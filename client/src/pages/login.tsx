@@ -81,7 +81,7 @@ export default function Login() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Mentra</h1>
           </div>
-          <p className="text-slate-600">Hybrid AI + Human Mentorship Platform</p>
+          <p className="text-slate-600">Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
@@ -95,7 +95,7 @@ export default function Login() {
               <CardHeader>
                 <CardTitle>Welcome back</CardTitle>
                 <CardDescription>
-                  Sign in to continue your mentorship journey
+                  Sign in to continue your journey of wisdom and guidance
                 </CardDescription>
               </CardHeader>
               <CardContent>

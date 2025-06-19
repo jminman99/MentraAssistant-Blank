@@ -104,6 +104,13 @@ The application is configured for deployment on Replit with the following setup:
 
 Preferred communication style: Simple, everyday language.
 
+## Branding Direction
+
+Moving away from traditional "mentorship" language toward more emotionally resonant messaging:
+- Primary tagline: "Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all."
+- Focus on wisdom, lived experience, and transformative guidance rather than structured mentorship
+- Avoid overusing "mentor" - prefer terms like "guide," "council," "wisdom," "lived experience"
+
 ## AI Mentor Semantic Layer
 
 The application features a sophisticated semantic personality layer that defines authentic communication patterns for each AI mentor:
@@ -129,6 +136,9 @@ Each mentor has defined:
 - June 19, 2025: Fixed authentication infinite loop issue
 - June 19, 2025: Seeded database with organizations, AI mentors, and human mentors
 - June 19, 2025: Updated subscription pricing to correct message limits
+- June 19, 2025: Created configurable semantic layer system for organization-level AI mentor customization
+- June 19, 2025: Built comprehensive admin interface for managing mentor behaviors and personality overrides
+- June 19, 2025: Updated branding from "Hybrid AI + Human Mentorship Program" to focus on wisdom and lived experience
 
 ## Changelog
 

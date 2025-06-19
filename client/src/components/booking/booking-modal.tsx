@@ -127,7 +127,7 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
                   <RadioGroupItem value="individual" />
                   <div>
                     <div className="font-medium text-slate-900">Individual (30 min)</div>
-                    <div className="text-sm text-slate-600">One-on-one mentorship</div>
+                    <div className="text-sm text-slate-600">Personal guidance session</div>
                     <div className="text-sm font-medium text-primary mt-1">
                       {user.subscriptionPlan === 'individual' ? 'Included in plan' : 'Switch plan required'}
                     </div>
@@ -137,7 +137,7 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
                   <RadioGroupItem value="council" />
                   <div>
                     <div className="font-medium text-slate-900">Council (60 min)</div>
-                    <div className="text-sm text-slate-600">Multiple mentors</div>
+                    <div className="text-sm text-slate-600">Council of wisdom</div>
                     <div className="text-sm font-medium text-primary mt-1">
                       {user.subscriptionPlan === 'council' ? 'Included in plan' : 'Switch plan required'}
                     </div>
