@@ -139,6 +139,8 @@ Each mentor has defined:
 - June 19, 2025: Created configurable semantic layer system for organization-level AI mentor customization
 - June 19, 2025: Built comprehensive admin interface for managing mentor behaviors and personality overrides
 - June 19, 2025: Updated branding from "Hybrid AI + Human Mentorship Program" to focus on wisdom and lived experience
+- June 19, 2025: Transformed visual design to sophisticated, masculine aesthetic using slate/charcoal color palette
+- June 19, 2025: Created pre-landing page (Welcome) to introduce Mentra's vision and create emotional connection for first-time users
 
 ## Changelog
 
