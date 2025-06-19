@@ -50,17 +50,15 @@ export default function Dashboard() {
       {/* Navigation Header */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-sm border border-slate-300">
-                  <div className="text-white font-bold text-sm">M</div>
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mentra</span>
+          <div className="flex items-center h-16">
+            <div className="flex items-center space-x-2 mr-8">
+              <div className="w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-sm border border-slate-300">
+                <div className="text-white font-bold text-sm">M</div>
               </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mentra</span>
             </div>
             
-            <div className="flex items-center space-x-4 md:space-x-8 overflow-x-auto">
+            <div className="flex items-center space-x-4 md:space-x-8 overflow-x-auto flex-1">
               <button 
                 onClick={() => setSelectedTab("ai-mentors")}
                 className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
