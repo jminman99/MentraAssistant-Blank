@@ -130,8 +130,15 @@ export function ChatInterface() {
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    const chatContainer = document.getElementById('chatMessages');
+    if (chatContainer && messages?.length > 0) {
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        chatContainer.scrollTo({
+          top: chatContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      });
     }
   }, [messages?.length]);
 
@@ -214,7 +221,7 @@ export function ChatInterface() {
       </div>
 
       {/* Chat Messages */}
-      <div className="h-96 overflow-y-auto p-4 space-y-4 chat-scroll" id="chatMessages">
+      <div className="h-96 overflow-y-auto p-4 space-y-4 scroll-smooth" id="chatMessages">
         {messages.length === 0 && selectedMentor && (
           <div className="flex items-start space-x-3">
             <img 
