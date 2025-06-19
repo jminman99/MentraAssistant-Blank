@@ -181,6 +181,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat Messages routes
+  app.get('/api/chat', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const aiMentorId = parseInt(req.query.aiMentorId as string);
+      if (!aiMentorId) {
+        return res.json([]);
+      }
+      const messages = await storage.getChatMessages(user.id, aiMentorId);
+      res.json(messages.reverse()); // Return in chronological order
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch chat messages' });
+    }
+  });
+
   app.get('/api/chat/:aiMentorId', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
@@ -195,6 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/chat', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      console.log('Chat request body:', req.body);
       const data = insertChatMessageSchema.parse(req.body);
 
       // Check message limit for user messages only
@@ -216,7 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(message);
     } catch (error) {
+      console.error('Chat error:', error);
       if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
         return res.status(400).json({ message: 'Validation error', errors: error.errors });
       }
       res.status(500).json({ message: 'Failed to create message' });
