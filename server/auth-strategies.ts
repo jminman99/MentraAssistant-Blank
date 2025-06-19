@@ -174,9 +174,12 @@ passport.serializeUser((user: any, done) => {
 
 passport.deserializeUser(async (id: number, done) => {
   try {
+    console.log('Deserializing user with id:', id);
     const user = await storage.getUser(id);
+    console.log('Deserialized user:', user);
     done(null, user);
   } catch (error) {
+    console.error('Error deserializing user:', error);
     done(error);
   }
 });
