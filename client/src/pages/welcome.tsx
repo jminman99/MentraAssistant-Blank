@@ -193,13 +193,19 @@ export default function Welcome() {
                 <p className="text-lg text-slate-600 mb-6">
                   Whether you need immediate guidance or deep, personal mentorship—Mentra meets you where you are.
                 </p>
-                <Button 
-                  className="mentra-button px-10 py-4 text-lg"
-                  onClick={() => setLocation("/login")}
-                >
-                  Begin Your Journey
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
+                <div className="space-y-4">
+                  <Button 
+                    className="mentra-button px-10 py-4 text-lg"
+                    onClick={() => setLocation("/login")}
+                  >
+                    Begin Your Journey
+                    <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  
+                  <div className="text-sm text-slate-500 border-t pt-4">
+                    Admin Demo: Use username "admin" / password "password" to explore the AI mentor configuration system
+                  </div>
+                </div>
               </div>
             </div>
           </div>
