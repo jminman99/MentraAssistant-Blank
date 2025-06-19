@@ -203,7 +203,7 @@ export default function Welcome() {
                   </Button>
                   
                   <div className="text-sm text-slate-500 border-t pt-4">
-                    Admin Demo: Use username "admin" / password "password" to explore the AI mentor configuration system
+                    Admin Demo: Use email "admin@mentra.com" / password "password" to explore the AI mentor configuration system
                   </div>
                 </div>
               </div>
