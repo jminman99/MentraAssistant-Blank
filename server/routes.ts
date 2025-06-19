@@ -30,9 +30,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
 
   // Auth middleware
-  const requireAuth = (req: any, res: any, next: any) => {
-    if (req.isAuthenticated()) {
-      return next();
+  const requireAuth = async (req: any, res: any, next: any) => {
+    if (req.isAuthenticated() && req.user) {
+      // Get full user data from database for API requests
+      try {
+        const fullUser = await storage.getUser(req.user.id);
+        if (fullUser) {
+          req.user = fullUser;
+          return next();
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+      }
     }
     res.status(401).json({ message: 'Authentication required' });
   };
@@ -225,8 +234,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const message = await storage.createChatMessage({
-        ...data,
         userId: user.id,
+        aiMentorId: data.aiMentorId,
+        content: data.content,
+        role: data.role,
       });
 
       res.json(message);
