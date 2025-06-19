@@ -6,6 +6,8 @@ import {
   chatMessages, 
   mentoringSessions,
   councilSessions,
+  semanticConfigurations,
+  mentorPersonalities,
   type User, 
   type InsertUser,
   type Organization,
@@ -17,10 +19,14 @@ import {
   type ChatMessage,
   type InsertChatMessage,
   type MentoringSession,
-  type InsertMentoringSession
+  type InsertMentoringSession,
+  type SemanticConfiguration,
+  type InsertSemanticConfiguration,
+  type MentorPersonality,
+  type InsertMentorPersonality
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -52,6 +58,18 @@ export interface IStorage {
   getUserSessions(userId: number): Promise<(MentoringSession & { humanMentor?: HumanMentor & { user: User } })[]>;
   createSession(session: InsertMentoringSession): Promise<MentoringSession>;
   updateSession(id: number, updates: Partial<MentoringSession>): Promise<MentoringSession | undefined>;
+
+  // Semantic Configuration methods
+  getSemanticConfigurations(organizationId?: number): Promise<SemanticConfiguration[]>;
+  getSemanticConfiguration(mentorName: string, organizationId?: number): Promise<SemanticConfiguration | undefined>;
+  createSemanticConfiguration(config: InsertSemanticConfiguration): Promise<SemanticConfiguration>;
+  updateSemanticConfiguration(id: number, updates: Partial<SemanticConfiguration>): Promise<SemanticConfiguration | undefined>;
+
+  // Mentor Personality methods
+  getMentorPersonalities(organizationId?: number): Promise<MentorPersonality[]>;
+  getMentorPersonality(mentorName: string, organizationId?: number): Promise<MentorPersonality | undefined>;
+  createMentorPersonality(personality: InsertMentorPersonality): Promise<MentorPersonality>;
+  updateMentorPersonality(id: number, updates: Partial<MentorPersonality>): Promise<MentorPersonality | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -246,6 +264,118 @@ export class DatabaseStorage implements IStorage {
       .where(eq(mentoringSessions.id, id))
       .returning();
     return session || undefined;
+  }
+
+  // Semantic Configuration methods
+  async getSemanticConfigurations(organizationId?: number): Promise<SemanticConfiguration[]> {
+    if (organizationId) {
+      return await db.select().from(semanticConfigurations)
+        .where(and(
+          eq(semanticConfigurations.organizationId, organizationId),
+          eq(semanticConfigurations.isActive, true)
+        ));
+    } else {
+      return await db.select().from(semanticConfigurations)
+        .where(and(
+          isNull(semanticConfigurations.organizationId),
+          eq(semanticConfigurations.isActive, true)
+        ));
+    }
+  }
+
+  async getSemanticConfiguration(mentorName: string, organizationId?: number): Promise<SemanticConfiguration | undefined> {
+    // Try organization-specific first, then fall back to global
+    if (organizationId) {
+      const [orgConfig] = await db.select().from(semanticConfigurations)
+        .where(and(
+          eq(semanticConfigurations.mentorName, mentorName),
+          eq(semanticConfigurations.organizationId, organizationId),
+          eq(semanticConfigurations.isActive, true)
+        ));
+      if (orgConfig) return orgConfig;
+    }
+
+    // Fall back to global configuration
+    const [globalConfig] = await db.select().from(semanticConfigurations)
+      .where(and(
+        eq(semanticConfigurations.mentorName, mentorName),
+        isNull(semanticConfigurations.organizationId),
+        eq(semanticConfigurations.isActive, true)
+      ));
+    return globalConfig || undefined;
+  }
+
+  async createSemanticConfiguration(config: InsertSemanticConfiguration): Promise<SemanticConfiguration> {
+    const [newConfig] = await db
+      .insert(semanticConfigurations)
+      .values(config)
+      .returning();
+    return newConfig;
+  }
+
+  async updateSemanticConfiguration(id: number, updates: Partial<SemanticConfiguration>): Promise<SemanticConfiguration | undefined> {
+    const [config] = await db
+      .update(semanticConfigurations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(semanticConfigurations.id, id))
+      .returning();
+    return config || undefined;
+  }
+
+  // Mentor Personality methods
+  async getMentorPersonalities(organizationId?: number): Promise<MentorPersonality[]> {
+    if (organizationId) {
+      return await db.select().from(mentorPersonalities)
+        .where(and(
+          eq(mentorPersonalities.organizationId, organizationId),
+          eq(mentorPersonalities.isActive, true)
+        ));
+    } else {
+      return await db.select().from(mentorPersonalities)
+        .where(and(
+          isNull(mentorPersonalities.organizationId),
+          eq(mentorPersonalities.isActive, true)
+        ));
+    }
+  }
+
+  async getMentorPersonality(mentorName: string, organizationId?: number): Promise<MentorPersonality | undefined> {
+    // Try organization-specific first, then fall back to global
+    if (organizationId) {
+      const [orgPersonality] = await db.select().from(mentorPersonalities)
+        .where(and(
+          eq(mentorPersonalities.mentorName, mentorName),
+          eq(mentorPersonalities.organizationId, organizationId),
+          eq(mentorPersonalities.isActive, true)
+        ));
+      if (orgPersonality) return orgPersonality;
+    }
+
+    // Fall back to global personality
+    const [globalPersonality] = await db.select().from(mentorPersonalities)
+      .where(and(
+        eq(mentorPersonalities.mentorName, mentorName),
+        isNull(mentorPersonalities.organizationId),
+        eq(mentorPersonalities.isActive, true)
+      ));
+    return globalPersonality || undefined;
+  }
+
+  async createMentorPersonality(personality: InsertMentorPersonality): Promise<MentorPersonality> {
+    const [newPersonality] = await db
+      .insert(mentorPersonalities)
+      .values(personality)
+      .returning();
+    return newPersonality;
+  }
+
+  async updateMentorPersonality(id: number, updates: Partial<MentorPersonality>): Promise<MentorPersonality | undefined> {
+    const [personality] = await db
+      .update(mentorPersonalities)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(mentorPersonalities.id, id))
+      .returning();
+    return personality || undefined;
   }
 }
 

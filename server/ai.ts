@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
+import { storage } from './storage.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY 
@@ -75,33 +76,39 @@ const personalityProfiles = {
 export async function generateAIResponse(
   mentor: AiMentor,
   userMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  organizationId?: number
 ): Promise<string> {
   if (!openai) {
     throw new Error('OpenAI API key not configured');
   }
 
+  // Get semantic configuration from database (organization-specific or global fallback)
+  const semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
+  const personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
+
+  // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
-  // Build the comprehensive system prompt with semantic personality layer
+  // Build the comprehensive system prompt with configurable semantic personality layer
   const systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
 
 CORE IDENTITY:
-${mentor.backstory}
+${personalityConfig?.customBackstory || mentor.backstory}
 
-EXPERTISE: ${mentor.expertise}
+EXPERTISE: ${personalityConfig?.customExpertise || mentor.expertise}
 
 PERSONALITY PROFILE:
-${mentor.personality}
+${personalityConfig?.customPersonality || mentor.personality}
 
-COMMUNICATION STYLE: ${profile?.communicationStyle || 'Professional and supportive'}
+COMMUNICATION STYLE: ${semanticConfig?.communicationStyle || profile?.communicationStyle || 'Professional and supportive'}
 
 SIGNATURE PHRASES (use naturally in conversation):
-${profile?.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || ''}
+${semanticConfig?.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || profile?.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || ''}
 
-DECISION-MAKING APPROACH: ${profile?.decisionMaking || 'Thoughtful and experience-based'}
+DECISION-MAKING APPROACH: ${semanticConfig?.decisionMaking || profile?.decisionMaking || 'Thoughtful and experience-based'}
 
-MENTORING STYLE: ${profile?.mentoring || 'Supportive and encouraging'}
+MENTORING STYLE: ${semanticConfig?.mentoring || profile?.mentoring || 'Supportive and encouraging'}
 
 CONVERSATION GUIDELINES:
 - Embody ${mentor.name}'s authentic voice and perspective

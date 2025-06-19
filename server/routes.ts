@@ -7,7 +7,9 @@ import {
   loginSchema, 
   registerSchema, 
   insertChatMessageSchema,
-  insertMentoringSessionSchema 
+  insertMentoringSessionSchema,
+  insertSemanticConfigurationSchema,
+  insertMentorPersonalitySchema
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
@@ -274,6 +276,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Semantic Configuration routes
+  app.get('/api/semantic-configurations', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const configurations = await storage.getSemanticConfigurations(user.organizationId);
+      res.json(configurations);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch semantic configurations' });
+    }
+  });
+
+  app.get('/api/semantic-configurations/:mentorName', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { mentorName } = req.params;
+      const configuration = await storage.getSemanticConfiguration(mentorName, user.organizationId);
+      res.json(configuration);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch semantic configuration' });
+    }
+  });
+
+  app.post('/api/semantic-configurations', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const data = insertSemanticConfigurationSchema.parse(req.body);
+
+      const configuration = await storage.createSemanticConfiguration({
+        ...data,
+        organizationId: user.organizationId
+      });
+
+      res.json(configuration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create semantic configuration' });
+    }
+  });
+
+  // Mentor Personality routes
+  app.get('/api/mentor-personalities', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const personalities = await storage.getMentorPersonalities(user.organizationId);
+      res.json(personalities);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch mentor personalities' });
+    }
+  });
+
+  app.post('/api/mentor-personalities', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const data = insertMentorPersonalitySchema.parse(req.body);
+
+      const personality = await storage.createMentorPersonality({
+        ...data,
+        organizationId: user.organizationId
+      });
+
+      res.json(personality);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create mentor personality' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup for real-time chat
@@ -307,9 +380,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
           
           try {
-            // Generate AI response using the semantic personality layer
+            // Get user to access organization ID
+            const user = await storage.getUser(userId);
+            
+            // Generate AI response using the configurable semantic personality layer
             const { generateAIResponse } = await import('./ai.js');
-            const aiResponse = await generateAIResponse(mentor, content, conversationHistory);
+            const aiResponse = await generateAIResponse(mentor, content, conversationHistory, user?.organizationId);
             
             // Save the AI response to the database
             await storage.createChatMessage({

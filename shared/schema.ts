@@ -87,6 +87,31 @@ export const councilSessions = pgTable("council_sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const semanticConfigurations = pgTable("semantic_configurations", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  mentorName: text("mentor_name").notNull(), // Global config if organizationId is null
+  communicationStyle: text("communication_style").notNull(),
+  commonPhrases: jsonb("common_phrases").$type<string[]>().default([]),
+  decisionMaking: text("decision_making").notNull(),
+  mentoring: text("mentoring").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mentorPersonalities = pgTable("mentor_personalities", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  mentorName: text("mentor_name").notNull(),
+  customBackstory: text("custom_backstory"),
+  customExpertise: text("custom_expertise"),
+  customPersonality: text("custom_personality"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   organization: one(organizations, {
@@ -105,6 +130,8 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
   aiMentors: many(aiMentors),
   humanMentors: many(humanMentors),
+  semanticConfigurations: many(semanticConfigurations),
+  mentorPersonalities: many(mentorPersonalities),
 }));
 
 export const aiMentorsRelations = relations(aiMentors, ({ one, many }) => ({
@@ -162,6 +189,20 @@ export const councilSessionsRelations = relations(councilSessions, ({ one }) => 
   }),
 }));
 
+export const semanticConfigurationsRelations = relations(semanticConfigurations, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [semanticConfigurations.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const mentorPersonalitiesRelations = relations(mentorPersonalities, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [mentorPersonalities.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -195,6 +236,18 @@ export const insertMentoringSessionSchema = createInsertSchema(mentoringSessions
   updatedAt: true,
 });
 
+export const insertSemanticConfigurationSchema = createInsertSchema(semanticConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMentorPersonalitySchema = createInsertSchema(mentorPersonalities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -220,5 +273,9 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type MentoringSession = typeof mentoringSessions.$inferSelect;
 export type InsertMentoringSession = z.infer<typeof insertMentoringSessionSchema>;
+export type SemanticConfiguration = typeof semanticConfigurations.$inferSelect;
+export type InsertSemanticConfiguration = z.infer<typeof insertSemanticConfigurationSchema>;
+export type MentorPersonality = typeof mentorPersonalities.$inferSelect;
+export type InsertMentorPersonality = z.infer<typeof insertMentorPersonalitySchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
