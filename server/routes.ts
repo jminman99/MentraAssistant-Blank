@@ -206,7 +206,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/chat', requireAuth, async (req, res) => {
+  // Rate limiting for chat endpoint to prevent infinite loops
+  const chatRequestCount = new Map<string, { count: number, lastReset: number }>();
+  
+  app.post('/api/chat', (req: any, res, next) => {
+    // Rate limiting - max 5 requests per minute per IP
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    const minute = 60 * 1000;
+    
+    if (!chatRequestCount.has(clientIP)) {
+      chatRequestCount.set(clientIP, { count: 1, lastReset: now });
+    } else {
+      const clientData = chatRequestCount.get(clientIP)!;
+      
+      // Reset counter if more than a minute has passed
+      if (now - clientData.lastReset > minute) {
+        clientData.count = 1;
+        clientData.lastReset = now;
+      } else {
+        clientData.count++;
+      }
+      
+      // Block if too many requests
+      if (clientData.count > 5) {
+        return res.status(429).json({ 
+          message: "Too many chat requests. Please wait a moment before trying again." 
+        });
+      }
+    }
+    
+    next();
+  }, requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
       console.log('Chat request body:', req.body);

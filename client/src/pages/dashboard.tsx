@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Compass, MessageCircle, Sparkles, Heart, Star, Crown } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { ChatInterface } from "@/components/chat/chat-interface";
+import { ChatInterface } from "@/components/chat/chat-interface-fixed";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
