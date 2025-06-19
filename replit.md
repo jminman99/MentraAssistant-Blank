@@ -187,6 +187,7 @@ The platform now supports multiple authentication methods alongside email/passwo
 - June 19, 2025: Created pre-landing page (Welcome) to introduce Mentra's vision and create emotional connection for first-time users
 - June 19, 2025: Implemented configurable branding and messaging system for different target audiences and organizations
 - June 19, 2025: Resolved authentication redirect issues and implemented comprehensive SSO authentication with Google, Facebook, X (Twitter), and Apple OAuth providers
+- June 19, 2025: Fixed critical chat system infinite loop bug that caused thousands of API requests by correcting frontend query parameter handling
 
 ## Changelog
 

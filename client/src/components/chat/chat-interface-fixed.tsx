@@ -28,6 +28,11 @@ export function ChatInterface() {
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['/api/chat', selectedMentorId],
+    queryFn: async () => {
+      if (!selectedMentorId) return [];
+      const response = await apiRequest('GET', `/api/chat?aiMentorId=${selectedMentorId}`);
+      return response.json();
+    },
     enabled: !!selectedMentorId && !!user,
   });
 
