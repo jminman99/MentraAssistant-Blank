@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Users } from "lucide-react";
+import { Lightbulb, Heart, Mountain } from "lucide-react";
 
 export default function Login() {
   const { login, register } = useAuth();
@@ -75,11 +75,13 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Users className="text-white h-6 w-6" />
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center shadow-lg border border-slate-300">
+                <div className="text-white font-bold text-xl">M</div>
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Mentra</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mentra</h1>
           </div>
           <p className="text-slate-600">Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.</p>
         </div>
@@ -121,8 +123,8 @@ export default function Login() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={login.isPending}>
-                    {login.isPending ? "Signing in..." : "Sign In"}
+                  <Button type="submit" className="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white border-0 shadow-lg transition-all duration-200 transform hover:scale-[1.02]" disabled={login.isPending}>
+                    {login.isPending ? "Signing in..." : "Enter Mentra"}
                   </Button>
                 </form>
               </CardContent>
@@ -215,8 +217,8 @@ export default function Login() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={register.isPending}>
-                    {register.isPending ? "Creating account..." : "Create Account"}
+                  <Button type="submit" className="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white border-0 shadow-lg transition-all duration-200 transform hover:scale-[1.02]" disabled={register.isPending}>
+                    {register.isPending ? "Creating account..." : "Begin Your Journey"}
                   </Button>
                 </form>
               </CardContent>

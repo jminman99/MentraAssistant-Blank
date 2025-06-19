@@ -9,25 +9,52 @@
   --card-foreground: hsl(222, 84%, 4.9%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222, 84%, 4.9%);
-  --primary: hsl(207, 90%, 54%);
+  --primary: hsl(215, 28%, 17%);
   --primary-foreground: hsl(210, 40%, 98%);
   --secondary: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222, 47%, 11%);
   --muted: hsl(210, 40%, 96%);
   --muted-foreground: hsl(215, 16%, 47%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 47%, 11%);
+  --accent: hsl(215, 20%, 25%);
+  --accent-foreground: hsl(210, 40%, 98%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
   --border: hsl(214, 32%, 91%);
   --input: hsl(214, 32%, 91%);
-  --ring: hsl(222, 84%, 4.9%);
-  --radius: 0.5rem;
-  --chart-1: hsl(12, 76%, 61%);
-  --chart-2: hsl(173, 58%, 39%);
-  --chart-3: hsl(197, 37%, 24%);
-  --chart-4: hsl(43, 74%, 66%);
-  --chart-5: hsl(27, 87%, 67%);
+  --ring: hsl(215, 28%, 17%);
+  --radius: 0.75rem;
+  --chart-1: hsl(215, 25%, 27%);
+  --chart-2: hsl(215, 20%, 35%);
+  --chart-3: hsl(215, 15%, 45%);
+  --chart-4: hsl(215, 10%, 55%);
+  --chart-5: hsl(215, 5%, 65%);
+}
+
+/* Professional masculine design utilities */
+@layer components {
+  .mentra-button {
+    @apply bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white border-0 shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium;
+  }
+  
+  .mentra-button-secondary {
+    @apply bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white border-0 shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium;
+  }
+  
+  .mentra-card {
+    @apply bg-white/95 backdrop-blur-sm border border-slate-200/60 shadow-xl shadow-slate-200/30 rounded-xl;
+  }
+  
+  .mentra-logo {
+    @apply w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-sm border border-slate-300;
+  }
+  
+  .mentra-text-gradient {
+    @apply bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent;
+  }
+  
+  .sophisticated-shadow {
+    @apply shadow-lg shadow-slate-900/10;
+  }
 }
 
 .dark {

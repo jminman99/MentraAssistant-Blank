@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, MessageCircle } from "lucide-react";
+import { Compass, MessageCircle, Sparkles, Heart, Star, Crown } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ChatInterface } from "@/components/chat/chat-interface";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
@@ -47,10 +47,10 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Users className="text-white h-5 w-5" />
+                <div className="w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-sm border border-slate-300">
+                  <div className="text-white font-bold text-sm">M</div>
                 </div>
-                <span className="text-xl font-bold text-slate-900">Mentra</span>
+                <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mentra</span>
               </div>
             </div>
             
@@ -61,7 +61,7 @@ export default function Dashboard() {
                   selectedTab === "ai-mentors" ? "border-b-2 border-primary pb-1" : ""
                 }`}
               >
-                AI Mentors
+                Wisdom Guides
               </button>
               <button 
                 onClick={() => setSelectedTab("human-mentors")}
@@ -69,7 +69,7 @@ export default function Dashboard() {
                   selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1" : ""
                 }`}
               >
-                Human Mentors
+                Experienced Guides
               </button>
               <button 
                 onClick={() => setSelectedTab("sessions")}
@@ -77,7 +77,7 @@ export default function Dashboard() {
                   selectedTab === "sessions" ? "border-b-2 border-primary pb-1" : ""
                 }`}
               >
-                My Sessions
+                Journey Sessions
               </button>
             </div>
 
