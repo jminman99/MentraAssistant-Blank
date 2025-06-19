@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Compass, MessageCircle, Sparkles, Heart, Star, Crown } from "lucide-react";
+import { Compass, MessageCircle, Sparkles, Heart, Star, Crown, Settings } from "lucide-react";
+import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { ChatInterface } from "@/components/chat/chat-interface-fixed";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
@@ -119,6 +120,18 @@ export default function Dashboard() {
                     <div className="text-xs text-slate-600">{user.email}</div>
                   </div>
                   <div className="p-2">
+                    {(user.role === 'admin' || user.role === 'super_admin') && (
+                      <Link href="/admin">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start text-slate-600 mb-1"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Admin Panel
+                        </Button>
+                      </Link>
+                    )}
                     <Button 
                       variant="ghost" 
                       size="sm" 
