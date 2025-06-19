@@ -251,7 +251,6 @@ export const insertHumanMentorSchema = createInsertSchema(humanMentors).omit({
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 

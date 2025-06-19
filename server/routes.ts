@@ -418,7 +418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Generate AI response using the configurable semantic personality layer
             const { generateAIResponse } = await import('./ai.js');
-            const aiResponse = await generateAIResponse(mentor, content, conversationHistory, user?.organizationId);
+            console.log('Generating AI response for user:', userId, 'mentor:', mentorId);
+            const aiResponse = await generateAIResponse(mentor, content, conversationHistory, user?.organizationId || undefined);
+            console.log('AI response generated:', aiResponse.substring(0, 100) + '...');
             
             // Save the AI response to the database
             await storage.createChatMessage({

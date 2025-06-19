@@ -44,11 +44,34 @@ export function ChatInterface() {
       const response = await apiRequest('POST', '/api/chat', data);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    onMutate: async (data) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/chat', selectedMentorId] });
+
+      // Get previous messages
+      const previousMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
+
+      // Optimistically add user message
+      if (previousMessages) {
+        const optimisticMessage: ChatMessage = {
+          id: Date.now(),
+          userId: user!.id,
+          aiMentorId: data.aiMentorId,
+          content: data.content,
+          role: data.role,
+          createdAt: new Date().toISOString(),
+        };
+        queryClient.setQueryData(['/api/chat', selectedMentorId], [...previousMessages, optimisticMessage]);
+      }
+
+      setIsTyping(true);
+      return { previousMessages };
     },
-    onError: (error: any) => {
+    onError: (error: any, data, context) => {
+      // Rollback optimistic update
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['/api/chat', selectedMentorId], context.previousMessages);
+      }
       setIsTyping(false);
       toast({
         title: "Failed to send message",
@@ -56,6 +79,10 @@ export function ChatInterface() {
         variant: "destructive",
       });
     },
+    onSettled: () => {
+      // Only refresh user data, not chat messages (WebSocket will handle that)
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    }
   });
 
   // Auto-select first mentor when available
@@ -65,10 +92,11 @@ export function ChatInterface() {
     }
   }, [aiMentors, selectedMentorId]);
 
-  // Handle WebSocket AI responses - with deduplication
+  // Handle WebSocket AI responses - with optimistic updates
   useEffect(() => {
     if (lastMessage?.type === 'ai_response' && 
         lastMessage.mentorId === selectedMentorId &&
+        lastMessage.content &&
         lastMessage.timestamp) {
       
       const responseKey = `${lastMessage.mentorId}-${lastMessage.timestamp}`;
@@ -78,11 +106,27 @@ export function ChatInterface() {
         processedResponsesRef.current.add(responseKey);
         setIsTyping(false);
         
-        // The AI response is already saved server-side, just refresh the messages
-        queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+        // Optimistically add AI response to avoid flash
+        const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
+        if (currentMessages) {
+          const aiMessage: ChatMessage = {
+            id: Date.now() + 1, // Temporary unique ID
+            userId: user!.id,
+            aiMentorId: lastMessage.mentorId,
+            content: lastMessage.content,
+            role: 'assistant',
+            createdAt: lastMessage.timestamp,
+          };
+          queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
+        }
+        
+        // Sync with server after a short delay to get real message ID
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+        }, 500);
       }
     }
-  }, [lastMessage?.type, lastMessage?.mentorId, lastMessage?.timestamp, selectedMentorId, queryClient]);
+  }, [lastMessage?.type, lastMessage?.mentorId, lastMessage?.content, lastMessage?.timestamp, selectedMentorId, queryClient, user]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
