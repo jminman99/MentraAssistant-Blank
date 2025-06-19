@@ -44,12 +44,18 @@ export interface IStorage {
 
   // Organization methods
   getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizations(): Promise<Organization[]>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined>;
+  deleteOrganization(id: number): Promise<void>;
 
   // AI Mentor methods
   getAiMentorsByOrganization(orgId: number): Promise<AiMentor[]>;
+  getAiMentors(): Promise<AiMentor[]>;
   getAiMentor(id: number): Promise<AiMentor | undefined>;
   createAiMentor(mentor: InsertAiMentor): Promise<AiMentor>;
+  updateAiMentor(id: number, updates: Partial<AiMentor>): Promise<AiMentor | undefined>;
+  deleteAiMentor(id: number): Promise<void>;
 
   // Human Mentor methods
   getHumanMentorsByOrganization(orgId: number): Promise<(HumanMentor & { user: User })[]>;
@@ -136,6 +142,23 @@ export class DatabaseStorage implements IStorage {
     return org;
   }
 
+  async getOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations).orderBy(asc(organizations.name));
+  }
+
+  async updateOrganization(id: number, updates: Partial<Organization>): Promise<Organization | undefined> {
+    const [org] = await db
+      .update(organizations)
+      .set(updates)
+      .where(eq(organizations.id, id))
+      .returning();
+    return org || undefined;
+  }
+
+  async deleteOrganization(id: number): Promise<void> {
+    await db.delete(organizations).where(eq(organizations.id, id));
+  }
+
   async getAiMentorsByOrganization(orgId: number): Promise<AiMentor[]> {
     return await db
       .select()
@@ -155,6 +178,23 @@ export class DatabaseStorage implements IStorage {
       .values(insertMentor)
       .returning();
     return mentor;
+  }
+
+  async getAiMentors(): Promise<AiMentor[]> {
+    return await db.select().from(aiMentors).orderBy(asc(aiMentors.name));
+  }
+
+  async updateAiMentor(id: number, updates: Partial<AiMentor>): Promise<AiMentor | undefined> {
+    const [mentor] = await db
+      .update(aiMentors)
+      .set(updates)
+      .where(eq(aiMentors.id, id))
+      .returning();
+    return mentor || undefined;
+  }
+
+  async deleteAiMentor(id: number): Promise<void> {
+    await db.delete(aiMentors).where(eq(aiMentors.id, id));
   }
 
   async getHumanMentorsByOrganization(orgId: number): Promise<(HumanMentor & { user: User })[]> {

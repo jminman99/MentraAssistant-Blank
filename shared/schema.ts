@@ -25,8 +25,10 @@ export const users = pgTable("users", {
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: varchar("type", { length: 20 }).notNull(), // 'church', 'business', 'city'
+  description: text("description").default(""),
+  type: varchar("type", { length: 20 }).notNull().default("business"), // 'church', 'business', 'city'
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const aiMentors = pgTable("ai_mentors", {

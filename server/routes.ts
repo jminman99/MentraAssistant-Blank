@@ -342,11 +342,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for organization management
+  app.get('/api/admin/organizations', requireAdmin, async (req: any, res) => {
+    try {
+      const organizations = await storage.getOrganizations();
+      res.json(organizations);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      res.status(500).json({ message: 'Failed to fetch organizations' });
+    }
+  });
+
+  app.post('/api/admin/organizations', requireAdmin, async (req: any, res) => {
+    try {
+      const { name, description } = req.body;
+      const organization = await storage.createOrganization({ name, description });
+      res.json(organization);
+    } catch (error) {
+      console.error('Error creating organization:', error);
+      res.status(500).json({ message: 'Failed to create organization' });
+    }
+  });
+
+  app.patch('/api/admin/organizations/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const organization = await storage.updateOrganization(parseInt(id), updates);
+      if (!organization) {
+        return res.status(404).json({ message: 'Organization not found' });
+      }
+      res.json(organization);
+    } catch (error) {
+      console.error('Error updating organization:', error);
+      res.status(500).json({ message: 'Failed to update organization' });
+    }
+  });
+
+  app.delete('/api/admin/organizations/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteOrganization(parseInt(id));
+      res.json({ message: 'Organization deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+      res.status(500).json({ message: 'Failed to delete organization' });
+    }
+  });
+
+  // Admin routes for AI mentor management
+  app.get('/api/admin/ai-mentors', requireAdmin, async (req: any, res) => {
+    try {
+      const aiMentors = await storage.getAiMentors();
+      res.json(aiMentors);
+    } catch (error) {
+      console.error('Error fetching AI mentors:', error);
+      res.status(500).json({ message: 'Failed to fetch AI mentors' });
+    }
+  });
+
+  app.post('/api/admin/ai-mentors', requireAdmin, async (req: any, res) => {
+    try {
+      const { name, personality, expertise, organizationId, isActive } = req.body;
+      const aiMentor = await storage.createAiMentor({
+        name,
+        personality,
+        expertise,
+        avatar: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face`,
+        backstory: personality, // Use personality as backstory for now
+        organizationId: organizationId || 1, // Default to first organization
+        isActive: isActive !== undefined ? isActive : true
+      });
+      res.json(aiMentor);
+    } catch (error) {
+      console.error('Error creating AI mentor:', error);
+      res.status(500).json({ message: 'Failed to create AI mentor' });
+    }
+  });
+
+  app.patch('/api/admin/ai-mentors/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const aiMentor = await storage.updateAiMentor(parseInt(id), updates);
+      if (!aiMentor) {
+        return res.status(404).json({ message: 'AI mentor not found' });
+      }
+      res.json(aiMentor);
+    } catch (error) {
+      console.error('Error updating AI mentor:', error);
+      res.status(500).json({ message: 'Failed to update AI mentor' });
+    }
+  });
+
+  app.delete('/api/admin/ai-mentors/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAiMentor(parseInt(id));
+      res.json({ message: 'AI mentor deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting AI mentor:', error);
+      res.status(500).json({ message: 'Failed to delete AI mentor' });
+    }
+  });
+
   // Admin routes for managing mentor applications
   app.get('/api/admin/mentor-applications', requireAdmin, async (req: any, res) => {
     try {
-      const user = req.adminUser;
-      const applications = await storage.getMentorApplications(user.organizationId);
+      const applications = await storage.getMentorApplications();
       res.json(applications);
     } catch (error) {
       console.error('Error fetching mentor applications:', error);
