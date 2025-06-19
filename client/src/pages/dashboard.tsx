@@ -84,6 +84,14 @@ export default function Dashboard() {
               >
                 Journey Sessions
               </button>
+              <button 
+                onClick={() => setSelectedTab("plan")}
+                className={`text-slate-600 hover:text-primary transition-colors ${
+                  selectedTab === "plan" ? "border-b-2 border-primary pb-1" : ""
+                }`}
+              >
+                Plan & Usage
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -171,48 +179,57 @@ export default function Dashboard() {
                 <UpcomingSessions />
               </div>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            
-            {/* Human Mentors Quick Access */}
-            {selectedTab === "ai-mentors" && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900">Human Mentors</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setSelectedTab("human-mentors")}
-                    className="text-primary hover:text-blue-700 text-sm font-medium"
-                  >
-                    View All
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {humanMentors.slice(0, 2).map((mentor) => (
-                    <HumanMentorCard
-                      key={mentor.id}
-                      mentor={mentor}
-                      onBook={() => handleBookSession(mentor)}
-                      disabled={user.sessionsUsed >= user.sessionsLimit}
-                      compact
-                    />
-                  ))}
+            {selectedTab === "plan" && (
+              <div className="space-y-6">
+                <UsageCard user={user} onUpgrade={() => setShowUpgradeModal(true)} />
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Sessions</h3>
+                  <UpcomingSessions compact />
                 </div>
               </div>
             )}
+          </div>
 
-            {/* Subscription Usage */}
-            <UsageCard user={user} onUpgrade={() => setShowUpgradeModal(true)} />
-
-            {/* Upcoming Sessions */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Sessions</h3>
-              <UpcomingSessions compact />
-            </div>
+          {/* Sidebar - only show quick access when on AI mentors tab */}
+          <div className="space-y-6">
+            {selectedTab === "ai-mentors" && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900">Quick Access</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedTab("human-mentors")}
+                    className="w-full justify-start"
+                  >
+                    <Compass className="h-4 w-4 mr-2" />
+                    Human Mentors
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedTab("sessions")}
+                    className="w-full justify-start"
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    My Sessions
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedTab("plan")}
+                    className="w-full justify-start"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Plan & Usage
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
