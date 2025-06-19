@@ -1,0 +1,110 @@
+# Mentra - AI & Human Mentoring Platform
+
+## Overview
+
+Mentra is a comprehensive mentoring platform that combines AI-powered conversations with human expertise. The application enables users to interact with AI mentors for immediate guidance and book sessions with human mentors for personalized advice. It features subscription-based access controls, real-time chat capabilities, and session management.
+
+## System Architecture
+
+This is a full-stack web application built with a React frontend and Express.js backend, following a modern TypeScript-first approach with shared type definitions.
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite for fast development and optimized builds
+- **UI Components**: Radix UI primitives with shadcn/ui design system
+- **Styling**: Tailwind CSS with CSS variables for theming
+- **State Management**: TanStack Query for server state management
+- **Routing**: Wouter for client-side routing
+- **Form Handling**: React Hook Form with Zod validation
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Passport.js with local strategy and express-session
+- **Real-time Communication**: WebSocket support for live chat
+- **Password Hashing**: bcrypt for secure authentication
+
+## Key Components
+
+### Database Schema
+The application uses PostgreSQL with the following core entities:
+- **Users**: User accounts with subscription plans and usage tracking
+- **Organizations**: Support for churches, businesses, and cities
+- **AI Mentors**: Configurable AI personalities with expertise areas
+- **Human Mentors**: Professional mentors with ratings and availability
+- **Chat Messages**: Conversation history between users and AI mentors
+- **Mentoring Sessions**: Scheduled sessions with human mentors
+- **Council Sessions**: Group mentoring sessions
+
+### Authentication System
+- Session-based authentication using express-session
+- Password hashing with bcrypt
+- User registration with subscription plan selection
+- Protected routes requiring authentication
+
+### Subscription Management
+Three subscription tiers:
+- **AI-Only ($19/month)**: 150 AI messages, no human sessions
+- **Individual ($49/month)**: 300 AI messages + 2 human sessions
+- **Council ($99/month)**: 500 AI messages + 5 human sessions + council access
+
+### Chat System
+- Real-time messaging with AI mentors
+- WebSocket connection for live updates
+- Message history persistence
+- Usage tracking and limits enforcement
+
+### Mentor Management
+- **AI Mentors**: Configurable personalities with backstories and expertise
+- **Human Mentors**: Professional profiles with ratings, availability, and hourly rates
+- Session booking and scheduling system
+
+## Data Flow
+
+1. **User Authentication**: Users register/login through the authentication system
+2. **Dashboard Access**: Authenticated users access the main dashboard
+3. **AI Chat**: Users select AI mentors and engage in real-time conversations
+4. **Human Mentoring**: Users browse and book sessions with human mentors
+5. **Usage Tracking**: System monitors message and session usage against subscription limits
+6. **Real-time Updates**: WebSocket connections provide live chat updates
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: Neon PostgreSQL database connection
+- **drizzle-orm**: Type-safe database ORM
+- **@tanstack/react-query**: Server state management
+- **passport**: Authentication middleware
+- **bcrypt**: Password hashing
+- **ws**: WebSocket implementation
+
+### UI Dependencies
+- **@radix-ui/***: Accessible UI primitives
+- **tailwindcss**: Utility-first CSS framework
+- **lucide-react**: Icon library
+- **react-hook-form**: Form management
+- **zod**: Schema validation
+
+## Deployment Strategy
+
+The application is configured for deployment on Replit with the following setup:
+- **Build Process**: Vite builds the frontend, esbuild bundles the backend
+- **Runtime**: Node.js 20 with PostgreSQL 16
+- **Environment**: Production builds served through Express static middleware
+- **Development**: Hot reload with Vite development server
+- **Database**: PostgreSQL with connection pooling via Neon
+
+### Environment Configuration
+- `DATABASE_URL`: PostgreSQL connection string
+- `NODE_ENV`: Environment mode (development/production)
+- Session secrets and other environment variables
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## Changelog
+
+Changelog:
+- June 19, 2025. Initial setup
