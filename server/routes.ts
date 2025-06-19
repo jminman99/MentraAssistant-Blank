@@ -32,16 +32,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   const requireAuth = async (req: any, res: any, next: any) => {
     if (req.isAuthenticated() && req.user) {
-      // Get full user data from database for API requests
+      console.log('Auth middleware - session user:', req.user);
       try {
         const fullUser = await storage.getUser(req.user.id);
+        console.log('Auth middleware - database user:', fullUser);
         if (fullUser) {
           req.user = fullUser;
           return next();
+        } else {
+          console.log('Auth middleware - user not found in database');
         }
       } catch (error) {
-        console.error('Error getting user data:', error);
+        console.error('Auth middleware - error getting user data:', error);
       }
+    } else {
+      console.log('Auth middleware - not authenticated or no user');
     }
     res.status(401).json({ message: 'Authentication required' });
   };
