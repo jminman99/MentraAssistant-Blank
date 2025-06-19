@@ -250,16 +250,21 @@ export function ChatInterface() {
             <Textarea
               placeholder={`Ask ${selectedMentor?.name || 'your mentor'} for guidance...`}
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
+              onChange={(e) => {
+                setMessageInput(e.target.value);
+                // Auto-resize textarea
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter') {
                   e.preventDefault();
                   handleSendMessage(e);
                 }
               }}
-              className="min-h-[60px] max-h-[120px] pr-12 resize-none"
+              className="min-h-[60px] max-h-[120px] pr-12 resize-none overflow-y-auto"
               disabled={sendMessageMutation.isPending || !selectedMentorId}
-              rows={2}
+              rows={1}
             />
             <Button
               type="submit"
@@ -272,7 +277,7 @@ export function ChatInterface() {
           </div>
         </form>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-          <span>Enter to send • Shift+Enter for new line</span>
+          <span>Press Enter to send</span>
           <span>
             {user ? user.messagesLimit - user.messagesUsed : 0} messages remaining this month
           </span>
