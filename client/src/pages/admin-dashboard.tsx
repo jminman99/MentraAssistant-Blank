@@ -289,22 +289,26 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="organizations" className="flex items-center space-x-2">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="organizations" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Building2 className="w-4 h-4" />
-              <span>Organizations</span>
+              <span className="hidden sm:inline">Organizations</span>
+              <span className="sm:hidden">Orgs</span>
             </TabsTrigger>
-            <TabsTrigger value="mentors" className="flex items-center space-x-2">
+            <TabsTrigger value="mentors" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
-              <span>Mentor Applications</span>
+              <span className="hidden sm:inline">Mentor Applications</span>
+              <span className="sm:hidden">Applications</span>
             </TabsTrigger>
-            <TabsTrigger value="ai-mentors" className="flex items-center space-x-2">
+            <TabsTrigger value="ai-mentors" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Bot className="w-4 h-4" />
-              <span>AI Mentors</span>
+              <span className="hidden sm:inline">AI Mentors</span>
+              <span className="sm:hidden">AI</span>
             </TabsTrigger>
-            <TabsTrigger value="super-admin" className="flex items-center space-x-2">
+            <TabsTrigger value="super-admin" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Crown className="w-4 h-4" />
-              <span>Super Admin</span>
+              <span className="hidden sm:inline">Super Admin</span>
+              <span className="sm:hidden">Admin</span>
             </TabsTrigger>
           </TabsList>
 

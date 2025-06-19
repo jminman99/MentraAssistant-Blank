@@ -58,10 +58,10 @@ export default function Dashboard() {
               <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Mentra</span>
             </div>
             
-            <div className="flex items-center space-x-4 md:space-x-8 overflow-x-auto flex-1">
+            <div className="flex items-center space-x-2 md:space-x-6 overflow-x-auto flex-1 scrollbar-hide">
               <button 
                 onClick={() => setSelectedTab("ai-mentors")}
-                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
                   selectedTab === "ai-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
@@ -69,7 +69,7 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={() => setSelectedTab("human-mentors")}
-                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
                   selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
@@ -77,7 +77,7 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={() => setSelectedTab("sessions")}
-                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
                   selectedTab === "sessions" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
@@ -85,12 +85,20 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={() => setSelectedTab("plan")}
-                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
                   selectedTab === "plan" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
                 Plan & Usage
               </button>
+              {(user.role === 'admin' || user.role === 'super_admin') && (
+                <Link href="/admin">
+                  <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
+                    <Crown className="w-3 h-3" />
+                    <span>Admin</span>
+                  </button>
+                </Link>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
