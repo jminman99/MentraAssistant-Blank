@@ -7,6 +7,8 @@ import Welcome from "@/pages/welcome";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import MentorApplication from "@/pages/mentor-application";
+import AdminDashboard from "@/pages/admin-dashboard";
 import { useAuth } from "@/lib/auth";
 
 function Router() {
@@ -20,12 +22,22 @@ function Router() {
     );
   }
 
+  const AdminRoute = () => {
+    if (!user) return <Login />;
+    if (user.role !== 'admin' && user.role !== 'super_admin') {
+      return <NotFound />;
+    }
+    return <AdminDashboard />;
+  };
+
   return (
     <Switch>
       <Route path="/" component={user ? Dashboard : Welcome} />
       <Route path="/welcome" component={Welcome} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
+      <Route path="/mentor-application" component={MentorApplication} />
+      <Route path="/admin" component={AdminRoute} />
       <Route component={NotFound} />
     </Switch>
   );

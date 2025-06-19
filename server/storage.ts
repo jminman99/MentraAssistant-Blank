@@ -9,6 +9,7 @@ import {
   semanticConfigurations,
   mentorPersonalities,
   brandingConfigurations,
+  mentorApplications,
   type User, 
   type InsertUser,
   type Organization,
@@ -26,7 +27,9 @@ import {
   type MentorPersonality,
   type InsertMentorPersonality,
   type BrandingConfiguration,
-  type InsertBrandingConfiguration
+  type InsertBrandingConfiguration,
+  type MentorApplication,
+  type InsertMentorApplication
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, isNull } from "drizzle-orm";
@@ -79,6 +82,12 @@ export interface IStorage {
   getBrandingConfiguration(targetAudience: string, organizationId?: number): Promise<BrandingConfiguration | undefined>;
   createBrandingConfiguration(config: InsertBrandingConfiguration): Promise<BrandingConfiguration>;
   updateBrandingConfiguration(id: number, updates: Partial<BrandingConfiguration>): Promise<BrandingConfiguration | undefined>;
+
+  // Mentor Application methods
+  getMentorApplications(organizationId?: number): Promise<MentorApplication[]>;
+  getMentorApplication(id: number): Promise<MentorApplication | undefined>;
+  createMentorApplication(application: InsertMentorApplication): Promise<MentorApplication>;
+  updateMentorApplication(id: number, updates: Partial<MentorApplication>): Promise<MentorApplication | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -406,6 +415,41 @@ export class DatabaseStorage implements IStorage {
       .where(eq(brandingConfigurations.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // Mentor Application methods
+  async getMentorApplications(organizationId?: number): Promise<MentorApplication[]> {
+    if (organizationId) {
+      return await db.select().from(mentorApplications)
+        .where(eq(mentorApplications.organizationId, organizationId))
+        .orderBy(mentorApplications.createdAt);
+    } else {
+      return await db.select().from(mentorApplications)
+        .orderBy(mentorApplications.createdAt);
+    }
+  }
+
+  async getMentorApplication(id: number): Promise<MentorApplication | undefined> {
+    const [application] = await db.select().from(mentorApplications)
+      .where(eq(mentorApplications.id, id));
+    return application || undefined;
+  }
+
+  async createMentorApplication(application: InsertMentorApplication): Promise<MentorApplication> {
+    const [newApplication] = await db
+      .insert(mentorApplications)
+      .values(application)
+      .returning();
+    return newApplication;
+  }
+
+  async updateMentorApplication(id: number, updates: Partial<MentorApplication>): Promise<MentorApplication | undefined> {
+    const [application] = await db
+      .update(mentorApplications)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(mentorApplications.id, id))
+      .returning();
+    return application || undefined;
   }
 }
 

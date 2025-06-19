@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   profileImage: text("profile_image"),
+  role: varchar("role", { length: 20 }).notNull().default("user"), // 'user', 'admin', 'super_admin'
   subscriptionPlan: varchar("subscription_plan", { length: 20 }).notNull().default("ai-only"),
   messagesUsed: integer("messages_used").notNull().default(0),
   messagesLimit: integer("messages_limit").notNull().default(100),
@@ -129,6 +130,45 @@ export const brandingConfigurations = pgTable("branding_configurations", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const mentorApplications = pgTable("mentor_applications", {
+  id: serial("id").primaryKey(),
+  applicantName: text("applicant_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  age: integer("age"),
+  
+  // Basic Information
+  bio: text("bio").notNull(),
+  expertise: text("expertise").notNull(),
+  yearsExperience: integer("years_experience"),
+  
+  // Semantic Content for AI Training - Flexible JSON structure
+  lifeStories: jsonb("life_stories"), // [{ topic: "career", story: "...", lesson: "...", keywords: [...] }]
+  challenges: jsonb("challenges"), // [{ challenge: "addiction", solution: "...", wisdom: "...", outcome: "..." }]
+  quotes: jsonb("quotes"), // [{ quote: "...", context: "...", topic: "..." }]
+  principles: jsonb("principles"), // [{ principle: "...", explanation: "...", application: "..." }]
+  
+  // Topic-specific wisdom capture
+  careerWisdom: text("career_wisdom"),
+  relationshipAdvice: text("relationship_advice"),
+  parentingInsights: text("parenting_insights"),
+  addictionRecovery: text("addiction_recovery"),
+  spiritualGuidance: text("spiritual_guidance"),
+  financialWisdom: text("financial_wisdom"),
+  mentalHealthSupport: text("mental_health_support"),
+  purposeAndBelonging: text("purpose_and_belonging"),
+  
+  // Application workflow
+  organizationId: integer("organization_id").references(() => organizations.id),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending', 'interview_scheduled', 'approved', 'rejected'
+  adminNotes: text("admin_notes"),
+  interviewDate: timestamp("interview_date"),
+  approvedBy: integer("approved_by"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   organization: one(organizations, {
@@ -149,6 +189,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   humanMentors: many(humanMentors),
   semanticConfigurations: many(semanticConfigurations),
   mentorPersonalities: many(mentorPersonalities),
+  mentorApplications: many(mentorApplications),
 }));
 
 export const aiMentorsRelations = relations(aiMentors, ({ one, many }) => ({
@@ -227,6 +268,13 @@ export const brandingConfigurationsRelations = relations(brandingConfigurations,
   }),
 }));
 
+export const mentorApplicationsRelations = relations(mentorApplications, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [mentorApplications.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -278,6 +326,12 @@ export const insertBrandingConfigurationSchema = createInsertSchema(brandingConf
   updatedAt: true,
 });
 
+export const insertMentorApplicationSchema = createInsertSchema(mentorApplications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -309,5 +363,7 @@ export type MentorPersonality = typeof mentorPersonalities.$inferSelect;
 export type InsertMentorPersonality = z.infer<typeof insertMentorPersonalitySchema>;
 export type BrandingConfiguration = typeof brandingConfigurations.$inferSelect;
 export type InsertBrandingConfiguration = z.infer<typeof insertBrandingConfigurationSchema>;
+export type MentorApplication = typeof mentorApplications.$inferSelect;
+export type InsertMentorApplication = z.infer<typeof insertMentorApplicationSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

@@ -9,7 +9,8 @@ import {
   insertChatMessageSchema,
   insertMentoringSessionSchema,
   insertSemanticConfigurationSchema,
-  insertMentorPersonalitySchema
+  insertMentorPersonalitySchema,
+  insertMentorApplicationSchema
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
@@ -35,6 +36,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return next();
     }
     res.status(401).json({ message: 'Authentication required' });
+  };
+
+  // Admin authentication middleware
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const user = await storage.getUser(req.user.id);
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    req.adminUser = user;
+    next();
   };
 
   // Auth routes
@@ -311,6 +327,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ user: { ...updatedUser, password: undefined } });
     } catch (error) {
       res.status(500).json({ message: 'Failed to upgrade subscription' });
+    }
+  });
+
+  // Mentor Application routes (Public - for prospective mentors)
+  app.post('/api/mentor-applications', async (req, res) => {
+    try {
+      const data = insertMentorApplicationSchema.parse(req.body);
+      const application = await storage.createMentorApplication(data);
+      res.json(application);
+    } catch (error) {
+      console.error('Error creating mentor application:', error);
+      res.status(400).json({ message: 'Invalid application data' });
+    }
+  });
+
+  // Admin routes for managing mentor applications
+  app.get('/api/admin/mentor-applications', requireAdmin, async (req: any, res) => {
+    try {
+      const user = req.adminUser;
+      const applications = await storage.getMentorApplications(user.organizationId);
+      res.json(applications);
+    } catch (error) {
+      console.error('Error fetching mentor applications:', error);
+      res.status(500).json({ message: 'Failed to fetch applications' });
+    }
+  });
+
+  app.get('/api/admin/mentor-applications/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const application = await storage.getMentorApplication(parseInt(id));
+      if (!application) {
+        return res.status(404).json({ message: 'Application not found' });
+      }
+      res.json(application);
+    } catch (error) {
+      console.error('Error fetching mentor application:', error);
+      res.status(500).json({ message: 'Failed to fetch application' });
+    }
+  });
+
+  app.patch('/api/admin/mentor-applications/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes, interviewDate } = req.body;
+      const user = req.adminUser;
+
+      const updates: any = { 
+        status, 
+        adminNotes,
+        approvedBy: user.id 
+      };
+
+      if (interviewDate) {
+        updates.interviewDate = new Date(interviewDate);
+      }
+
+      const application = await storage.updateMentorApplication(parseInt(id), updates);
+      if (!application) {
+        return res.status(404).json({ message: 'Application not found' });
+      }
+
+      res.json(application);
+    } catch (error) {
+      console.error('Error updating mentor application:', error);
+      res.status(500).json({ message: 'Failed to update application' });
     }
   });
 

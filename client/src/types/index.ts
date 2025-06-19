@@ -71,6 +71,7 @@ export interface User {
   sessionsUsed: number;
   sessionsLimit: number;
   organizationId?: number;
+  role: 'user' | 'admin' | 'super_admin';
   createdAt: string;
   updatedAt: string;
 }
