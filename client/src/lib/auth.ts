@@ -8,22 +8,27 @@ export function useAuth() {
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ['/api/auth/me'],
     retry: false,
-    staleTime: 0, // No cache
+    staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchInterval: false,
     queryFn: async () => {
-      const res = await fetch('/api/auth/me', {
-        credentials: 'include',
-      });
-      if (res.status === 401) {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        if (res.status === 401) {
+          return null;
+        }
+        if (!res.ok) {
+          throw new Error('Failed to fetch user');
+        }
+        const data = await res.json();
+        return data.user;
+      } catch (error) {
+        console.error('Auth fetch error:', error);
         return null;
       }
-      if (!res.ok) {
-        throw new Error('Failed to fetch user');
-      }
-      const data = await res.json();
-      return data.user;
     },
   });
 
@@ -34,7 +39,8 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['/api/auth/me'], data.user);
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      // Force a refetch instead of just invalidating
+      queryClient.refetchQueries({ queryKey: ['/api/auth/me'] });
     },
   });
 

@@ -38,6 +38,10 @@ export default function Login() {
         title: "Success",
         description: "Welcome back to Mentra!",
       });
+      // Navigate to dashboard after successful login
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -64,6 +68,10 @@ export default function Login() {
         title: "Success",
         description: "Welcome to Mentra! Your account has been created.",
       });
+      // Navigate to dashboard after successful registration
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Registration Failed",
