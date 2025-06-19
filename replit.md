@@ -188,6 +188,12 @@ The platform now supports multiple authentication methods alongside email/passwo
 - June 19, 2025: Implemented configurable branding and messaging system for different target audiences and organizations
 - June 19, 2025: Resolved authentication redirect issues and implemented comprehensive SSO authentication with Google, Facebook, X (Twitter), and Apple OAuth providers
 - June 19, 2025: Fixed critical chat system infinite loop bug that caused thousands of API requests by correcting frontend query parameter handling
+- June 19, 2025: Implemented auto-expanding textarea for chat input (Replit-style UX)
+- June 19, 2025: Added optimistic updates to chat interface to reduce UI jumpiness
+- June 19, 2025: Fixed authentication middleware to load full user data for API requests
+- June 19, 2025: Resolved chat message validation errors (userId required issue)
+- June 19, 2025: Dashboard now scrolls to top when loaded
+- June 19, 2025: Cleaned up 8,629 duplicate messages from database
 
 ## Changelog
 
