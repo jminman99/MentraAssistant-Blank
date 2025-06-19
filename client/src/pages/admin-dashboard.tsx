@@ -730,7 +730,7 @@ export default function AdminDashboard() {
                         <SelectValue placeholder="Select organization" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No organization</SelectItem>
+                        <SelectItem value="none">No organization</SelectItem>
                         {organizations.map((org) => (
                           <SelectItem key={org.id} value={org.id.toString()}>
                             {org.name}
@@ -845,98 +845,125 @@ export default function AdminDashboard() {
 
       {/* Edit AI Mentor Dialog */}
       <Dialog open={!!selectedAiMentor} onOpenChange={() => setSelectedAiMentor(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configure AI Mentor</DialogTitle>
             <DialogDescription>
               Update AI mentor personality and settings
             </DialogDescription>
           </DialogHeader>
-          {selectedAiMentor && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          
+          {selectedAiMentor ? (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Basic Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-mentor-name">Mentor Name</Label>
+                    <Input
+                      id="edit-mentor-name"
+                      value={selectedAiMentor.name}
+                      onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, name: e.target.value })}
+                      placeholder="e.g., Marcus, David, Sarah"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-mentor-expertise">Expertise Domain</Label>
+                    <Input
+                      id="edit-mentor-expertise"
+                      value={selectedAiMentor.expertise}
+                      onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, expertise: e.target.value })}
+                      placeholder="e.g., Business Leadership, Tech Strategy"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Personality */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Personality & Background</h4>
                 <div>
-                  <Label htmlFor="edit-mentor-name">Mentor Name</Label>
-                  <Input
-                    id="edit-mentor-name"
-                    defaultValue={selectedAiMentor.name}
-                    onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, name: e.target.value })}
+                  <Label htmlFor="edit-mentor-personality">Personality Description</Label>
+                  <Textarea
+                    id="edit-mentor-personality"
+                    value={selectedAiMentor.personality}
+                    onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, personality: e.target.value })}
+                    rows={4}
+                    placeholder="Describe the mentor's background, communication style, and approach to guidance..."
                   />
                 </div>
-                <div>
-                  <Label htmlFor="edit-mentor-expertise">Expertise Domain</Label>
-                  <Input
-                    id="edit-mentor-expertise"
-                    defaultValue={selectedAiMentor.expertise}
-                    onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, expertise: e.target.value })}
-                  />
+              </div>
+
+              {/* Configuration */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Configuration</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-mentor-org">Organization</Label>
+                    <Select 
+                      value={selectedAiMentor.organizationId?.toString() || "global"} 
+                      onValueChange={(value) => setSelectedAiMentor({ 
+                        ...selectedAiMentor, 
+                        organizationId: value === "global" ? null : parseInt(value)
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select organization" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="global">Global (All Organizations)</SelectItem>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id.toString()}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-mentor-active">Status</Label>
+                    <Select 
+                      value={selectedAiMentor.isActive.toString()} 
+                      onValueChange={(value) => setSelectedAiMentor({ 
+                        ...selectedAiMentor, 
+                        isActive: value === 'true' 
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="edit-mentor-personality">Personality & Background</Label>
-                <Textarea
-                  id="edit-mentor-personality"
-                  defaultValue={selectedAiMentor.personality}
-                  onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, personality: e.target.value })}
-                  rows={4}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-mentor-org">Organization</Label>
-                  <Select 
-                    defaultValue={selectedAiMentor.organizationId?.toString() || ""} 
-                    onValueChange={(value) => setSelectedAiMentor({ 
-                      ...selectedAiMentor, 
-                      organizationId: value ? parseInt(value) : undefined 
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Global (All Organizations)</SelectItem>
-                      {organizations.map((org) => (
-                        <SelectItem key={org.id} value={org.id.toString()}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-mentor-active">Status</Label>
-                  <Select 
-                    defaultValue={selectedAiMentor.isActive.toString()} 
-                    onValueChange={(value) => setSelectedAiMentor({ 
-                      ...selectedAiMentor, 
-                      isActive: value === 'true' 
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Active</SelectItem>
-                      <SelectItem value="false">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setSelectedAiMentor(null)}>
                   Cancel
                 </Button>
-                <Button onClick={() => handleUpdateAiMentor(selectedAiMentor, {
-                  name: selectedAiMentor.name,
-                  expertise: selectedAiMentor.expertise,
-                  personality: selectedAiMentor.personality,
-                  organizationId: selectedAiMentor.organizationId,
-                  isActive: selectedAiMentor.isActive
-                })}>
-                  Update AI Mentor
+                <Button 
+                  onClick={() => handleUpdateAiMentor(selectedAiMentor, {
+                    name: selectedAiMentor.name,
+                    expertise: selectedAiMentor.expertise,
+                    personality: selectedAiMentor.personality,
+                    organizationId: selectedAiMentor.organizationId,
+                    isActive: selectedAiMentor.isActive
+                  })}
+                  disabled={updateAiMentorMutation.isPending}
+                >
+                  {updateAiMentorMutation.isPending ? 'Updating...' : 'Update AI Mentor'}
                 </Button>
               </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              Loading mentor configuration...
             </div>
           )}
         </DialogContent>
