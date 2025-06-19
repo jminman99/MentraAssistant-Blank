@@ -8,9 +8,9 @@ export function useAuth() {
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ['/api/auth/me'],
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // No cache
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchInterval: false,
     queryFn: async () => {
       const res = await fetch('/api/auth/me', {
@@ -34,12 +34,13 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['/api/auth/me'], data.user);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/auth/logout');
+      await apiRequest('POST', '/api/auth/logout', {});
     },
     onSuccess: () => {
       queryClient.setQueryData(['/api/auth/me'], null);
@@ -62,6 +63,7 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['/api/auth/me'], data.user);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
   });
 
