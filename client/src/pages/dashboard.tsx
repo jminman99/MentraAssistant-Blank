@@ -191,46 +191,95 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Sidebar - only show quick access when on AI mentors tab */}
-          <div className="space-y-6">
-            {selectedTab === "ai-mentors" && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900">Quick Access</h3>
-                </div>
-                
-                <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedTab("human-mentors")}
-                    className="w-full justify-start"
-                  >
-                    <Compass className="h-4 w-4 mr-2" />
-                    Human Mentors
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedTab("sessions")}
-                    className="w-full justify-start"
-                  >
-                    <Star className="h-4 w-4 mr-2" />
-                    My Sessions
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedTab("plan")}
-                    className="w-full justify-start"
-                  >
-                    <Crown className="h-4 w-4 mr-2" />
-                    Plan & Usage
-                  </Button>
-                </div>
+          {/* Sidebar - show quick access on larger screens */}
+          <div className="hidden lg:block space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Quick Access</h3>
               </div>
-            )}
+              
+              <div className="space-y-3">
+                <Button 
+                  variant={selectedTab === "ai-mentors" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("ai-mentors")}
+                  className="w-full justify-start"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Wisdom Guides
+                </Button>
+                <Button 
+                  variant={selectedTab === "human-mentors" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("human-mentors")}
+                  className="w-full justify-start"
+                >
+                  <Compass className="h-4 w-4 mr-2" />
+                  Human Mentors
+                </Button>
+                <Button 
+                  variant={selectedTab === "sessions" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("sessions")}
+                  className="w-full justify-start"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  My Sessions
+                </Button>
+                <Button 
+                  variant={selectedTab === "plan" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("plan")}
+                  className="w-full justify-start"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Plan & Usage
+                </Button>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation for Mobile */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40">
+        <div className="flex items-center justify-around py-2">
+          <button
+            onClick={() => setSelectedTab("ai-mentors")}
+            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              selectedTab === "ai-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
+            }`}
+          >
+            <Sparkles className="h-5 w-5" />
+            <span className="text-xs font-medium">Wisdom</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab("human-mentors")}
+            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              selectedTab === "human-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
+            }`}
+          >
+            <Compass className="h-5 w-5" />
+            <span className="text-xs font-medium">Mentors</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab("sessions")}
+            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              selectedTab === "sessions" ? "text-primary bg-blue-50" : "text-slate-600"
+            }`}
+          >
+            <Star className="h-5 w-5" />
+            <span className="text-xs font-medium">Sessions</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab("plan")}
+            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              selectedTab === "plan" ? "text-primary bg-blue-50" : "text-slate-600"
+            }`}
+          >
+            <Crown className="h-5 w-5" />
+            <span className="text-xs font-medium">Plan</span>
+          </button>
         </div>
       </div>
 
