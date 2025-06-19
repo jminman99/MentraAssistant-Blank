@@ -428,56 +428,57 @@ export default function AdminDashboard() {
 
       {/* AI Mentor Semantic Configuration Dialog */}
       <Dialog open={showAiMentorDialog} onOpenChange={setShowAiMentorDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Configure AI Mentor Semantic Layer</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg sm:text-xl">Configure AI Mentor Semantic Layer</DialogTitle>
+            <DialogDescription className="text-sm">
               Customize {selectedAiMentor?.name}'s personality, stories, and communication patterns
             </DialogDescription>
           </DialogHeader>
           
           {selectedAiMentor ? (
             <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
-                <TabsTrigger value="basic" className="text-xs md:text-sm">Basic</TabsTrigger>
-                <TabsTrigger value="personality" className="text-xs md:text-sm">Personality</TabsTrigger>
-                <TabsTrigger value="stories" className="text-xs md:text-sm">Stories</TabsTrigger>
-                <TabsTrigger value="communication" className="text-xs md:text-sm">Communication</TabsTrigger>
-                <TabsTrigger value="semantic" className="text-xs md:text-sm">Semantic</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-0.5">
+                <TabsTrigger value="basic" className="text-xs md:text-sm px-1 md:px-3">Basic</TabsTrigger>
+                <TabsTrigger value="personality" className="text-xs md:text-sm px-1 md:px-3">Person</TabsTrigger>
+                <TabsTrigger value="stories" className="text-xs md:text-sm px-1 md:px-3">Stories</TabsTrigger>
+                <TabsTrigger value="communication" className="text-xs md:text-sm px-1 md:px-3 col-span-2 md:col-span-1">Comm</TabsTrigger>
+                <TabsTrigger value="semantic" className="text-xs md:text-sm px-1 md:px-3 col-span-3 md:col-span-1">Semantic</TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}
-              <TabsContent value="basic" className="space-y-4">
-                <h4 className="font-semibold text-slate-900">Basic Information</h4>
-                <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                  <div>
-                    <Label htmlFor="edit-mentor-name" className="text-sm font-medium">Mentor Name</Label>
+              <TabsContent value="basic" className="space-y-6">
+                <h4 className="font-semibold text-slate-900 text-base">Basic Information</h4>
+                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-mentor-name" className="text-sm font-medium block">Mentor Name</Label>
                     <Input
                       id="edit-mentor-name"
                       value={selectedAiMentor.name}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, name: e.target.value })}
                       placeholder="e.g., Marcus, David, Elder Thomas"
-                      className="mt-1"
+                      className="w-full text-sm"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="edit-mentor-expertise" className="text-sm font-medium">Expertise Domain</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-mentor-expertise" className="text-sm font-medium block">Expertise Domain</Label>
                     <Input
                       id="edit-mentor-expertise"
                       value={selectedAiMentor.expertise}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, expertise: e.target.value })}
-                      placeholder="e.g., Life wisdom through adversity, Business leadership"
-                      className="mt-1"
+                      placeholder="e.g., Life wisdom, Business leadership"
+                      className="w-full text-sm"
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="edit-mentor-core-identity">Core Identity</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-mentor-core-identity" className="text-sm font-medium block">Core Identity</Label>
                   <Textarea
                     id="edit-mentor-core-identity"
                     value={selectedAiMentor.personality}
                     onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, personality: e.target.value })}
                     rows={3}
+                    className="w-full text-sm"
                     placeholder="Brief description of who they are (e.g., Navy vet, recovered alcoholic, father of 5, quietly wise)"
                   />
                 </div>
@@ -497,26 +498,28 @@ export default function AdminDashboard() {
                     placeholder="Navy veteran, 20 years active duty, father of 3, struggled with alcohol in his 30s but found recovery through faith and AA, built successful consulting business after military..."
                   />
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
                   <div>
-                    <Label htmlFor="communication-style">Communication Style</Label>
-                    <p className="text-sm text-slate-500 mb-2">How they speak and interact with people</p>
+                    <Label htmlFor="communication-style" className="block text-sm font-medium mb-1">Communication Style</Label>
+                    <p className="text-xs text-slate-500 mb-2">How they speak and interact with people</p>
                     <Textarea
                       id="communication-style"
                       value={semanticConfig.communicationStyle}
                       onChange={(e) => setSemanticConfig({...semanticConfig, communicationStyle: e.target.value})}
                       rows={3}
+                      className="w-full text-sm"
                       placeholder="Direct but gentle, uses metaphors from military life, thoughtful pauses, asks follow-up questions, doesn't rush to give advice"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="decision-making">Decision-Making Approach</Label>
-                    <p className="text-sm text-slate-500 mb-2">How they analyze problems and make decisions</p>
+                    <Label htmlFor="decision-making" className="block text-sm font-medium mb-1">Decision-Making Approach</Label>
+                    <p className="text-xs text-slate-500 mb-2">How they analyze problems and make decisions</p>
                     <Textarea
                       id="decision-making"
                       value={semanticConfig.decisionMaking}
                       onChange={(e) => setSemanticConfig({...semanticConfig, decisionMaking: e.target.value})}
                       rows={3}
+                      className="w-full text-sm"
                       placeholder="Values-based, considers long-term character impact, weighs consequences on family, trusts gut instinct backed by experience"
                     />
                   </div>
@@ -562,11 +565,11 @@ export default function AdminDashboard() {
                 <Card className="p-4 bg-slate-50">
                   <h5 className="font-medium mb-3">Add New Story</h5>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-3 md:grid md:grid-cols-3 md:gap-3 md:space-y-0">
                       <div>
-                        <Label htmlFor="story-category">Category</Label>
+                        <Label htmlFor="story-category" className="block text-sm font-medium mb-1">Category</Label>
                         <Select value={newStory.category} onValueChange={(value) => setNewStory({...newStory, category: value})}>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
@@ -581,19 +584,21 @@ export default function AdminDashboard() {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="story-title">Story Title</Label>
+                        <Label htmlFor="story-title" className="block text-sm font-medium mb-1">Story Title</Label>
                         <Input 
                           value={newStory.title}
                           onChange={(e) => setNewStory({...newStory, title: e.target.value})}
-                          placeholder="e.g., The Dark Basement" 
+                          placeholder="e.g., The Dark Basement"
+                          className="w-full"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="story-emotional-tone">Emotional Tone</Label>
+                        <Label htmlFor="story-emotional-tone" className="block text-sm font-medium mb-1">Emotional Tone</Label>
                         <Input 
                           value={newStory.emotionalTone}
                           onChange={(e) => setNewStory({...newStory, emotionalTone: e.target.value})}
-                          placeholder="reflective, hopeful, somber, triumphant" 
+                          placeholder="reflective, hopeful"
+                          className="w-full"
                         />
                       </div>
                     </div>
@@ -607,23 +612,25 @@ export default function AdminDashboard() {
                         placeholder="Write the full story in first person, as if the mentor is telling it directly..."
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                       <div>
-                        <Label htmlFor="story-lesson">Key Lesson/Wisdom</Label>
+                        <Label htmlFor="story-lesson" className="block text-sm font-medium mb-1">Key Lesson/Wisdom</Label>
                         <Textarea
                           id="story-lesson"
                           value={newStory.lesson}
                           onChange={(e) => setNewStory({...newStory, lesson: e.target.value})}
                           rows={2}
+                          className="w-full text-sm"
                           placeholder="What wisdom or principle does this story teach?"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="story-keywords">Keywords (comma-separated)</Label>
+                        <Label htmlFor="story-keywords" className="block text-sm font-medium mb-1">Keywords (comma-separated)</Label>
                         <Input 
                           value={newStory.keywords}
                           onChange={(e) => setNewStory({...newStory, keywords: e.target.value})}
-                          placeholder="courage, fear, childhood, father, darkness, bravery" 
+                          placeholder="courage, fear, childhood"
+                          className="w-full text-sm"
                         />
                       </div>
                     </div>
