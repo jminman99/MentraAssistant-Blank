@@ -98,7 +98,31 @@ export const semanticConfigurations = pgTable("semantic_configurations", {
   commonPhrases: jsonb("common_phrases").$type<string[]>().default([]),
   decisionMaking: text("decision_making").notNull(),
   mentoring: text("mentoring").notNull(),
+  detailedBackground: text("detailed_background"),
+  coreValues: jsonb("core_values").$type<string[]>().default([]),
+  conversationStarters: jsonb("conversation_starters").$type<string[]>().default([]),
+  advicePatterns: text("advice_patterns"),
+  responseExamples: text("response_examples"),
+  contextAwarenessRules: text("context_awareness_rules"),
+  storySelectionLogic: text("story_selection_logic"),
+  personalityConsistencyRules: text("personality_consistency_rules"),
+  conversationFlowPatterns: text("conversation_flow_patterns"),
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mentorLifeStories = pgTable("mentor_life_stories", {
+  id: serial("id").primaryKey(),
+  mentorId: integer("mentor_id").notNull().references(() => aiMentors.id, { onDelete: 'cascade' }),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  category: varchar("category", { length: 50 }).notNull(), // 'childhood', 'father', 'marriage', etc.
+  title: varchar("title", { length: 200 }).notNull(),
+  story: text("story").notNull(), // Full narrative in first person
+  lesson: text("lesson").notNull(), // Key wisdom/principle learned
+  keywords: jsonb("keywords").$type<string[]>().default([]),
+  emotionalTone: varchar("emotional_tone", { length: 100 }),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -367,5 +391,15 @@ export type BrandingConfiguration = typeof brandingConfigurations.$inferSelect;
 export type InsertBrandingConfiguration = z.infer<typeof insertBrandingConfigurationSchema>;
 export type MentorApplication = typeof mentorApplications.$inferSelect;
 export type InsertMentorApplication = z.infer<typeof insertMentorApplicationSchema>;
+
+export const insertMentorLifeStorySchema = createInsertSchema(mentorLifeStories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type MentorLifeStory = typeof mentorLifeStories.$inferSelect;
+export type InsertMentorLifeStory = z.infer<typeof insertMentorLifeStorySchema>;
+
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

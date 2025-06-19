@@ -854,9 +854,17 @@ export default function AdminDashboard() {
           </DialogHeader>
           
           {selectedAiMentor ? (
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
+            <Tabs defaultValue="basic" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="personality">Personality</TabsTrigger>
+                <TabsTrigger value="stories">Life Stories</TabsTrigger>
+                <TabsTrigger value="communication">Communication</TabsTrigger>
+                <TabsTrigger value="semantic">Semantic Layer</TabsTrigger>
+              </TabsList>
+
+              {/* Basic Information Tab */}
+              <TabsContent value="basic" className="space-y-4">
                 <h4 className="font-semibold text-slate-900">Basic Information</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -865,7 +873,7 @@ export default function AdminDashboard() {
                       id="edit-mentor-name"
                       value={selectedAiMentor.name}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, name: e.target.value })}
-                      placeholder="e.g., Marcus, David, Sarah"
+                      placeholder="e.g., Marcus, David, Elder Thomas"
                     />
                   </div>
                   <div>
@@ -874,30 +882,20 @@ export default function AdminDashboard() {
                       id="edit-mentor-expertise"
                       value={selectedAiMentor.expertise}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, expertise: e.target.value })}
-                      placeholder="e.g., Business Leadership, Tech Strategy"
+                      placeholder="e.g., Life wisdom through adversity, Business leadership"
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Personality */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-slate-900">Personality & Background</h4>
                 <div>
-                  <Label htmlFor="edit-mentor-personality">Personality Description</Label>
+                  <Label htmlFor="edit-mentor-core-identity">Core Identity</Label>
                   <Textarea
-                    id="edit-mentor-personality"
+                    id="edit-mentor-core-identity"
                     value={selectedAiMentor.personality}
                     onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, personality: e.target.value })}
-                    rows={4}
-                    placeholder="Describe the mentor's background, communication style, and approach to guidance..."
+                    rows={3}
+                    placeholder="Brief description of who they are (e.g., Navy vet, recovered alcoholic, father of 5, quietly wise)"
                   />
                 </div>
-              </div>
-
-              {/* Configuration */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-slate-900">Configuration</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-mentor-org">Organization</Label>
@@ -905,7 +903,7 @@ export default function AdminDashboard() {
                       value={selectedAiMentor.organizationId?.toString() || "global"} 
                       onValueChange={(value) => setSelectedAiMentor({ 
                         ...selectedAiMentor, 
-                        organizationId: value === "global" ? null : parseInt(value)
+                        organizationId: value === "global" ? undefined : parseInt(value)
                       })}
                     >
                       <SelectTrigger>
@@ -940,15 +938,203 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
                 </div>
-              </div>
+              </TabsContent>
 
+              {/* Personality Tab */}
+              <TabsContent value="personality" className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Personality Traits & Background</h4>
+                <div>
+                  <Label htmlFor="detailed-background">Detailed Background</Label>
+                  <Textarea
+                    id="detailed-background"
+                    rows={4}
+                    placeholder="Detailed background including key life experiences, career journey, relationships, challenges overcome..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="communication-style">Communication Style</Label>
+                    <Textarea
+                      id="communication-style"
+                      rows={3}
+                      placeholder="How they speak and interact (e.g., Direct but gentle, uses metaphors from military life, thoughtful pauses)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="decision-making">Decision-Making Approach</Label>
+                    <Textarea
+                      id="decision-making"
+                      rows={3}
+                      placeholder="How they approach decisions (e.g., Values-based, considers long-term character impact)"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="mentoring-style">Mentoring Style</Label>
+                  <Textarea
+                    id="mentoring-style"
+                    rows={3}
+                    placeholder="How they guide others (e.g., Shares personal stories, admits mistakes openly, emphasizes growth through difficulty)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="core-values">Core Values (comma-separated)</Label>
+                  <Input
+                    id="core-values"
+                    placeholder="integrity, patience, accountability, quiet strength, service to others"
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Life Stories Tab */}
+              <TabsContent value="stories" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-slate-900">Life Stories & Experiences</h4>
+                  <Button size="sm" variant="outline">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Story
+                  </Button>
+                </div>
+                <div className="text-sm text-slate-600 mb-4">
+                  Add authentic stories that define this mentor's character and wisdom. These will be used to make conversations feel personal and authentic.
+                </div>
+                <div className="space-y-4">
+                  {/* Story Template */}
+                  <Card className="p-4">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <Label htmlFor="story-category">Category</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="childhood">Childhood Snapshot</SelectItem>
+                              <SelectItem value="father">Relationship with Father</SelectItem>
+                              <SelectItem value="mother">Relationship with Mother</SelectItem>
+                              <SelectItem value="marriage">Marriage - Struggles & Triumphs</SelectItem>
+                              <SelectItem value="parenting">Parenting Challenges</SelectItem>
+                              <SelectItem value="career">Career Journey</SelectItem>
+                              <SelectItem value="spiritual">Spiritual Insights</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="story-title">Story Title</Label>
+                          <Input placeholder="e.g., The Dark Basement" />
+                        </div>
+                        <div>
+                          <Label htmlFor="emotional-tone">Emotional Tone</Label>
+                          <Input placeholder="e.g., quiet wisdom, gentle strength" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="story-narrative">Story (First Person)</Label>
+                        <Textarea
+                          rows={4}
+                          placeholder="Tell the complete story in first person, with vivid details and emotional honesty..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="story-lesson">Key Lesson/Wisdom</Label>
+                        <Textarea
+                          rows={2}
+                          placeholder="What wisdom or principle emerges from this story?"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="story-keywords">Keywords (comma-separated)</Label>
+                        <Input placeholder="courage, fear, childhood, father, darkness, bravery" />
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* Communication Tab */}
+              <TabsContent value="communication" className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Communication Patterns</h4>
+                <div>
+                  <Label htmlFor="signature-phrases">Signature Phrases</Label>
+                  <div className="text-sm text-slate-600 mb-2">
+                    Add unique sayings and phrases this mentor uses naturally in conversation
+                  </div>
+                  <Textarea
+                    id="signature-phrases"
+                    rows={4}
+                    placeholder="One phrase per line:&#10;Experience is a hard teacher, but a thorough one&#10;You can't build character when everything's easy&#10;Sometimes the fish teach you more by not biting"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="conversation-starters">Common Conversation Starters</Label>
+                    <Textarea
+                      rows={3}
+                      placeholder="Let me think on that for a moment...&#10;In my experience...&#10;I've learned that..."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="advice-patterns">Advice-Giving Patterns</Label>
+                    <Textarea
+                      rows={3}
+                      placeholder="How they typically give advice (e.g., through stories, asking questions, sharing mistakes)"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="response-examples">Response Examples</Label>
+                  <div className="text-sm text-slate-600 mb-2">
+                    Example responses for different scenarios
+                  </div>
+                  <Textarea
+                    rows={4}
+                    placeholder="Fear/Anxiety: 'I wasn't always this way, son. Let me tell you about a time...'&#10;Relationship Issues: 'Marriage is like...'&#10;Career Struggles: 'Every good thing takes time to build...'"
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Semantic Layer Tab */}
+              <TabsContent value="semantic" className="space-y-4">
+                <h4 className="font-semibold text-slate-900">Advanced Semantic Configuration</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="context-awareness">Context Awareness Rules</Label>
+                    <Textarea
+                      rows={4}
+                      placeholder="How to respond to different contexts:&#10;- Advice requests: Share relevant story&#10;- Fear/anxiety: Draw from courage experiences&#10;- Relationships: Reference marriage wisdom"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="story-selection">Story Selection Logic</Label>
+                    <Textarea
+                      rows={4}
+                      placeholder="Rules for when to use specific stories:&#10;- Childhood stories for fear/courage topics&#10;- Marriage stories for relationship advice&#10;- Career stories for professional guidance"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="personality-consistency">Personality Consistency Rules</Label>
+                  <Textarea
+                    rows={3}
+                    placeholder="Rules to maintain authentic character (e.g., Always admit when unsure, Never give advice outside experience, Pause thoughtfully before responding)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="conversation-flow">Conversation Flow Patterns</Label>
+                  <Textarea
+                    rows={3}
+                    placeholder="How conversations should develop (e.g., Listen first, ask clarifying questions, share relevant experience, offer gentle guidance)"
+                  />
+                </div>
+              </TabsContent>
               {/* Actions */}
-              <div className="flex justify-end space-x-2 pt-4 border-t">
+              <div className="flex justify-end space-x-2 pt-4 border-t mt-6">
                 <Button variant="outline" onClick={() => setSelectedAiMentor(null)}>
                   Cancel
                 </Button>
                 <Button 
-                  onClick={() => handleUpdateAiMentor(selectedAiMentor, {
+                  onClick={() => selectedAiMentor && handleUpdateAiMentor(selectedAiMentor, {
                     name: selectedAiMentor.name,
                     expertise: selectedAiMentor.expertise,
                     personality: selectedAiMentor.personality,
@@ -960,7 +1146,7 @@ export default function AdminDashboard() {
                   {updateAiMentorMutation.isPending ? 'Updating...' : 'Update AI Mentor'}
                 </Button>
               </div>
-            </div>
+            </Tabs>
           ) : (
             <div className="text-center py-8 text-slate-500">
               Loading mentor configuration...

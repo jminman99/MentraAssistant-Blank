@@ -203,6 +203,43 @@ The platform includes comprehensive admin capabilities for managing mentor appli
 - Keywords and categorization for improved AI content retrieval
 - Admin review process ensures quality before integration into AI training data
 
+## AI Mentor Semantic Layer System
+
+The platform now features a comprehensive semantic layer that transforms AI mentors from generic chatbots into authentic, story-driven personalities. This system was inspired by the "Elder Thomas" example - a Navy vet, recovered alcoholic, father of 5, and quietly wise mentor who speaks from lived experience rather than abstract advice.
+
+### Semantic Configuration Architecture
+
+**Five-Tab Admin Interface:**
+1. **Basic Info** - Core identity, expertise, organization assignment
+2. **Personality** - Detailed background, communication style, decision-making approach, mentoring style, core values  
+3. **Life Stories** - Authentic personal experiences categorized by life domains (childhood, relationships, career, spiritual insights)
+4. **Communication** - Signature phrases, conversation starters, advice patterns, response examples
+5. **Semantic Layer** - Advanced context awareness rules, story selection logic, personality consistency
+
+**Story Categories Framework:**
+- Childhood Snapshot
+- Relationship with Father/Mother
+- Peer Acceptance
+- Marriage - Struggles & Triumphs
+- Parenting Challenges
+- Career Journey
+- Signature Phrases & Perspectives
+- Spiritual Insights
+
+**Database Schema:**
+- Enhanced `semantic_configurations` table with rich personality data
+- New `mentor_life_stories` table storing categorized narratives with lessons and keywords
+- Automatic story selection based on user input context
+- Organization-level customization support
+
+**AI Response Generation:**
+- Context-aware story selection algorithm
+- Personality-driven response styling
+- Integration with Elder Thomas semantic template
+- Authentic character voice maintenance
+
+This system ensures users talk to genuine mentors with lived experiences, not generic AI responses.
+
 ## Recent Changes
 
 - June 19, 2025: Initial setup with full-stack architecture
@@ -237,6 +274,9 @@ The platform includes comprehensive admin capabilities for managing mentor appli
 - June 19, 2025: Implemented complete CRUD operations for organizations and AI mentors with admin role restrictions
 - June 19, 2025: Enhanced admin dashboard with tabbed interface supporting organization creation/editing, mentor application review with semantic content display, and AI mentor personality management
 - June 19, 2025: Implemented super admin role hierarchy with user role management capabilities and four-tab admin interface including dedicated Super Admin section
+- June 19, 2025: Created comprehensive AI mentor semantic layer system with Elder Thomas template for authentic, story-driven personalities
+- June 19, 2025: Built five-tab configuration interface allowing complete customization of mentor personalities, life stories, communication patterns, and semantic behavior
+- June 19, 2025: Added mentor life stories database schema with categorized narratives, lessons, keywords, and emotional tones for authentic AI responses
 
 ## Changelog
 

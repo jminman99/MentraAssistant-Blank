@@ -10,6 +10,7 @@ import {
   mentorPersonalities,
   brandingConfigurations,
   mentorApplications,
+  mentorLifeStories,
   type User, 
   type InsertUser,
   type Organization,
@@ -29,7 +30,9 @@ import {
   type BrandingConfiguration,
   type InsertBrandingConfiguration,
   type MentorApplication,
-  type InsertMentorApplication
+  type InsertMentorApplication,
+  type MentorLifeStory,
+  type InsertMentorLifeStory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, isNull } from "drizzle-orm";
@@ -95,6 +98,12 @@ export interface IStorage {
   getMentorApplication(id: number): Promise<MentorApplication | undefined>;
   createMentorApplication(application: InsertMentorApplication): Promise<MentorApplication>;
   updateMentorApplication(id: number, updates: Partial<MentorApplication>): Promise<MentorApplication | undefined>;
+
+  // Mentor Life Stories methods
+  getMentorLifeStories(mentorId: number): Promise<MentorLifeStory[]>;
+  createMentorLifeStory(story: InsertMentorLifeStory): Promise<MentorLifeStory>;
+  updateMentorLifeStory(id: number, updates: Partial<MentorLifeStory>): Promise<MentorLifeStory | undefined>;
+  deleteMentorLifeStory(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -495,6 +504,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(mentorApplications.id, id))
       .returning();
     return application || undefined;
+  }
+
+  // Mentor Life Stories methods
+  async getMentorLifeStories(mentorId: number): Promise<MentorLifeStory[]> {
+    return await db.select().from(mentorLifeStories)
+      .where(and(
+        eq(mentorLifeStories.mentorId, mentorId),
+        eq(mentorLifeStories.isActive, true)
+      ))
+      .orderBy(asc(mentorLifeStories.category));
+  }
+
+  async createMentorLifeStory(story: InsertMentorLifeStory): Promise<MentorLifeStory> {
+    const [newStory] = await db
+      .insert(mentorLifeStories)
+      .values([story])
+      .returning();
+    return newStory;
+  }
+
+  async updateMentorLifeStory(id: number, updates: Partial<MentorLifeStory>): Promise<MentorLifeStory | undefined> {
+    const [story] = await db
+      .update(mentorLifeStories)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(mentorLifeStories.id, id))
+      .returning();
+    return story || undefined;
+  }
+
+  async deleteMentorLifeStory(id: number): Promise<void> {
+    await db
+      .update(mentorLifeStories)
+      .set({ isActive: false })
+      .where(eq(mentorLifeStories.id, id));
   }
 }
 

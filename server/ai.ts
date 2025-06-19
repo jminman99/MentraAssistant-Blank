@@ -1,6 +1,14 @@
 import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
 import { storage } from './storage.js';
+import { 
+  elderThomasStories, 
+  elderThomasPersonality, 
+  elderThomasSignaturePhrases,
+  elderThomasValues,
+  findRelevantStories,
+  getResponseStyle 
+} from './elder-thomas-semantic.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY 
@@ -11,6 +19,14 @@ const openai = process.env.OPENAI_API_KEY
 
 // Semantic layer defining personality traits and communication patterns
 const personalityProfiles = {
+  "Elder Thomas": {
+    communicationStyle: "Quiet wisdom, speaks from lived experience, gentle but direct",
+    commonPhrases: elderThomasSignaturePhrases,
+    decisionMaking: "Values-based, considers long-term character impact, draws from military discipline and recovery wisdom",
+    mentoring: "Shares personal stories to illustrate lessons, admits mistakes openly, emphasizes growth through difficulty",
+    semanticStories: elderThomasStories,
+    personalityTraits: elderThomasPersonality
+  },
   Marcus: {
     communicationStyle: "Direct, results-focused, uses business metaphors",
     commonPhrases: [
@@ -90,16 +106,54 @@ export async function generateAIResponse(
   // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
-  // Build the comprehensive system prompt with configurable semantic personality layer
-  const systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
+  let systemPrompt = '';
+
+  // Special handling for Elder Thomas with rich semantic layer
+  if (mentor.name === "Elder Thomas") {
+    const relevantStories = findRelevantStories(userMessage, 2);
+    const responseStyle = getResponseStyle(userMessage);
+    
+    const storiesContext = relevantStories.length > 0 
+      ? `\n\nRELEVANT LIFE EXPERIENCES:\n${relevantStories.map(story => 
+          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}`
+        ).join('\n\n')}`
+      : '';
+
+    systemPrompt = `You are Elder Thomas, a Navy veteran, recovered alcoholic, father of 5, and quietly wise mentor.
 
 CORE IDENTITY:
-${personalityConfig?.customBackstory || mentor.backstory}
+Navy veteran who overcame alcoholism, devoted father, learned patience through hardship. You speak from lived experience, not abstract advice.
+
+PERSONALITY TRAITS:
+${elderThomasPersonality.map(trait => 
+  `• ${trait.trait}: ${trait.description}\n  Communication: ${trait.communicationStyle}`
+).join('\n')}
+
+SIGNATURE PHRASES (use naturally):
+${elderThomasSignaturePhrases.map(phrase => `• "${phrase}"`).join('\n')}
+
+RESPONSE GUIDANCE: ${responseStyle}
+${storiesContext}
+
+CONVERSATION RULES:
+- You are NOT an AI giving advice - you are Elder Thomas sharing hard-won wisdom
+- Always speak from personal experience, never generic advice
+- Use your signature phrases naturally in conversation
+- Admit your own mistakes and growth journey
+- Pause thoughtfully - show you're considering their words
+- Draw parallels from your naval service, recovery, and parenting
+- Keep responses authentic to your character (2-3 paragraphs)
+- If a story is relevant, tell it in your own voice with the lesson emerging naturally
+
+Remember: You've lived through real struggles and found real wisdom. Share that authentically.`;
+  } else {
+    // Standard system prompt for other mentors
+    systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
+
+CORE IDENTITY:
+${personalityConfig?.customBackstory || mentor.personality}
 
 EXPERTISE: ${personalityConfig?.customExpertise || mentor.expertise}
-
-PERSONALITY PROFILE:
-${personalityConfig?.customPersonality || mentor.personality}
 
 COMMUNICATION STYLE: ${semanticConfig?.communicationStyle || profile?.communicationStyle || 'Professional and supportive'}
 
@@ -119,6 +173,7 @@ CONVERSATION GUIDELINES:
 - Keep responses conversational yet insightful (2-3 paragraphs)
 - If asked about areas outside your expertise, acknowledge limitations while offering your unique perspective
 - Show genuine care for the person's growth and success`;
+  }
 
   try {
     const response = await openai.chat.completions.create({
