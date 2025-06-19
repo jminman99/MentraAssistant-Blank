@@ -5,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Lightbulb, Heart, Mountain } from "lucide-react";
+import { SiGoogle, SiFacebook, SiX, SiApple } from "react-icons/si";
 
 export default function Login() {
   const { login, register } = useAuth();
@@ -101,6 +103,55 @@ export default function Login() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* SSO Buttons */}
+                <div className="space-y-3 mb-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center space-x-2 h-11"
+                    onClick={() => window.location.href = '/api/auth/google'}
+                  >
+                    <SiGoogle className="w-4 h-4 text-blue-600" />
+                    <span>Continue with Google</span>
+                  </Button>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/facebook'}
+                    >
+                      <SiFacebook className="w-4 h-4 text-blue-600" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/twitter'}
+                    >
+                      <SiX className="w-4 h-4 text-black" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/apple'}
+                    >
+                      <SiApple className="w-4 h-4 text-black" />
+                    </Button>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                    </div>
+                  </div>
+                </div>
+
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -140,6 +191,55 @@ export default function Login() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* SSO Buttons for Registration */}
+                <div className="space-y-3 mb-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center space-x-2 h-11"
+                    onClick={() => window.location.href = '/api/auth/google'}
+                  >
+                    <SiGoogle className="w-4 h-4 text-blue-600" />
+                    <span>Continue with Google</span>
+                  </Button>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/facebook'}
+                    >
+                      <SiFacebook className="w-4 h-4 text-blue-600" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/twitter'}
+                    >
+                      <SiX className="w-4 h-4 text-black" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex items-center justify-center h-11"
+                      onClick={() => window.location.href = '/api/auth/apple'}
+                    >
+                      <SiApple className="w-4 h-4 text-black" />
+                    </Button>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or create account with email</span>
+                    </div>
+                  </div>
+                </div>
+
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

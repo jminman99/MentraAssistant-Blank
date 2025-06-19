@@ -13,43 +13,9 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import passport from "./auth-strategies";
 
-// Configure Passport
-passport.use(new LocalStrategy(
-  { usernameField: 'email' },
-  async (email, password, done) => {
-    try {
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return done(null, false, { message: 'Invalid email or password' });
-      }
-
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return done(null, false, { message: 'Invalid email or password' });
-      }
-
-      return done(null, user);
-    } catch (error) {
-      return done(error);
-    }
-  }
-));
-
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id: number, done) => {
-  try {
-    const user = await storage.getUser(id);
-    done(null, user);
-  } catch (error) {
-    done(error);
-  }
-});
+import { generateAIResponse } from "./ai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware
@@ -123,8 +89,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
-    res.json({ user: { ...req.user, password: undefined } });
+  app.post('/api/auth/login', (req, res, next) => {
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: 'Authentication failed' });
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || 'Invalid credentials' });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).json({ message: 'Login failed' });
+        }
+        res.json({ user: { ...user, password: undefined } });
+      });
+    })(req, res, next);
   });
 
   app.post('/api/auth/logout', (req, res) => {
@@ -139,6 +119,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ user: { ...req.user, password: undefined } });
   });
+
+  // Google OAuth routes
+  app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  app.get('/api/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Facebook OAuth routes
+  app.get('/api/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+  app.get('/api/auth/facebook/callback',
+    passport.authenticate('facebook', { failureRedirect: '/login' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Twitter OAuth routes
+  app.get('/api/auth/twitter', passport.authenticate('twitter'));
+  app.get('/api/auth/twitter/callback',
+    passport.authenticate('twitter', { failureRedirect: '/login' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Apple OAuth routes
+  app.get('/api/auth/apple', passport.authenticate('apple'));
+  app.get('/api/auth/apple/callback',
+    passport.authenticate('apple', { failureRedirect: '/login' }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
 
   // AI Mentors routes
   app.get('/api/ai-mentors', requireAuth, async (req, res) => {

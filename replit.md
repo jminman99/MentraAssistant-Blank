@@ -149,6 +149,29 @@ The platform supports organization-level customization of branding and messaging
 
 Organizations can create custom branding configurations through the admin interface, allowing the same platform to serve diverse audiences with appropriate messaging and visual design.
 
+## SSO Authentication System
+
+The platform now supports multiple authentication methods alongside email/password login:
+
+### Supported SSO Providers
+- **Google OAuth**: Primary SSO option with clean Google branding
+- **Facebook**: Social authentication for broader user accessibility
+- **X (Twitter)**: Professional networking authentication
+- **Apple**: Privacy-focused authentication for iOS users
+
+### Authentication Architecture
+- Consolidated authentication strategies in `server/auth-strategies.ts`
+- Passport.js configuration for all SSO providers
+- Automatic user creation for new OAuth users with default subscription plans
+- Session-based authentication with proper cookie management
+- Graceful fallback to email authentication when SSO providers aren't configured
+
+### Login/Registration Flow
+- Unified login page with SSO buttons prominently displayed
+- Email authentication available as fallback option
+- Automatic redirect to dashboard after successful authentication
+- Proper error handling for failed authentication attempts
+
 ## Recent Changes
 
 - June 19, 2025: Initial setup with full-stack architecture
@@ -163,6 +186,7 @@ Organizations can create custom branding configurations through the admin interf
 - June 19, 2025: Transformed visual design to sophisticated, masculine aesthetic using slate/charcoal color palette
 - June 19, 2025: Created pre-landing page (Welcome) to introduce Mentra's vision and create emotional connection for first-time users
 - June 19, 2025: Implemented configurable branding and messaging system for different target audiences and organizations
+- June 19, 2025: Resolved authentication redirect issues and implemented comprehensive SSO authentication with Google, Facebook, X (Twitter), and Apple OAuth providers
 
 ## Changelog
 
