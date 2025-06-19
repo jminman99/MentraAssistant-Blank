@@ -236,6 +236,7 @@ The platform includes comprehensive admin capabilities for managing mentor appli
 - June 19, 2025: Built comprehensive admin dashboard with three main sections: organization management, mentor approval workflow, and AI mentor configuration
 - June 19, 2025: Implemented complete CRUD operations for organizations and AI mentors with admin role restrictions
 - June 19, 2025: Enhanced admin dashboard with tabbed interface supporting organization creation/editing, mentor application review with semantic content display, and AI mentor personality management
+- June 19, 2025: Implemented super admin role hierarchy with user role management capabilities and four-tab admin interface including dedicated Super Admin section
 
 ## Changelog
 

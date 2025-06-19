@@ -28,6 +28,8 @@ import {
   Quote,
   Lightbulb,
   Clock,
+  Shield,
+  Crown,
   User,
   Calendar
 } from "lucide-react";
@@ -300,6 +302,10 @@ export default function AdminDashboard() {
               <Bot className="w-4 h-4" />
               <span>AI Mentors</span>
             </TabsTrigger>
+            <TabsTrigger value="super-admin" className="flex items-center space-x-2">
+              <Crown className="w-4 h-4" />
+              <span>Super Admin</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Organizations Tab */}
@@ -503,6 +509,32 @@ export default function AdminDashboard() {
                   No AI mentors configured yet
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          {/* Super Admin Tab */}
+          <TabsContent value="super-admin" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
+                <p className="text-slate-600">Manage user roles and permissions across the platform</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Shield className="w-5 h-5" />
+                    <span>Platform Users</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-slate-600">
+                    User role management coming soon - super admin controls for promoting users to admin status
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

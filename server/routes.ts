@@ -51,6 +51,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     req.adminUser = user;
     next();
+  }
+
+  // Super admin middleware - only allows super_admin
+  const requireSuperAdmin = async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const user = await storage.getUser(req.user.id);
+    if (!user || user.role !== 'super_admin') {
+      return res.status(403).json({ message: 'Super admin access required' });
+    }
+    
+    req.adminUser = user;
+    next();
   };
 
   // Auth routes
@@ -443,6 +458,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting AI mentor:', error);
       res.status(500).json({ message: 'Failed to delete AI mentor' });
+    }
+  });
+
+  // Super admin routes for user management
+  app.get('/api/super-admin/users', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(user => ({ ...user, password: undefined }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.patch('/api/super-admin/users/:id/role', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!['user', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      const updatedUser = await storage.updateUser(parseInt(id), { role });
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Failed to update user role' });
     }
   });
 
