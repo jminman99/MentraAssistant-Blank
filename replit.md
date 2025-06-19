@@ -128,6 +128,27 @@ Each mentor has defined:
 - Mentoring style reflecting their expertise
 - Life narratives that inform their responses
 
+## Configurable Branding & Messaging System
+
+The platform supports organization-level customization of branding and messaging to serve different target audiences:
+
+### Target Audience Configurations
+- **Men 20-55**: Current default with masculine aesthetic and wisdom-focused messaging
+- **Business Professionals**: Corporate blue theme with strategic guidance focus
+- **Young Professionals**: Energetic design emphasizing career growth
+- **Church Communities**: Faith-based guidance and terminology
+- **Technology Workers**: Technical leadership and industry-specific mentorship
+
+### Configurable Elements
+- Primary and secondary taglines
+- Problem statements and vision messaging
+- Call-to-action text
+- Color schemes (masculine-slate, professional-blue, warm-earth, etc.)
+- Mentor terminology (guides, mentors, advisors, coaches)
+- Communication tone (masculine-direct, professional-warm, inspiring-supportive, analytical-precise)
+
+Organizations can create custom branding configurations through the admin interface, allowing the same platform to serve diverse audiences with appropriate messaging and visual design.
+
 ## Recent Changes
 
 - June 19, 2025: Initial setup with full-stack architecture
@@ -141,6 +162,7 @@ Each mentor has defined:
 - June 19, 2025: Updated branding from "Hybrid AI + Human Mentorship Program" to focus on wisdom and lived experience
 - June 19, 2025: Transformed visual design to sophisticated, masculine aesthetic using slate/charcoal color palette
 - June 19, 2025: Created pre-landing page (Welcome) to introduce Mentra's vision and create emotional connection for first-time users
+- June 19, 2025: Implemented configurable branding and messaging system for different target audiences and organizations
 
 ## Changelog
 

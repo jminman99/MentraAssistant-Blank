@@ -447,5 +447,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Branding Configuration routes
+  app.get("/api/admin/branding-configurations", async (req, res) => {
+    try {
+      const configurations = await storage.getBrandingConfigurations();
+      res.json(configurations);
+    } catch (error) {
+      console.error("Error fetching branding configurations:", error);
+      res.status(500).json({ message: "Failed to fetch branding configurations" });
+    }
+  });
+
+  app.post("/api/admin/branding-configurations", async (req, res) => {
+    try {
+      const configuration = await storage.createBrandingConfiguration(req.body);
+      res.status(201).json(configuration);
+    } catch (error) {
+      console.error("Error creating branding configuration:", error);
+      res.status(500).json({ message: "Failed to create branding configuration" });
+    }
+  });
+
+  app.patch("/api/admin/branding-configurations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateBrandingConfiguration(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ message: "Branding configuration not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating branding configuration:", error);
+      res.status(500).json({ message: "Failed to update branding configuration" });
+    }
+  });
+
   return httpServer;
 }

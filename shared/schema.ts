@@ -112,6 +112,23 @@ export const mentorPersonalities = pgTable("mentor_personalities", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const brandingConfigurations = pgTable("branding_configurations", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  targetAudience: text("target_audience").notNull(), // "men-20-55", "business-professionals", "women-entrepreneurs", etc.
+  primaryTagline: text("primary_tagline").notNull(),
+  secondaryTagline: text("secondary_tagline"),
+  problemStatement: text("problem_statement").notNull(),
+  visionStatement: text("vision_statement").notNull(),
+  ctaText: text("cta_text").notNull(),
+  colorScheme: text("color_scheme").notNull(), // "masculine-slate", "professional-blue", "warm-earth", etc.
+  mentorTerminology: text("mentor_terminology").notNull(), // "guides", "mentors", "advisors", "coaches"
+  tone: text("tone").notNull(), // "masculine-direct", "professional-warm", "inspiring-supportive"
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   organization: one(organizations, {
@@ -203,6 +220,13 @@ export const mentorPersonalitiesRelations = relations(mentorPersonalities, ({ on
   }),
 }));
 
+export const brandingConfigurationsRelations = relations(brandingConfigurations, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [brandingConfigurations.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -248,6 +272,12 @@ export const insertMentorPersonalitySchema = createInsertSchema(mentorPersonalit
   updatedAt: true,
 });
 
+export const insertBrandingConfigurationSchema = createInsertSchema(brandingConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -277,5 +307,7 @@ export type SemanticConfiguration = typeof semanticConfigurations.$inferSelect;
 export type InsertSemanticConfiguration = z.infer<typeof insertSemanticConfigurationSchema>;
 export type MentorPersonality = typeof mentorPersonalities.$inferSelect;
 export type InsertMentorPersonality = z.infer<typeof insertMentorPersonalitySchema>;
+export type BrandingConfiguration = typeof brandingConfigurations.$inferSelect;
+export type InsertBrandingConfiguration = z.infer<typeof insertBrandingConfigurationSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

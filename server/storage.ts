@@ -8,6 +8,7 @@ import {
   councilSessions,
   semanticConfigurations,
   mentorPersonalities,
+  brandingConfigurations,
   type User, 
   type InsertUser,
   type Organization,
@@ -23,7 +24,9 @@ import {
   type SemanticConfiguration,
   type InsertSemanticConfiguration,
   type MentorPersonality,
-  type InsertMentorPersonality
+  type InsertMentorPersonality,
+  type BrandingConfiguration,
+  type InsertBrandingConfiguration
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, isNull } from "drizzle-orm";
@@ -70,6 +73,12 @@ export interface IStorage {
   getMentorPersonality(mentorName: string, organizationId?: number): Promise<MentorPersonality | undefined>;
   createMentorPersonality(personality: InsertMentorPersonality): Promise<MentorPersonality>;
   updateMentorPersonality(id: number, updates: Partial<MentorPersonality>): Promise<MentorPersonality | undefined>;
+
+  // Branding Configuration methods
+  getBrandingConfigurations(organizationId?: number): Promise<BrandingConfiguration[]>;
+  getBrandingConfiguration(targetAudience: string, organizationId?: number): Promise<BrandingConfiguration | undefined>;
+  createBrandingConfiguration(config: InsertBrandingConfiguration): Promise<BrandingConfiguration>;
+  updateBrandingConfiguration(id: number, updates: Partial<BrandingConfiguration>): Promise<BrandingConfiguration | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -376,6 +385,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(mentorPersonalities.id, id))
       .returning();
     return personality || undefined;
+  }
+
+  async getBrandingConfigurations(organizationId?: number): Promise<BrandingConfiguration[]> {
+    const conditions = organizationId 
+      ? [eq(brandingConfigurations.organizationId, organizationId), eq(brandingConfigurations.isActive, true)]
+      : [isNull(brandingConfigurations.organizationId), eq(brandingConfigurations.isActive, true)];
+    
+    return await db
+      .select()
+      .from(brandingConfigurations)
+      .where(and(...conditions))
+      .orderBy(asc(brandingConfigurations.targetAudience));
+  }
+
+  async getBrandingConfiguration(targetAudience: string, organizationId?: number): Promise<BrandingConfiguration | undefined> {
+    const conditions = organizationId 
+      ? [eq(brandingConfigurations.targetAudience, targetAudience), eq(brandingConfigurations.organizationId, organizationId), eq(brandingConfigurations.isActive, true)]
+      : [eq(brandingConfigurations.targetAudience, targetAudience), isNull(brandingConfigurations.organizationId), eq(brandingConfigurations.isActive, true)];
+    
+    const [config] = await db
+      .select()
+      .from(brandingConfigurations)
+      .where(and(...conditions))
+      .limit(1);
+    return config || undefined;
+  }
+
+  async createBrandingConfiguration(config: InsertBrandingConfiguration): Promise<BrandingConfiguration> {
+    const [newConfig] = await db
+      .insert(brandingConfigurations)
+      .values(config)
+      .returning();
+    return newConfig;
+  }
+
+  async updateBrandingConfiguration(id: number, updates: Partial<BrandingConfiguration>): Promise<BrandingConfiguration | undefined> {
+    const [updated] = await db
+      .update(brandingConfigurations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(brandingConfigurations.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
