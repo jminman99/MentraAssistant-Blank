@@ -430,7 +430,7 @@ export default function AdminDashboard() {
       <Dialog open={showAiMentorDialog} onOpenChange={setShowAiMentorDialog}>
         <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg sm:text-xl">Configure AI Mentor Semantic Layer</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Configure AI Mentor</DialogTitle>
             <DialogDescription className="text-sm">
               Customize {selectedAiMentor?.name}'s personality, stories, and communication patterns
             </DialogDescription>
@@ -443,7 +443,7 @@ export default function AdminDashboard() {
                 <TabsTrigger value="personality" className="text-xs md:text-sm px-1 md:px-3">Person</TabsTrigger>
                 <TabsTrigger value="stories" className="text-xs md:text-sm px-1 md:px-3">Stories</TabsTrigger>
                 <TabsTrigger value="communication" className="text-xs md:text-sm px-1 md:px-3 col-span-2 md:col-span-1">Comm</TabsTrigger>
-                <TabsTrigger value="semantic" className="text-xs md:text-sm px-1 md:px-3 col-span-3 md:col-span-1">Semantic</TabsTrigger>
+                <TabsTrigger value="semantic" className="text-xs md:text-sm px-1 md:px-3 col-span-3 md:col-span-1">Advanced</TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}
