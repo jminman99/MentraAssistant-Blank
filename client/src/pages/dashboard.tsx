@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Compass, MessageCircle, Sparkles, Heart, Star, Crown } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +26,11 @@ export default function Dashboard() {
     setSelectedMentor(mentor);
     setShowBookingModal(true);
   };
+
+  // Scroll to top when dashboard loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleLogout = async () => {
     try {

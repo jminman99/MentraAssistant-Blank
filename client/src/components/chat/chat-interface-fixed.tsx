@@ -171,6 +171,11 @@ export function ChatInterface() {
     } catch (error) {
       console.error("Failed to send message:", error);
       setIsTyping(false);
+      toast({
+        title: "Failed to send message",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
     }
   }, [messageInput, selectedMentorId, user, sendMessageMutation, toast, sendMessage]);
 
