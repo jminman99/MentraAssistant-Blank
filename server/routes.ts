@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('AI response error:', aiError);
             
             // Send fallback response that explains the AI service needs configuration
-            const fallbackResponse = `I'm ${mentor.name}, and I'd love to help you with that question. However, I'm currently not able to generate responses because the AI service isn't configured yet. Once the Anthropic API key is added, I'll be able to provide personalized guidance based on my expertise in ${mentor.expertise}.`;
+            const fallbackResponse = `I'm ${mentor.name}, and I'd love to help you with that question. However, I'm currently not able to generate responses because the AI service isn't configured yet. Once the OpenAI API key is added, I'll be able to provide personalized guidance based on my expertise in ${mentor.expertise}.`;
             
             // Save fallback response
             await storage.createChatMessage({

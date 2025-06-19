@@ -1,10 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
 
-// the newest Anthropic model is "claude-sonnet-4-20250514" which was released May 14, 2025. Use this by default unless user has already selected claude-3-7-sonnet-20250219
-const anthropic = process.env.ANTHROPIC_API_KEY 
-  ? new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
 
@@ -77,8 +77,8 @@ export async function generateAIResponse(
   userMessage: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Promise<string> {
-  if (!anthropic) {
-    throw new Error('Anthropic API key not configured');
+  if (!openai) {
+    throw new Error('OpenAI API key not configured');
   }
 
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
@@ -114,18 +114,17 @@ CONVERSATION GUIDELINES:
 - Show genuine care for the person's growth and success`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 1000,
-      system: systemPrompt,
       messages: [
+        { role: 'system', content: systemPrompt },
         ...conversationHistory.slice(-10), // Keep last 10 messages for context
         { role: 'user', content: userMessage }
       ],
     });
 
-    const textContent = response.content.find(block => block.type === 'text');
-    return textContent?.text || 'I apologize, but I encountered an issue generating a response. Please try again.';
+    return response.choices[0].message.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
   } catch (error) {
     console.error('Error generating AI response:', error);
     throw new Error('Failed to generate AI response');
