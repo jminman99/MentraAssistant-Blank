@@ -287,31 +287,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const data = JSON.parse(message.toString());
         
         if (data.type === 'chat_message') {
-          // Simulate AI response
-          setTimeout(() => {
-            const aiResponses = [
-              "That's a thoughtful question. Let me share some wisdom from my experience...",
-              "I understand your challenge. Remember, every obstacle is an opportunity to grow stronger.",
-              "Your perspective shows maturity. Have you considered looking at this from a different angle?",
-              "Leadership isn't about having all the answers - it's about asking the right questions.",
-              "The path forward often becomes clearer when we pause and reflect on our values.",
-              "Trust in your ability to navigate this. What does your intuition tell you?",
-            ];
+          const { mentorId, content, userId } = data;
+          
+          // Get the AI mentor
+          const mentor = await storage.getAiMentor(mentorId);
+          if (!mentor) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              content: 'AI mentor not found'
+            }));
+            return;
+          }
+          
+          // Get conversation history
+          const history = await storage.getChatMessages(userId, mentorId, 10);
+          const conversationHistory = history.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          }));
+          
+          try {
+            // Generate AI response using the semantic personality layer
+            const { generateAIResponse } = await import('./ai.js');
+            const aiResponse = await generateAIResponse(mentor, content, conversationHistory);
             
-            const response = {
-              type: 'ai_response',
-              mentorId: data.mentorId,
-              content: aiResponses[Math.floor(Math.random() * aiResponses.length)],
-              timestamp: new Date().toISOString(),
-            };
-
+            // Save the AI response to the database
+            await storage.createChatMessage({
+              userId,
+              aiMentorId: mentorId,
+              content: aiResponse,
+              role: 'assistant'
+            });
+            
+            // Send the AI response back via WebSocket
             if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify(response));
+              ws.send(JSON.stringify({
+                type: 'ai_response',
+                mentorId,
+                content: aiResponse,
+                timestamp: new Date().toISOString()
+              }));
             }
-          }, 1500 + Math.random() * 1000); // Random delay 1.5-2.5 seconds
+            
+          } catch (aiError) {
+            console.error('AI response error:', aiError);
+            
+            // Send fallback response that explains the AI service needs configuration
+            const fallbackResponse = `I'm ${mentor.name}, and I'd love to help you with that question. However, I'm currently not able to generate responses because the AI service isn't configured yet. Once the Anthropic API key is added, I'll be able to provide personalized guidance based on my expertise in ${mentor.expertise}.`;
+            
+            // Save fallback response
+            await storage.createChatMessage({
+              userId,
+              aiMentorId: mentorId,
+              content: fallbackResponse,
+              role: 'assistant'
+            });
+            
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'ai_response',
+                mentorId,
+                content: fallbackResponse,
+                timestamp: new Date().toISOString()
+              }));
+            }
+          }
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          content: 'Invalid message format'
+        }));
       }
     });
 

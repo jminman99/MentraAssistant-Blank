@@ -104,6 +104,32 @@ The application is configured for deployment on Replit with the following setup:
 
 Preferred communication style: Simple, everyday language.
 
+## AI Mentor Semantic Layer
+
+The application features a sophisticated semantic personality layer that defines authentic communication patterns for each AI mentor:
+
+### Personality Profiles
+- **Marcus**: Business-focused, direct communication with Fortune 500 experience
+- **David**: Thoughtful wisdom from pastoral and counseling background  
+- **Robert**: Analytical tech leader with CTO experience
+- **James**: Financial strategist focused on wealth building
+- **Michael**: Holistic life coach emphasizing work-life balance
+
+Each mentor has defined:
+- Communication style and signature phrases
+- Decision-making approach based on their background
+- Mentoring style reflecting their expertise
+- Life narratives that inform their responses
+
+## Recent Changes
+
+- June 19, 2025: Initial setup with full-stack architecture
+- June 19, 2025: Implemented semantic personality layer for AI mentors
+- June 19, 2025: Added Claude AI integration with personality-driven responses
+- June 19, 2025: Fixed authentication infinite loop issue
+- June 19, 2025: Seeded database with organizations, AI mentors, and human mentors
+- June 19, 2025: Updated subscription pricing to correct message limits
+
 ## Changelog
 
 Changelog:
