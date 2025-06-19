@@ -203,19 +203,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatMessages(userId: number, aiMentorId: number, limit: number = 50): Promise<ChatMessage[]> {
-    return await db
+    console.log(`Fetching messages for userId: ${userId}, aiMentorId: ${aiMentorId}`);
+    const messages = await db
       .select()
       .from(chatMessages)
       .where(and(eq(chatMessages.userId, userId), eq(chatMessages.aiMentorId, aiMentorId)))
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
+    console.log(`Found ${messages.length} messages:`, messages);
+    return messages;
   }
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    console.log('Creating chat message:', insertMessage);
     const [message] = await db
       .insert(chatMessages)
       .values(insertMessage)
       .returning();
+    console.log('Created message:', message);
     return message;
   }
 
