@@ -194,6 +194,8 @@ The platform now supports multiple authentication methods alongside email/passwo
 - June 19, 2025: Resolved chat message validation errors (userId required issue)
 - June 19, 2025: Dashboard now scrolls to top when loaded
 - June 19, 2025: Cleaned up 8,629 duplicate messages from database
+- June 19, 2025: Fixed AI mentor chat validation error by properly including userId in request schema
+- June 19, 2025: AI mentor responses now working correctly via WebSocket delivery system
 
 ## Changelog
 

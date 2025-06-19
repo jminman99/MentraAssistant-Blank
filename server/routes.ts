@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/chat', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
-      console.log('Chat request body:', req.body);
+
       const data = insertChatMessageSchema.parse({
         ...req.body,
         userId: user.id
