@@ -105,6 +105,7 @@ export function ChatInterface() {
         type: 'chat_message',
         mentorId: selectedMentorId,
         content,
+        userId: user.id,
       });
     } catch (error) {
       console.error("Failed to send message:", error);

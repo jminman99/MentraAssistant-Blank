@@ -79,5 +79,6 @@ export interface WebSocketMessage {
   type: 'chat_message' | 'ai_response';
   mentorId?: number;
   content?: string;
+  userId?: number;
   timestamp?: string;
 }
