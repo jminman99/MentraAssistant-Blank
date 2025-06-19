@@ -59,35 +59,35 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="flex items-center space-x-4 md:space-x-8 overflow-x-auto">
               <button 
                 onClick={() => setSelectedTab("ai-mentors")}
-                className={`text-slate-600 hover:text-primary transition-colors ${
-                  selectedTab === "ai-mentors" ? "border-b-2 border-primary pb-1" : ""
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                  selectedTab === "ai-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
                 Wisdom Guides
               </button>
               <button 
                 onClick={() => setSelectedTab("human-mentors")}
-                className={`text-slate-600 hover:text-primary transition-colors ${
-                  selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1" : ""
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                  selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
                 Experienced Guides
               </button>
               <button 
                 onClick={() => setSelectedTab("sessions")}
-                className={`text-slate-600 hover:text-primary transition-colors ${
-                  selectedTab === "sessions" ? "border-b-2 border-primary pb-1" : ""
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                  selectedTab === "sessions" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
                 Journey Sessions
               </button>
               <button 
                 onClick={() => setSelectedTab("plan")}
-                className={`text-slate-600 hover:text-primary transition-colors ${
-                  selectedTab === "plan" ? "border-b-2 border-primary pb-1" : ""
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-sm md:text-base ${
+                  selectedTab === "plan" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
                 Plan & Usage
