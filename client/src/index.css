@@ -59,16 +59,12 @@
 
 /* Mobile-specific scroll improvements */
 @media (max-width: 768px) {
-  body {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-  
   /* Prevent viewport jumping on mobile */
   #chatMessages {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     transform: translateZ(0); /* Force hardware acceleration */
+    touch-action: pan-y;
   }
 }
 
