@@ -29,24 +29,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Auth middleware
+  // Simplified auth middleware
   const requireAuth = async (req: any, res: any, next: any) => {
     if (req.isAuthenticated() && req.user) {
-      console.log('Auth middleware - session user:', req.user);
-      try {
-        const fullUser = await storage.getUser(req.user.id);
-        console.log('Auth middleware - database user:', fullUser);
-        if (fullUser) {
-          req.user = fullUser;
-          return next();
-        } else {
-          console.log('Auth middleware - user not found in database');
-        }
-      } catch (error) {
-        console.error('Auth middleware - error getting user data:', error);
-      }
-    } else {
-      console.log('Auth middleware - not authenticated or no user');
+      return next();
     }
     res.status(401).json({ message: 'Authentication required' });
   };
@@ -224,7 +210,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       console.log('Chat request body:', req.body);
-      const data = insertChatMessageSchema.parse(req.body);
+      const data = insertChatMessageSchema.parse({
+        ...req.body,
+        userId: user.id
+      });
 
       // Check message limit for user messages only
       if (data.role === 'user') {
