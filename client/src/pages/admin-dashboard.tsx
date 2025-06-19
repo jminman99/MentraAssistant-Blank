@@ -250,6 +250,20 @@ export default function AdminDashboard() {
     },
   });
 
+  const updateOrgMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
+      return await apiRequest(`/api/admin/organizations/${id}`, 'PATCH', updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/organizations'] });
+      setSelectedOrganization(null);
+      toast({ title: "Success", description: "Organization updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update organization", variant: "destructive" });
+    }
+  });
+
   const updateAiMentorMutation = useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
       return await apiRequest(`/api/admin/ai-mentors/${id}`, 'PATCH', updates);
@@ -793,6 +807,103 @@ export default function AdminDashboard() {
           ) : (
             <div className="text-center py-8 text-slate-500">
               Loading mentor configuration...
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Organization Creation Dialog */}
+      <Dialog open={showOrgDialog} onOpenChange={setShowOrgDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Organization</DialogTitle>
+            <DialogDescription>
+              Add a new organization to the platform
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="org-name">Organization Name</Label>
+              <Input
+                id="org-name"
+                value={orgForm.name}
+                onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
+                placeholder="Enter organization name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="org-description">Description</Label>
+              <Textarea
+                id="org-description"
+                value={orgForm.description}
+                onChange={(e) => setOrgForm({ ...orgForm, description: e.target.value })}
+                placeholder="Enter organization description"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowOrgDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!orgForm.name.trim()) return;
+                  createOrgMutation.mutate(orgForm);
+                }} 
+                disabled={createOrgMutation.isPending}
+              >
+                {createOrgMutation.isPending ? 'Creating...' : 'Create Organization'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Organization Dialog */}
+      <Dialog open={!!selectedOrganization} onOpenChange={() => setSelectedOrganization(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Organization</DialogTitle>
+            <DialogDescription>
+              Update organization details
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOrganization && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-org-name">Organization Name</Label>
+                <Input
+                  id="edit-org-name"
+                  value={selectedOrganization.name}
+                  onChange={(e) => setSelectedOrganization({ ...selectedOrganization, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-org-description">Description</Label>
+                <Textarea
+                  id="edit-org-description"
+                  value={selectedOrganization.description}
+                  onChange={(e) => setSelectedOrganization({ ...selectedOrganization, description: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setSelectedOrganization(null)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    updateOrgMutation.mutate({ 
+                      id: selectedOrganization.id, 
+                      updates: {
+                        name: selectedOrganization.name,
+                        description: selectedOrganization.description
+                      }
+                    });
+                  }}
+                  disabled={updateOrgMutation.isPending}
+                >
+                  {updateOrgMutation.isPending ? 'Updating...' : 'Update Organization'}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
