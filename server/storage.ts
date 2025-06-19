@@ -220,42 +220,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserSessions(userId: number): Promise<(MentoringSession & { humanMentor?: HumanMentor & { user: User } })[]> {
-    return await db
-      .select({
-        id: mentoringSessions.id,
-        userId: mentoringSessions.userId,
-        humanMentorId: mentoringSessions.humanMentorId,
-        type: mentoringSessions.type,
-        status: mentoringSessions.status,
-        scheduledAt: mentoringSessions.scheduledAt,
-        duration: mentoringSessions.duration,
-        topic: mentoringSessions.topic,
-        notes: mentoringSessions.notes,
-        rating: mentoringSessions.rating,
-        feedback: mentoringSessions.feedback,
-        createdAt: mentoringSessions.createdAt,
-        updatedAt: mentoringSessions.updatedAt,
-        humanMentor: {
-          id: humanMentors.id,
-          userId: humanMentors.userId,
-          expertise: humanMentors.expertise,
-          bio: humanMentors.bio,
-          experience: humanMentors.experience,
-          hourlyRate: humanMentors.hourlyRate,
-          rating: humanMentors.rating,
-          totalSessions: humanMentors.totalSessions,
-          availability: humanMentors.availability,
-          isActive: humanMentors.isActive,
-          organizationId: humanMentors.organizationId,
-          createdAt: humanMentors.createdAt,
-          user: users,
-        },
-      })
+    const sessions = await db
+      .select()
       .from(mentoringSessions)
       .leftJoin(humanMentors, eq(mentoringSessions.humanMentorId, humanMentors.id))
       .leftJoin(users, eq(humanMentors.userId, users.id))
       .where(eq(mentoringSessions.userId, userId))
       .orderBy(desc(mentoringSessions.scheduledAt));
+
+    return sessions.map(session => ({
+      ...session.mentoring_sessions,
+      humanMentor: session.human_mentors ? {
+        ...session.human_mentors,
+        user: session.users!
+      } : undefined
+    }));
   }
 
   async createSession(insertSession: InsertMentoringSession): Promise<MentoringSession> {
