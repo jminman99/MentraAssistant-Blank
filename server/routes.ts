@@ -461,6 +461,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Semantic Configuration routes
+  app.get('/api/admin/ai-mentors/:id/semantic', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const mentor = await storage.getAiMentor(parseInt(id));
+      if (!mentor) {
+        return res.status(404).json({ message: 'AI mentor not found' });
+      }
+      
+      const semanticConfig = await storage.getSemanticConfiguration(mentor.name, mentor.organizationId);
+      const stories = await storage.getMentorLifeStories(parseInt(id));
+      
+      res.json({
+        semanticConfig: semanticConfig || {},
+        stories: stories || []
+      });
+    } catch (error) {
+      console.error('Error fetching semantic configuration:', error);
+      res.status(500).json({ message: 'Failed to fetch semantic configuration' });
+    }
+  });
+
+  app.post('/api/admin/ai-mentors/:id/semantic', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { semanticConfig, stories } = req.body;
+      
+      const mentor = await storage.getAiMentor(parseInt(id));
+      if (!mentor) {
+        return res.status(404).json({ message: 'AI mentor not found' });
+      }
+
+      // Update or create semantic configuration
+      const existingConfig = await storage.getSemanticConfiguration(mentor.name, mentor.organizationId);
+      let savedConfig;
+      
+      if (existingConfig) {
+        savedConfig = await storage.updateSemanticConfiguration(existingConfig.id, {
+          ...semanticConfig,
+          mentorName: mentor.name,
+          organizationId: mentor.organizationId
+        });
+      } else {
+        savedConfig = await storage.createSemanticConfiguration({
+          ...semanticConfig,
+          mentorName: mentor.name,
+          organizationId: mentor.organizationId
+        });
+      }
+
+      // Save stories if provided
+      if (stories && Array.isArray(stories)) {
+        for (const story of stories) {
+          if (story.id) {
+            await storage.updateMentorLifeStory(story.id, story);
+          } else {
+            await storage.createMentorLifeStory({
+              ...story,
+              mentorId: parseInt(id),
+              organizationId: mentor.organizationId
+            });
+          }
+        }
+      }
+
+      res.json({ semanticConfig: savedConfig, message: 'Semantic configuration saved successfully' });
+    } catch (error) {
+      console.error('Error saving semantic configuration:', error);
+      res.status(500).json({ message: 'Failed to save semantic configuration' });
+    }
+  });
+
+  app.get('/api/admin/ai-mentors/:id/stories', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const stories = await storage.getMentorLifeStories(parseInt(id));
+      res.json(stories);
+    } catch (error) {
+      console.error('Error fetching mentor stories:', error);
+      res.status(500).json({ message: 'Failed to fetch mentor stories' });
+    }
+  });
+
+  app.post('/api/admin/ai-mentors/:id/stories', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const storyData = req.body;
+      
+      const story = await storage.createMentorLifeStory({
+        ...storyData,
+        mentorId: parseInt(id)
+      });
+      
+      res.json(story);
+    } catch (error) {
+      console.error('Error creating mentor story:', error);
+      res.status(500).json({ message: 'Failed to create mentor story' });
+    }
+  });
+
+  app.patch('/api/admin/mentor-stories/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const story = await storage.updateMentorLifeStory(parseInt(id), updates);
+      if (!story) {
+        return res.status(404).json({ message: 'Story not found' });
+      }
+      
+      res.json(story);
+    } catch (error) {
+      console.error('Error updating mentor story:', error);
+      res.status(500).json({ message: 'Failed to update mentor story' });
+    }
+  });
+
+  app.delete('/api/admin/mentor-stories/:id', requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteMentorLifeStory(parseInt(id));
+      res.json({ message: 'Story deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting mentor story:', error);
+      res.status(500).json({ message: 'Failed to delete mentor story' });
+    }
+  });
+
   // Super admin routes for user management
   app.get('/api/super-admin/users', requireSuperAdmin, async (req: any, res) => {
     try {

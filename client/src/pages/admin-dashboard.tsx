@@ -1,38 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Building2,
-  Bot,
-  Users,
-  Plus,
-  Edit,
-  Trash,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Settings,
-  Brain,
-  MessageSquare,
-  Heart,
-  Quote,
-  Lightbulb,
-  Clock,
-  Shield,
-  Crown,
-  User,
-  Calendar
-} from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Building2, Users, Settings, Shield, Plus, Trash2, Edit, X } from "lucide-react";
+
+// Types
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: 'user' | 'admin' | 'super_admin';
+  createdAt: string;
+}
 
 interface Organization {
   id: number;
@@ -51,14 +39,10 @@ interface MentorApplication {
   bio: string;
   expertise: string;
   yearsExperience?: number;
-  
-  // Semantic data
   lifeStories: any[];
   challenges: any[];
   quotes: any[];
   principles: any[];
-  
-  // Topic wisdom
   careerWisdom?: string;
   relationshipAdvice?: string;
   parentingInsights?: string;
@@ -67,7 +51,6 @@ interface MentorApplication {
   financialWisdom?: string;
   mentalHealthSupport?: string;
   purposeAndBelonging?: string;
-  
   status: 'pending' | 'interview_scheduled' | 'approved' | 'rejected';
   adminNotes?: string;
   interviewDate?: string;
@@ -88,13 +71,40 @@ interface AiMentor {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("organizations");
   
   // Dialog states
   const [selectedApplication, setSelectedApplication] = useState<MentorApplication | null>(null);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [selectedAiMentor, setSelectedAiMentor] = useState<AiMentor | null>(null);
+  
+  // Semantic configuration state
+  const [semanticConfig, setSemanticConfig] = useState({
+    detailedBackground: '',
+    communicationStyle: '',
+    decisionMaking: '',
+    mentoring: '',
+    coreValues: [] as string[],
+    conversationStarters: [] as string[],
+    advicePatterns: '',
+    responseExamples: '',
+    contextAwarenessRules: '',
+    storySelectionLogic: '',
+    personalityConsistencyRules: '',
+    conversationFlowPatterns: '',
+    commonPhrases: [] as string[]
+  });
+  
+  const [mentorStories, setMentorStories] = useState<any[]>([]);
+  const [newStory, setNewStory] = useState({
+    category: '',
+    title: '',
+    story: '',
+    lesson: '',
+    keywords: '',
+    emotionalTone: ''
+  });
+  
   const [showOrgDialog, setShowOrgDialog] = useState(false);
   const [showAiMentorDialog, setShowAiMentorDialog] = useState(false);
   
@@ -130,7 +140,104 @@ export default function AdminDashboard() {
     retry: false
   });
 
-  // Mutations
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
+    retry: false
+  });
+
+  // Load semantic configuration when mentor is selected
+  const { data: semanticData, refetch: refetchSemantic } = useQuery({
+    queryKey: ['/api/admin/ai-mentors', selectedAiMentor?.id, 'semantic'],
+    enabled: !!selectedAiMentor?.id,
+    retry: false,
+  });
+
+  // Load semantic data into form state
+  useEffect(() => {
+    if (semanticData && selectedAiMentor) {
+      const config = semanticData.semanticConfig || {};
+      setSemanticConfig({
+        detailedBackground: config.detailedBackground || '',
+        communicationStyle: config.communicationStyle || '',
+        decisionMaking: config.decisionMaking || '',
+        mentoring: config.mentoring || '',
+        coreValues: config.coreValues || [],
+        conversationStarters: config.conversationStarters || [],
+        advicePatterns: config.advicePatterns || '',
+        responseExamples: config.responseExamples || '',
+        contextAwarenessRules: config.contextAwarenessRules || '',
+        storySelectionLogic: config.storySelectionLogic || '',
+        personalityConsistencyRules: config.personalityConsistencyRules || '',
+        conversationFlowPatterns: config.conversationFlowPatterns || '',
+        commonPhrases: config.commonPhrases || []
+      });
+      setMentorStories(semanticData.stories || []);
+    }
+  }, [semanticData, selectedAiMentor]);
+
+  // Add story function
+  const addStory = () => {
+    if (!newStory.category || !newStory.title) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in category and title',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const story = {
+      ...newStory,
+      id: Date.now(),
+      keywords: newStory.keywords.split(',').map((k: string) => k.trim())
+    };
+    setMentorStories([...mentorStories, story]);
+    setNewStory({
+      category: '',
+      title: '',
+      story: '',
+      lesson: '',
+      keywords: '',
+      emotionalTone: ''
+    });
+  };
+
+  // Remove story function
+  const removeStory = (index: number) => {
+    setMentorStories(mentorStories.filter((_, i) => i !== index));
+  };
+
+  // Save semantic configuration
+  const saveSemanticConfig = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/admin/ai-mentors/${selectedAiMentor?.id}/semantic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          semanticConfig: semanticConfig,
+          stories: mentorStories
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save semantic configuration');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Semantic configuration saved successfully',
+      });
+      refetchSemantic();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save semantic configuration',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutations (simplified for this fixed version)
   const createOrgMutation = useMutation({
     mutationFn: async (orgData: any) => {
       return await apiRequest('/api/admin/organizations', 'POST', orgData);
@@ -141,138 +248,32 @@ export default function AdminDashboard() {
       setOrgForm({ name: '', description: '' });
       toast({ title: "Success", description: "Organization created successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create organization", variant: "destructive" });
-    }
-  });
-
-  const updateOrgMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      return await apiRequest(`/api/admin/organizations/${id}`, 'PATCH', updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/organizations'] });
-      setSelectedOrganization(null);
-      toast({ title: "Success", description: "Organization updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update organization", variant: "destructive" });
-    }
-  });
-
-  const deleteOrgMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return await apiRequest(`/api/admin/organizations/${id}`, 'DELETE');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/organizations'] });
-      toast({ title: "Success", description: "Organization deleted successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to delete organization", variant: "destructive" });
-    }
-  });
-
-  const updateApplicationMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      return await apiRequest(`/api/admin/mentor-applications/${id}`, 'PATCH', updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/mentor-applications'] });
-      setSelectedApplication(null);
-      toast({ title: "Success", description: "Application updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update application", variant: "destructive" });
-    }
-  });
-
-  const createAiMentorMutation = useMutation({
-    mutationFn: async (mentorData: any) => {
-      return await apiRequest('/api/admin/ai-mentors', 'POST', mentorData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/ai-mentors'] });
-      setShowAiMentorDialog(false);
-      setAiMentorForm({ name: '', personality: '', expertise: '', organizationId: '', isActive: true });
-      toast({ title: "Success", description: "AI mentor created successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create AI mentor", variant: "destructive" });
-    }
   });
 
   const updateAiMentorMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
+    mutationFn: async ({ id, ...updates }: any) => {
       return await apiRequest(`/api/admin/ai-mentors/${id}`, 'PATCH', updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/ai-mentors'] });
-      setSelectedAiMentor(null);
       toast({ title: "Success", description: "AI mentor updated successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update AI mentor", variant: "destructive" });
-    }
   });
 
-  // Event handlers
-  const handleCreateOrg = () => {
-    if (!orgForm.name.trim()) return;
-    createOrgMutation.mutate(orgForm);
-  };
-
-  const handleUpdateOrg = (org: Organization, updates: any) => {
-    updateOrgMutation.mutate({ id: org.id, updates });
-  };
-
-  const handleDeleteOrg = (id: number) => {
-    if (confirm('Are you sure you want to delete this organization?')) {
-      deleteOrgMutation.mutate(id);
-    }
-  };
-
-  const handleReviewApplication = (application: MentorApplication) => {
-    setSelectedApplication(application);
-    setReviewData({
-      status: application.status,
-      adminNotes: application.adminNotes || '',
-      interviewDate: application.interviewDate || '',
-      organizationId: application.organizationId?.toString() || ''
-    });
-  };
-
-  const handleUpdateApplication = () => {
-    if (!selectedApplication) return;
-    updateApplicationMutation.mutate({
-      id: selectedApplication.id,
-      updates: {
-        ...reviewData,
-        organizationId: reviewData.organizationId ? parseInt(reviewData.organizationId) : null
-      }
-    });
-  };
-
-  const handleCreateAiMentor = () => {
-    if (!aiMentorForm.name.trim()) return;
-    createAiMentorMutation.mutate({
-      ...aiMentorForm,
-      organizationId: aiMentorForm.organizationId ? parseInt(aiMentorForm.organizationId) : null
-    });
-  };
-
   const handleUpdateAiMentor = (mentor: AiMentor, updates: any) => {
-    updateAiMentorMutation.mutate({ id: mentor.id, updates });
+    updateAiMentorMutation.mutate({ id: mentor.id, ...updates });
+    setSelectedAiMentor(null);
+    setShowAiMentorDialog(false);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-sm border border-slate-300">
                   <div className="text-white font-bold text-sm">M</div>
                 </div>
@@ -289,35 +290,35 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
             <TabsTrigger value="organizations" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">Organizations</span>
               <span className="sm:hidden">Orgs</span>
             </TabsTrigger>
-            <TabsTrigger value="mentors" className="flex items-center space-x-1 text-xs sm:text-sm">
+            <TabsTrigger value="applications" className="flex items-center space-x-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Mentor Applications</span>
-              <span className="sm:hidden">Applications</span>
+              <span className="hidden sm:inline">Applications</span>
+              <span className="sm:hidden">Apps</span>
             </TabsTrigger>
             <TabsTrigger value="ai-mentors" className="flex items-center space-x-1 text-xs sm:text-sm">
-              <Bot className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">AI Mentors</span>
               <span className="sm:hidden">AI</span>
             </TabsTrigger>
             <TabsTrigger value="super-admin" className="flex items-center space-x-1 text-xs sm:text-sm">
-              <Crown className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">Super Admin</span>
-              <span className="sm:hidden">Admin</span>
+              <span className="sm:hidden">Super</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Organizations Tab */}
           <TabsContent value="organizations" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">Organization Management</h2>
-                <p className="text-slate-600">Create and manage organizations on the platform</p>
+                <h2 className="text-2xl font-bold text-slate-900">Organizations</h2>
+                <p className="text-slate-600">Manage community organizations and their settings</p>
               </div>
               <Button onClick={() => setShowOrgDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -325,564 +326,148 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
-            <div className="grid gap-6">
-              {orgsLoading ? (
-                <div className="text-center py-8">Loading organizations...</div>
-              ) : organizations.length > 0 ? (
-                organizations.map((org) => (
-                  <Card key={org.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{org.name}</CardTitle>
-                          <p className="text-sm text-slate-600 mt-1">{org.description}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedOrganization(org)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteOrg(org.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash className="w-4 h-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {organizations.map((org) => (
+                <Card key={org.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{org.name}</CardTitle>
+                        <CardDescription className="mt-1">{org.description}</CardDescription>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xs text-slate-500">
-                        Created: {new Date(org.createdAt).toLocaleDateString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  No organizations found. Create your first organization to get started.
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Mentor Applications Tab */}
-          <TabsContent value="mentors" className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Mentor Application Workflow</h2>
-              <p className="text-slate-600">Review and approve mentor applications with semantic content</p>
-            </div>
-
-            <div className="grid gap-6">
-              {appsLoading ? (
-                <div className="text-center py-8">Loading applications...</div>
-              ) : applications.length > 0 ? (
-                applications.map((application) => (
-                  <Card key={application.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{application.applicantName}</CardTitle>
-                          <p className="text-sm text-slate-600">{application.email}</p>
-                          <p className="text-sm text-slate-600">{application.expertise}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant={
-                              application.status === 'approved' ? 'default' : 
-                              application.status === 'rejected' ? 'destructive' : 
-                              'secondary'
-                            }
-                          >
-                            {application.status.replace('_', ' ')}
-                          </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReviewApplication(application)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Review
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium">Experience:</span> {application.yearsExperience || 'N/A'} years
-                        </div>
-                        <div>
-                          <span className="font-medium">Applied:</span> {new Date(application.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                      {application.bio && (
-                        <div className="mt-3">
-                          <p className="text-sm text-slate-600 line-clamp-2">{application.bio}</p>
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-4 mt-3 text-xs text-slate-500">
-                        <span className="flex items-center">
-                          <MessageSquare className="w-3 h-3 mr-1" />
-                          {application.lifeStories?.length || 0} stories
-                        </span>
-                        <span className="flex items-center">
-                          <Heart className="w-3 h-3 mr-1" />
-                          {application.challenges?.length || 0} challenges
-                        </span>
-                        <span className="flex items-center">
-                          <Quote className="w-3 h-3 mr-1" />
-                          {application.quotes?.length || 0} quotes
-                        </span>
-                        <span className="flex items-center">
-                          <Lightbulb className="w-3 h-3 mr-1" />
-                          {application.principles?.length || 0} principles
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  No mentor applications found
-                </div>
-              )}
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedOrganization(org)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-slate-500">
+                      Created: {new Date(org.createdAt).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
           {/* AI Mentors Tab */}
           <TabsContent value="ai-mentors" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">AI Mentor Configuration</h2>
-                <p className="text-slate-600">Manage AI mentor personalities and configurations</p>
+                <p className="text-slate-600">Configure AI mentor personalities and semantic behavior</p>
               </div>
-              <Button onClick={() => setShowAiMentorDialog(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add AI Mentor
-              </Button>
             </div>
 
-            <div className="grid gap-6">
-              {aiMentorsLoading ? (
-                <div className="text-center py-8">Loading AI mentors...</div>
-              ) : aiMentors.length > 0 ? (
-                aiMentors.map((mentor) => (
-                  <Card key={mentor.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg flex items-center">
-                            <Brain className="w-5 h-5 mr-2 text-slate-600" />
-                            {mentor.name}
-                          </CardTitle>
-                          <p className="text-sm text-slate-600 mt-1">{mentor.expertise}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={mentor.isActive ? 'default' : 'secondary'}>
-                            {mentor.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedAiMentor(mentor)}
-                          >
-                            <Settings className="w-4 h-4 mr-1" />
-                            Configure
-                          </Button>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {aiMentors.map((mentor) => (
+                <Card key={mentor.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{mentor.name}</CardTitle>
+                        <CardDescription className="mt-1">{mentor.expertise}</CardDescription>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-slate-600 line-clamp-2">{mentor.personality}</p>
-                      <div className="mt-3 text-xs text-slate-500">
-                        Organization: {organizations.find(org => org.id === mentor.organizationId)?.name || 'Global'}
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={mentor.isActive ? "default" : "secondary"}>
+                          {mentor.isActive ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  No AI mentors configured yet
-                </div>
-              )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-3">{mentor.personality}</p>
+                    <Button 
+                      onClick={() => {
+                        setSelectedAiMentor(mentor);
+                        setShowAiMentorDialog(true);
+                      }}
+                      className="w-full"
+                      size="sm"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configure Semantic Layer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
-          {/* Super Admin Tab */}
-          <TabsContent value="super-admin" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
-                <p className="text-slate-600">Manage user roles and permissions across the platform</p>
-              </div>
+          {/* Applications Tab - Simplified */}
+          <TabsContent value="applications" className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-900">Mentor Applications</h2>
+            <div className="grid gap-4">
+              {applications.map((app) => (
+                <Card key={app.id}>
+                  <CardHeader>
+                    <CardTitle>{app.applicantName}</CardTitle>
+                    <CardDescription>{app.email} • {app.expertise}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
             </div>
+          </TabsContent>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="w-5 h-5" />
-                    <span>Platform Users</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-slate-600">
-                    User role management coming soon - super admin controls for promoting users to admin status
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Super Admin Tab - Simplified */}
+          <TabsContent value="super-admin" className="space-y-6">
+            <h2 className="text-2xl font-bold text-slate-900">Super Admin</h2>
+            <div className="grid gap-4">
+              {users.map((user) => (
+                <Card key={user.id}>
+                  <CardHeader>
+                    <CardTitle>{user.username}</CardTitle>
+                    <CardDescription>{user.email} • {user.role}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Organization Dialog */}
-      <Dialog open={showOrgDialog} onOpenChange={setShowOrgDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Organization</DialogTitle>
-            <DialogDescription>
-              Add a new organization to the platform
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="org-name">Organization Name</Label>
-              <Input
-                id="org-name"
-                value={orgForm.name}
-                onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
-                placeholder="Enter organization name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="org-description">Description</Label>
-              <Textarea
-                id="org-description"
-                value={orgForm.description}
-                onChange={(e) => setOrgForm({ ...orgForm, description: e.target.value })}
-                placeholder="Enter organization description"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowOrgDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateOrg} disabled={createOrgMutation.isPending}>
-                {createOrgMutation.isPending ? 'Creating...' : 'Create Organization'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Organization Dialog */}
-      <Dialog open={!!selectedOrganization} onOpenChange={() => setSelectedOrganization(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Organization</DialogTitle>
-            <DialogDescription>
-              Update organization details
-            </DialogDescription>
-          </DialogHeader>
-          {selectedOrganization && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-org-name">Organization Name</Label>
-                <Input
-                  id="edit-org-name"
-                  defaultValue={selectedOrganization.name}
-                  onChange={(e) => setSelectedOrganization({ ...selectedOrganization, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-org-description">Description</Label>
-                <Textarea
-                  id="edit-org-description"
-                  defaultValue={selectedOrganization.description}
-                  onChange={(e) => setSelectedOrganization({ ...selectedOrganization, description: e.target.value })}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setSelectedOrganization(null)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => handleUpdateOrg(selectedOrganization, {
-                  name: selectedOrganization.name,
-                  description: selectedOrganization.description
-                })}>
-                  Update Organization
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Review Application Dialog */}
-      <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}>
+      {/* AI Mentor Semantic Configuration Dialog */}
+      <Dialog open={showAiMentorDialog} onOpenChange={setShowAiMentorDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Review Mentor Application</DialogTitle>
+            <DialogTitle>Configure AI Mentor Semantic Layer</DialogTitle>
             <DialogDescription>
-              Review application details and semantic content
-            </DialogDescription>
-          </DialogHeader>
-          {selectedApplication && (
-            <div className="space-y-6">
-              {/* Application Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Applicant Name</Label>
-                  <p className="text-sm font-medium">{selectedApplication.applicantName}</p>
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <p className="text-sm">{selectedApplication.email}</p>
-                </div>
-                <div>
-                  <Label>Expertise</Label>
-                  <p className="text-sm">{selectedApplication.expertise}</p>
-                </div>
-                <div>
-                  <Label>Experience</Label>
-                  <p className="text-sm">{selectedApplication.yearsExperience || 'N/A'} years</p>
-                </div>
-              </div>
-
-              {/* Bio */}
-              {selectedApplication.bio && (
-                <div>
-                  <Label>Bio</Label>
-                  <p className="text-sm text-slate-600">{selectedApplication.bio}</p>
-                </div>
-              )}
-
-              {/* Semantic Content */}
-              <div className="space-y-4">
-                <h4 className="font-medium">Semantic Content for AI Training</h4>
-                
-                {selectedApplication.lifeStories?.length > 0 && (
-                  <div>
-                    <Label className="flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      Life Stories ({selectedApplication.lifeStories.length})
-                    </Label>
-                    <div className="mt-2 space-y-2">
-                      {selectedApplication.lifeStories.slice(0, 2).map((story: any, index: number) => (
-                        <div key={index} className="p-3 bg-slate-50 rounded-md">
-                          <p className="text-sm font-medium">{story.topic}</p>
-                          <p className="text-xs text-slate-600 line-clamp-2">{story.story}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedApplication.quotes?.length > 0 && (
-                  <div>
-                    <Label className="flex items-center">
-                      <Quote className="w-4 h-4 mr-1" />
-                      Key Quotes ({selectedApplication.quotes.length})
-                    </Label>
-                    <div className="mt-2 space-y-2">
-                      {selectedApplication.quotes.slice(0, 2).map((quote: any, index: number) => (
-                        <div key={index} className="p-3 bg-slate-50 rounded-md">
-                          <p className="text-sm italic">"{quote.quote}"</p>
-                          <p className="text-xs text-slate-600">{quote.context}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Review Form */}
-              <div className="border-t pt-4 space-y-4">
-                <h4 className="font-medium">Review Decision</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={reviewData.status} onValueChange={(value) => setReviewData({ ...reviewData, status: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="interview_scheduled">Interview Scheduled</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="organization">Assign to Organization</Label>
-                    <Select value={reviewData.organizationId} onValueChange={(value) => setReviewData({ ...reviewData, organizationId: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select organization" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No organization</SelectItem>
-                        {organizations.map((org) => (
-                          <SelectItem key={org.id} value={org.id.toString()}>
-                            {org.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="admin-notes">Admin Notes</Label>
-                  <Textarea
-                    id="admin-notes"
-                    value={reviewData.adminNotes}
-                    onChange={(e) => setReviewData({ ...reviewData, adminNotes: e.target.value })}
-                    placeholder="Add notes about this application"
-                  />
-                </div>
-                {reviewData.status === 'interview_scheduled' && (
-                  <div>
-                    <Label htmlFor="interview-date">Interview Date</Label>
-                    <Input
-                      id="interview-date"
-                      type="datetime-local"
-                      value={reviewData.interviewDate}
-                      onChange={(e) => setReviewData({ ...reviewData, interviewDate: e.target.value })}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setSelectedApplication(null)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateApplication} disabled={updateApplicationMutation.isPending}>
-                  {updateApplicationMutation.isPending ? 'Updating...' : 'Update Application'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* AI Mentor Dialog */}
-      <Dialog open={showAiMentorDialog} onOpenChange={setShowAiMentorDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create AI Mentor</DialogTitle>
-            <DialogDescription>
-              Configure a new AI mentor personality
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="mentor-name">Mentor Name</Label>
-                <Input
-                  id="mentor-name"
-                  value={aiMentorForm.name}
-                  onChange={(e) => setAiMentorForm({ ...aiMentorForm, name: e.target.value })}
-                  placeholder="e.g., Marcus, David, Sarah"
-                />
-              </div>
-              <div>
-                <Label htmlFor="mentor-expertise">Expertise Domain</Label>
-                <Input
-                  id="mentor-expertise"
-                  value={aiMentorForm.expertise}
-                  onChange={(e) => setAiMentorForm({ ...aiMentorForm, expertise: e.target.value })}
-                  placeholder="e.g., Business Strategy, Life Coaching"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="mentor-personality">Personality & Background</Label>
-              <Textarea
-                id="mentor-personality"
-                value={aiMentorForm.personality}
-                onChange={(e) => setAiMentorForm({ ...aiMentorForm, personality: e.target.value })}
-                placeholder="Describe the mentor's personality, communication style, and background..."
-                rows={4}
-              />
-            </div>
-            <div>
-              <Label htmlFor="mentor-org">Organization</Label>
-              <Select value={aiMentorForm.organizationId} onValueChange={(value) => setAiMentorForm({ ...aiMentorForm, organizationId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Global (All Organizations)</SelectItem>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id.toString()}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowAiMentorDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateAiMentor} disabled={createAiMentorMutation.isPending}>
-                {createAiMentorMutation.isPending ? 'Creating...' : 'Create AI Mentor'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit AI Mentor Dialog */}
-      <Dialog open={!!selectedAiMentor} onOpenChange={() => setSelectedAiMentor(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Configure AI Mentor</DialogTitle>
-            <DialogDescription>
-              Update AI mentor personality and settings
+              Customize {selectedAiMentor?.name}'s personality, stories, and communication patterns
             </DialogDescription>
           </DialogHeader>
           
           {selectedAiMentor ? (
             <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="personality">Personality</TabsTrigger>
-                <TabsTrigger value="stories">Life Stories</TabsTrigger>
-                <TabsTrigger value="communication">Communication</TabsTrigger>
-                <TabsTrigger value="semantic">Semantic Layer</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+                <TabsTrigger value="basic" className="text-xs md:text-sm">Basic</TabsTrigger>
+                <TabsTrigger value="personality" className="text-xs md:text-sm">Personality</TabsTrigger>
+                <TabsTrigger value="stories" className="text-xs md:text-sm">Stories</TabsTrigger>
+                <TabsTrigger value="communication" className="text-xs md:text-sm">Communication</TabsTrigger>
+                <TabsTrigger value="semantic" className="text-xs md:text-sm">Semantic</TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}
               <TabsContent value="basic" className="space-y-4">
                 <h4 className="font-semibold text-slate-900">Basic Information</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                   <div>
-                    <Label htmlFor="edit-mentor-name">Mentor Name</Label>
+                    <Label htmlFor="edit-mentor-name" className="text-sm font-medium">Mentor Name</Label>
                     <Input
                       id="edit-mentor-name"
                       value={selectedAiMentor.name}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, name: e.target.value })}
                       placeholder="e.g., Marcus, David, Elder Thomas"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-mentor-expertise">Expertise Domain</Label>
+                    <Label htmlFor="edit-mentor-expertise" className="text-sm font-medium">Expertise Domain</Label>
                     <Input
                       id="edit-mentor-expertise"
                       value={selectedAiMentor.expertise}
                       onChange={(e) => setSelectedAiMentor({ ...selectedAiMentor, expertise: e.target.value })}
                       placeholder="e.g., Life wisdom through adversity, Business leadership"
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -896,92 +481,66 @@ export default function AdminDashboard() {
                     placeholder="Brief description of who they are (e.g., Navy vet, recovered alcoholic, father of 5, quietly wise)"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-mentor-org">Organization</Label>
-                    <Select 
-                      value={selectedAiMentor.organizationId?.toString() || "global"} 
-                      onValueChange={(value) => setSelectedAiMentor({ 
-                        ...selectedAiMentor, 
-                        organizationId: value === "global" ? undefined : parseInt(value)
-                      })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select organization" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="global">Global (All Organizations)</SelectItem>
-                        {organizations.map((org) => (
-                          <SelectItem key={org.id} value={org.id.toString()}>
-                            {org.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-mentor-active">Status</Label>
-                    <Select 
-                      value={selectedAiMentor.isActive.toString()} 
-                      onValueChange={(value) => setSelectedAiMentor({ 
-                        ...selectedAiMentor, 
-                        isActive: value === 'true' 
-                      })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Active</SelectItem>
-                        <SelectItem value="false">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
               </TabsContent>
 
               {/* Personality Tab */}
-              <TabsContent value="personality" className="space-y-4">
+              <TabsContent value="personality" className="space-y-6">
                 <h4 className="font-semibold text-slate-900">Personality Traits & Background</h4>
                 <div>
                   <Label htmlFor="detailed-background">Detailed Background</Label>
+                  <p className="text-sm text-slate-500 mb-2">Complete life story including career, relationships, challenges overcome</p>
                   <Textarea
                     id="detailed-background"
+                    value={semanticConfig.detailedBackground}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, detailedBackground: e.target.value})}
                     rows={4}
-                    placeholder="Detailed background including key life experiences, career journey, relationships, challenges overcome..."
+                    placeholder="Navy veteran, 20 years active duty, father of 3, struggled with alcohol in his 30s but found recovery through faith and AA, built successful consulting business after military..."
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="communication-style">Communication Style</Label>
+                    <p className="text-sm text-slate-500 mb-2">How they speak and interact with people</p>
                     <Textarea
                       id="communication-style"
+                      value={semanticConfig.communicationStyle}
+                      onChange={(e) => setSemanticConfig({...semanticConfig, communicationStyle: e.target.value})}
                       rows={3}
-                      placeholder="How they speak and interact (e.g., Direct but gentle, uses metaphors from military life, thoughtful pauses)"
+                      placeholder="Direct but gentle, uses metaphors from military life, thoughtful pauses, asks follow-up questions, doesn't rush to give advice"
                     />
                   </div>
                   <div>
                     <Label htmlFor="decision-making">Decision-Making Approach</Label>
+                    <p className="text-sm text-slate-500 mb-2">How they analyze problems and make decisions</p>
                     <Textarea
                       id="decision-making"
+                      value={semanticConfig.decisionMaking}
+                      onChange={(e) => setSemanticConfig({...semanticConfig, decisionMaking: e.target.value})}
                       rows={3}
-                      placeholder="How they approach decisions (e.g., Values-based, considers long-term character impact)"
+                      placeholder="Values-based, considers long-term character impact, weighs consequences on family, trusts gut instinct backed by experience"
                     />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="mentoring-style">Mentoring Style</Label>
+                  <p className="text-sm text-slate-500 mb-2">How they guide and teach others</p>
                   <Textarea
                     id="mentoring-style"
+                    value={semanticConfig.mentoring}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, mentoring: e.target.value})}
                     rows={3}
-                    placeholder="How they guide others (e.g., Shares personal stories, admits mistakes openly, emphasizes growth through difficulty)"
+                    placeholder="Shares personal stories and failures openly, emphasizes growth through difficulty, holds people accountable with love, doesn't enable excuses"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="core-values">Core Values (comma-separated)</Label>
-                  <Input
+                  <Label htmlFor="core-values">Core Values</Label>
+                  <p className="text-sm text-slate-500 mb-2">Fundamental principles that guide their life (one per line)</p>
+                  <Textarea
                     id="core-values"
-                    placeholder="integrity, patience, accountability, quiet strength, service to others"
+                    value={semanticConfig.coreValues.join('\n')}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, coreValues: e.target.value.split('\n').filter(v => v.trim())})}
+                    rows={4}
+                    placeholder="Integrity above all else&#10;Family comes first&#10;Service to others&#10;Growth through adversity&#10;Accountability in all things"
                   />
                 </div>
               </TabsContent>
@@ -990,7 +549,7 @@ export default function AdminDashboard() {
               <TabsContent value="stories" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-slate-900">Life Stories & Experiences</h4>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={addStory}>
                     <Plus className="w-4 h-4 mr-1" />
                     Add Story
                   </Button>
@@ -998,152 +557,229 @@ export default function AdminDashboard() {
                 <div className="text-sm text-slate-600 mb-4">
                   Add authentic stories that define this mentor's character and wisdom. These will be used to make conversations feel personal and authentic.
                 </div>
-                <div className="space-y-4">
-                  {/* Story Template */}
-                  <Card className="p-4">
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <Label htmlFor="story-category">Category</Label>
-                          <Select>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="childhood">Childhood Snapshot</SelectItem>
-                              <SelectItem value="father">Relationship with Father</SelectItem>
-                              <SelectItem value="mother">Relationship with Mother</SelectItem>
-                              <SelectItem value="marriage">Marriage - Struggles & Triumphs</SelectItem>
-                              <SelectItem value="parenting">Parenting Challenges</SelectItem>
-                              <SelectItem value="career">Career Journey</SelectItem>
-                              <SelectItem value="spiritual">Spiritual Insights</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="story-title">Story Title</Label>
-                          <Input placeholder="e.g., The Dark Basement" />
-                        </div>
-                        <div>
-                          <Label htmlFor="emotional-tone">Emotional Tone</Label>
-                          <Input placeholder="e.g., quiet wisdom, gentle strength" />
-                        </div>
+                
+                {/* New Story Form */}
+                <Card className="p-4 bg-slate-50">
+                  <h5 className="font-medium mb-3">Add New Story</h5>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label htmlFor="story-category">Category</Label>
+                        <Select value={newStory.category} onValueChange={(value) => setNewStory({...newStory, category: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="childhood">Childhood Snapshot</SelectItem>
+                            <SelectItem value="father">Relationship with Father</SelectItem>
+                            <SelectItem value="mother">Relationship with Mother</SelectItem>
+                            <SelectItem value="marriage">Marriage - Struggles & Triumphs</SelectItem>
+                            <SelectItem value="parenting">Parenting Challenges</SelectItem>
+                            <SelectItem value="career">Career Journey</SelectItem>
+                            <SelectItem value="spiritual">Spiritual Insights</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
-                        <Label htmlFor="story-narrative">Story (First Person)</Label>
-                        <Textarea
-                          rows={4}
-                          placeholder="Tell the complete story in first person, with vivid details and emotional honesty..."
+                        <Label htmlFor="story-title">Story Title</Label>
+                        <Input 
+                          value={newStory.title}
+                          onChange={(e) => setNewStory({...newStory, title: e.target.value})}
+                          placeholder="e.g., The Dark Basement" 
                         />
                       </div>
                       <div>
+                        <Label htmlFor="story-emotional-tone">Emotional Tone</Label>
+                        <Input 
+                          value={newStory.emotionalTone}
+                          onChange={(e) => setNewStory({...newStory, emotionalTone: e.target.value})}
+                          placeholder="reflective, hopeful, somber, triumphant" 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="story-content">Story Content</Label>
+                      <Textarea
+                        id="story-content"
+                        value={newStory.story}
+                        onChange={(e) => setNewStory({...newStory, story: e.target.value})}
+                        rows={4}
+                        placeholder="Write the full story in first person, as if the mentor is telling it directly..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
                         <Label htmlFor="story-lesson">Key Lesson/Wisdom</Label>
                         <Textarea
+                          id="story-lesson"
+                          value={newStory.lesson}
+                          onChange={(e) => setNewStory({...newStory, lesson: e.target.value})}
                           rows={2}
-                          placeholder="What wisdom or principle emerges from this story?"
+                          placeholder="What wisdom or principle does this story teach?"
                         />
                       </div>
                       <div>
                         <Label htmlFor="story-keywords">Keywords (comma-separated)</Label>
-                        <Input placeholder="courage, fear, childhood, father, darkness, bravery" />
+                        <Input 
+                          value={newStory.keywords}
+                          onChange={(e) => setNewStory({...newStory, keywords: e.target.value})}
+                          placeholder="courage, fear, childhood, father, darkness, bravery" 
+                        />
                       </div>
                     </div>
-                  </Card>
-                </div>
+                    <Button onClick={addStory} size="sm" className="mt-3">
+                      Add Story to Collection
+                    </Button>
+                  </div>
+                </Card>
+
+                {/* Existing Stories Display */}
+                {mentorStories.length > 0 && (
+                  <div className="space-y-3">
+                    <h5 className="font-medium text-slate-900">Existing Stories</h5>
+                    {mentorStories.map((story, index) => (
+                      <Card key={story.id || index} className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="text-xs bg-slate-100 px-2 py-1 rounded">{story.category}</span>
+                            <h6 className="font-medium mt-1">{story.title}</h6>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => removeStory(index)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-slate-600 line-clamp-2">{story.story}</p>
+                        <p className="text-xs text-slate-500 mt-1"><strong>Lesson:</strong> {story.lesson}</p>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Communication Tab */}
-              <TabsContent value="communication" className="space-y-4">
+              <TabsContent value="communication" className="space-y-6">
                 <h4 className="font-semibold text-slate-900">Communication Patterns</h4>
+                
                 <div>
                   <Label htmlFor="signature-phrases">Signature Phrases</Label>
-                  <div className="text-sm text-slate-600 mb-2">
-                    Add unique sayings and phrases this mentor uses naturally in conversation
-                  </div>
+                  <p className="text-sm text-slate-500 mb-2">Unique sayings and phrases this mentor uses naturally (one per line)</p>
                   <Textarea
                     id="signature-phrases"
+                    value={semanticConfig.commonPhrases.join('\n')}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, commonPhrases: e.target.value.split('\n').filter(p => p.trim())})}
                     rows={4}
-                    placeholder="One phrase per line:&#10;Experience is a hard teacher, but a thorough one&#10;You can't build character when everything's easy&#10;Sometimes the fish teach you more by not biting"
+                    placeholder="You know what I mean?&#10;Let me tell you something&#10;Back in my day&#10;Here's the thing about life"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="conversation-starters">Common Conversation Starters</Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="Let me think on that for a moment...&#10;In my experience...&#10;I've learned that..."
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="advice-patterns">Advice-Giving Patterns</Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="How they typically give advice (e.g., through stories, asking questions, sharing mistakes)"
-                    />
-                  </div>
+                
+                <div>
+                  <Label htmlFor="conversation-starters">Conversation Starters</Label>
+                  <p className="text-sm text-slate-500 mb-2">How they typically begin conversations (one per line)</p>
+                  <Textarea
+                    id="conversation-starters"
+                    value={semanticConfig.conversationStarters.join('\n')}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, conversationStarters: e.target.value.split('\n').filter(s => s.trim())})}
+                    rows={3}
+                    placeholder="What's on your mind today?&#10;Tell me what's really bothering you&#10;I've been thinking about what you said"
+                  />
                 </div>
+                
+                <div>
+                  <Label htmlFor="advice-patterns">Advice Patterns</Label>
+                  <p className="text-sm text-slate-500 mb-2">How they structure and deliver guidance</p>
+                  <Textarea
+                    id="advice-patterns"
+                    value={semanticConfig.advicePatterns}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, advicePatterns: e.target.value})}
+                    rows={3}
+                    placeholder="Starts with personal story, asks clarifying questions, offers practical steps, ends with encouragement"
+                  />
+                </div>
+                
                 <div>
                   <Label htmlFor="response-examples">Response Examples</Label>
-                  <div className="text-sm text-slate-600 mb-2">
-                    Example responses for different scenarios
-                  </div>
+                  <p className="text-sm text-slate-500 mb-2">Sample responses that capture their voice and style</p>
                   <Textarea
+                    id="response-examples"
+                    value={semanticConfig.responseExamples}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, responseExamples: e.target.value})}
                     rows={4}
-                    placeholder="Fear/Anxiety: 'I wasn't always this way, son. Let me tell you about a time...'&#10;Relationship Issues: 'Marriage is like...'&#10;Career Struggles: 'Every good thing takes time to build...'"
+                    placeholder="When someone asks about career change: 'You know, I switched careers three times before I found my calling. Let me ask you - what scares you more, staying where you are or taking the leap?'"
                   />
                 </div>
               </TabsContent>
 
               {/* Semantic Layer Tab */}
-              <TabsContent value="semantic" className="space-y-4">
+              <TabsContent value="semantic" className="space-y-6">
                 <h4 className="font-semibold text-slate-900">Advanced Semantic Configuration</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="context-awareness">Context Awareness Rules</Label>
-                    <Textarea
-                      rows={4}
-                      placeholder="How to respond to different contexts:&#10;- Advice requests: Share relevant story&#10;- Fear/anxiety: Draw from courage experiences&#10;- Relationships: Reference marriage wisdom"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="story-selection">Story Selection Logic</Label>
-                    <Textarea
-                      rows={4}
-                      placeholder="Rules for when to use specific stories:&#10;- Childhood stories for fear/courage topics&#10;- Marriage stories for relationship advice&#10;- Career stories for professional guidance"
-                    />
-                  </div>
-                </div>
+                
                 <div>
-                  <Label htmlFor="personality-consistency">Personality Consistency Rules</Label>
+                  <Label htmlFor="context-awareness">Context Awareness Rules</Label>
+                  <p className="text-sm text-slate-500 mb-2">How they adapt responses based on conversation context</p>
                   <Textarea
+                    id="context-awareness"
+                    value={semanticConfig.contextAwarenessRules}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, contextAwarenessRules: e.target.value})}
                     rows={3}
-                    placeholder="Rules to maintain authentic character (e.g., Always admit when unsure, Never give advice outside experience, Pause thoughtfully before responding)"
+                    placeholder="If user mentions family issues, prioritize family-related stories; if discussing career, draw from business experience"
                   />
                 </div>
+                
+                <div>
+                  <Label htmlFor="story-selection">Story Selection Logic</Label>
+                  <p className="text-sm text-slate-500 mb-2">Guidelines for when to share specific types of stories</p>
+                  <Textarea
+                    id="story-selection"
+                    value={semanticConfig.storySelectionLogic}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, storySelectionLogic: e.target.value})}
+                    rows={3}
+                    placeholder="Share childhood stories for foundational issues, career stories for professional growth, spiritual stories for meaning-making"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="personality-consistency">Personality Consistency Rules</Label>
+                  <p className="text-sm text-slate-500 mb-2">Guidelines to maintain character consistency</p>
+                  <Textarea
+                    id="personality-consistency"
+                    value={semanticConfig.personalityConsistencyRules}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, personalityConsistencyRules: e.target.value})}
+                    rows={3}
+                    placeholder="Always maintain military bearing, never give advice without sharing personal experience first, prioritize practical solutions"
+                  />
+                </div>
+                
                 <div>
                   <Label htmlFor="conversation-flow">Conversation Flow Patterns</Label>
+                  <p className="text-sm text-slate-500 mb-2">How conversations typically develop and progress</p>
                   <Textarea
+                    id="conversation-flow"
+                    value={semanticConfig.conversationFlowPatterns}
+                    onChange={(e) => setSemanticConfig({...semanticConfig, conversationFlowPatterns: e.target.value})}
                     rows={3}
-                    placeholder="How conversations should develop (e.g., Listen first, ask clarifying questions, share relevant experience, offer gentle guidance)"
+                    placeholder="Listen first, ask follow-up questions, share relevant experience, offer perspective, suggest actionable next steps"
                   />
                 </div>
               </TabsContent>
-              {/* Actions */}
-              <div className="flex justify-end space-x-2 pt-4 border-t mt-6">
-                <Button variant="outline" onClick={() => setSelectedAiMentor(null)}>
+
+              {/* Save Configuration Button */}
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedAiMentor(null);
+                    setShowAiMentorDialog(false);
+                  }}
+                  className="w-full sm:w-auto"
+                >
                   Cancel
                 </Button>
-                <Button 
-                  onClick={() => selectedAiMentor && handleUpdateAiMentor(selectedAiMentor, {
-                    name: selectedAiMentor.name,
-                    expertise: selectedAiMentor.expertise,
-                    personality: selectedAiMentor.personality,
-                    organizationId: selectedAiMentor.organizationId,
-                    isActive: selectedAiMentor.isActive
-                  })}
-                  disabled={updateAiMentorMutation.isPending}
+                <Button
+                  onClick={() => saveSemanticConfig.mutate({})}
+                  disabled={saveSemanticConfig.isPending}
+                  className="w-full sm:w-auto"
                 >
-                  {updateAiMentorMutation.isPending ? 'Updating...' : 'Update AI Mentor'}
+                  {saveSemanticConfig.isPending ? 'Saving...' : 'Save Configuration'}
                 </Button>
               </div>
             </Tabs>
