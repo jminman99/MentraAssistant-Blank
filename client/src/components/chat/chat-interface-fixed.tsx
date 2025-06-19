@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -91,7 +91,7 @@ export function ChatInterface() {
     }
   }, [messages?.length]);
 
-  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !selectedMentorId || !user || sendMessageMutation.isPending) return;
 
@@ -245,20 +245,26 @@ export function ChatInterface() {
 
       {/* Message Input */}
       <div className="border-t border-slate-200 p-4">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-          <div className="flex-1 relative">
-            <Input
-              type="text"
+        <form onSubmit={handleSendMessage} className="space-y-3">
+          <div className="relative">
+            <Textarea
               placeholder={`Ask ${selectedMentor?.name || 'your mentor'} for guidance...`}
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
-              className="pr-12"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }
+              }}
+              className="min-h-[60px] max-h-[120px] pr-12 resize-none"
               disabled={sendMessageMutation.isPending || !selectedMentorId}
+              rows={2}
             />
             <Button
               type="submit"
               size="sm"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+              className="absolute right-2 bottom-2 h-8 w-8 p-0"
               disabled={!messageInput.trim() || sendMessageMutation.isPending || !selectedMentorId}
             >
               <Send className="h-4 w-4" />
@@ -266,7 +272,7 @@ export function ChatInterface() {
           </div>
         </form>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-          <span>Press Enter to send</span>
+          <span>Enter to send • Shift+Enter for new line</span>
           <span>
             {user ? user.messagesLimit - user.messagesUsed : 0} messages remaining this month
           </span>
