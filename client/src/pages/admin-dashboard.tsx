@@ -438,12 +438,12 @@ export default function AdminDashboard() {
           
           {selectedAiMentor ? (
             <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-0.5">
-                <TabsTrigger value="basic" className="text-xs md:text-sm px-1 md:px-3">Basic</TabsTrigger>
-                <TabsTrigger value="personality" className="text-xs md:text-sm px-1 md:px-3">Person</TabsTrigger>
-                <TabsTrigger value="stories" className="text-xs md:text-sm px-1 md:px-3">Stories</TabsTrigger>
-                <TabsTrigger value="communication" className="text-xs md:text-sm px-1 md:px-3 col-span-2 md:col-span-1">Comm</TabsTrigger>
-                <TabsTrigger value="semantic" className="text-xs md:text-sm px-1 md:px-3 col-span-3 md:col-span-1">Advanced</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5 gap-0">
+                <TabsTrigger value="basic" className="text-xs px-1">Info</TabsTrigger>
+                <TabsTrigger value="personality" className="text-xs px-1">Style</TabsTrigger>
+                <TabsTrigger value="stories" className="text-xs px-1">Stories</TabsTrigger>
+                <TabsTrigger value="communication" className="text-xs px-1">Words</TabsTrigger>
+                <TabsTrigger value="semantic" className="text-xs px-1">Rules</TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}

@@ -277,7 +277,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 19, 2025: Created comprehensive AI mentor semantic layer system with Elder Thomas template for authentic, story-driven personalities
 - June 19, 2025: Built five-tab configuration interface allowing complete customization of mentor personalities, life stories, communication patterns, and semantic behavior
 - June 19, 2025: Added mentor life stories database schema with categorized narratives, lessons, keywords, and emotional tones for authentic AI responses
-- June 19, 2025: Fixed mobile responsiveness issues in admin dashboard configuration interface - resolved overlapping text by removing "semantic" from headers, improved tab layout, added proper spacing for mobile devices
+- June 19, 2025: Fixed mobile responsiveness issues in admin dashboard configuration interface - resolved overlapping text by simplifying tab labels to single words (Info, Style, Stories, Words, Rules), improved mobile tab layout
 
 ## Changelog
 
