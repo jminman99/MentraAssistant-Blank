@@ -132,12 +132,14 @@ export function ChatInterface() {
   useEffect(() => {
     const chatContainer = document.getElementById('chatMessages');
     if (chatContainer && messages?.length > 0) {
-      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      // Use requestAnimationFrame and setTimeout for better mobile performance
       requestAnimationFrame(() => {
-        chatContainer.scrollTo({
-          top: chatContainer.scrollHeight,
-          behavior: 'smooth'
-        });
+        setTimeout(() => {
+          chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'auto' // Use auto instead of smooth for mobile
+          });
+        }, 50);
       });
     }
   }, [messages?.length]);
@@ -221,7 +223,7 @@ export function ChatInterface() {
       </div>
 
       {/* Chat Messages */}
-      <div className="h-96 overflow-y-auto p-4 space-y-4 scroll-smooth" id="chatMessages">
+      <div className="h-96 overflow-y-auto p-4 space-y-4 scroll-smooth overscroll-contain" id="chatMessages" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 && selectedMentor && (
           <div className="flex items-start space-x-3">
             <img 
