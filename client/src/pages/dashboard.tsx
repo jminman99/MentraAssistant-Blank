@@ -9,28 +9,103 @@ import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
 import { BookingModal } from "@/components/booking/booking-modal";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
+import CalendarAvailability from "@/components/calendar-availability";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { addDays } from "date-fns";
+
+// Council booking form schema
+const councilBookingSchema = z.object({
+  selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
+  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
+  questions: z.string().optional(),
+  preferredDate: z.date(),
+  preferredTime: z.string(),
+});
+
+type CouncilBookingData = z.infer<typeof councilBookingSchema>;
 
 // Council Scheduling Component - Fully Integrated into Dashboard
 function CouncilSchedulingContent() {
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Fetch available mentors for council sessions
   const { data: mentors = [], isLoading } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
   });
 
+  const form = useForm<CouncilBookingData>({
+    resolver: zodResolver(councilBookingSchema),
+    defaultValues: {
+      selectedMentorIds: [],
+      sessionGoals: "",
+      questions: "",
+      preferredDate: addDays(new Date(), 7),
+      preferredTime: "",
+    },
+  });
+
+  // Submit council session booking
+  const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
+    mutationFn: async (data: CouncilBookingData) => {
+      const requestBody = {
+        selectedMentorIds: data.selectedMentorIds,
+        sessionGoals: data.sessionGoals,
+        questions: data.questions,
+        preferredDate: data.preferredDate.toISOString(),
+        preferredTimeSlot: data.preferredTime,
+      };
+      
+      const response = await apiRequest("POST", '/api/council-sessions/book', requestBody);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Council Session Booked",
+        description: "Your council session has been scheduled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/council-sessions'] });
+      setShowBookingForm(false);
+      setSelectedMentors([]);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Failed to book council session",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleMentorSelection = (mentorId: number) => {
-    setSelectedMentors(prev => 
-      prev.includes(mentorId) 
+    setSelectedMentors(prev => {
+      const newSelection = prev.includes(mentorId) 
         ? prev.filter(id => id !== mentorId)
-        : prev.length < 5 ? [...prev, mentorId] : prev
-    );
+        : prev.length < 5 ? [...prev, mentorId] : prev;
+      
+      form.setValue('selectedMentorIds', newSelection);
+      return newSelection;
+    });
   };
 
   const hasMinimumMentors = selectedMentors.length >= 3;
+
+  const onSubmit = (data: CouncilBookingData) => {
+    bookCouncilSession(data);
+  };
 
   if (showBookingForm && hasMinimumMentors) {
     return (
@@ -46,22 +121,100 @@ function CouncilSchedulingContent() {
           </Button>
         </div>
         <div className="p-6">
-          <p className="text-slate-600 mb-6">
-            Booking form for {selectedMentors.length} selected mentors will be implemented here.
-            This integrates the real calendar availability system.
-          </p>
-          <div className="space-y-4">
-            <h3 className="font-medium">Selected Mentors:</h3>
-            {selectedMentors.map(mentorId => {
-              const mentor = mentors.find(m => m.id === mentorId);
-              return mentor ? (
-                <div key={mentorId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                  <span className="font-medium">{mentor.user?.firstName} {mentor.user?.lastName}</span>
-                  <span className="text-slate-600">{mentor.expertise}</span>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Selected Mentors Display */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-slate-900">Selected Council Members ({selectedMentors.length})</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {selectedMentors.map(mentorId => {
+                    const mentor = mentors.find(m => m.id === mentorId);
+                    return mentor ? (
+                      <div key={mentorId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                        <span className="font-medium">{mentor.user?.firstName} {mentor.user?.lastName}</span>
+                        <span className="text-slate-600 text-sm">{mentor.expertise}</span>
+                      </div>
+                    ) : null;
+                  })}
                 </div>
-              ) : null;
-            })}
-          </div>
+              </div>
+
+              {/* Calendar Availability */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-900">Select Date & Time</h4>
+                <p className="text-sm text-slate-600">
+                  Choose a specific date and time when all selected mentors are available.
+                </p>
+                <CalendarAvailability
+                  selectedMentors={selectedMentors}
+                  mentors={mentors}
+                  onTimeSelect={(date, time) => {
+                    setSelectedDate(date);
+                    setSelectedTime(time);
+                    form.setValue('preferredDate', date);
+                    form.setValue('preferredTime', time);
+                  }}
+                  selectedDate={selectedDate}
+                  selectedTime={selectedTime}
+                />
+              </div>
+
+              {/* Session Goals */}
+              <FormField
+                control={form.control}
+                name="sessionGoals"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session Goals</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe what you want to accomplish in this council session..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Optional Questions */}
+              <FormField
+                control={form.control}
+                name="questions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Specific Questions (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any specific questions you'd like the council to address..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="submit"
+                  disabled={isBooking || !selectedDate || !selectedTime}
+                  className="bg-amber-500 hover:bg-amber-600"
+                >
+                  {isBooking ? "Booking..." : "Book Council Session"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBookingForm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
       </div>
     );

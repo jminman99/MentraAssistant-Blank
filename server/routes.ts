@@ -40,12 +40,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Simplified auth middleware
+  // Enhanced auth middleware that loads full user data
   const requireAuth = async (req: any, res: any, next: any) => {
-    if (req.isAuthenticated() && req.user) {
-      return next();
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
     }
-    res.status(401).json({ message: 'Authentication required' });
+    
+    try {
+      // Load full user data including subscription plan
+      const fullUser = await storage.getUser(req.user.id);
+      if (!fullUser) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      req.user = fullUser; // Replace session user with full database user
+      next();
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      res.status(500).json({ message: 'Authentication error' });
+    }
   };
 
   // Admin authentication middleware
@@ -705,16 +718,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/council-sessions/book', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      console.log('Council booking attempt by user:', user?.id, 'plan:', user?.subscriptionPlan);
+      console.log('Request body:', req.body);
       
       // Check if user has council plan access
       if (user.subscriptionPlan !== 'council') {
+        console.log('User does not have council plan:', user.subscriptionPlan);
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
       }
       
       const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
 
+      // Validate required fields
+      if (!sessionGoals) {
+        console.log('Missing session goals');
+        return res.status(400).json({ message: "Session goals are required" });
+      }
+      
+      if (!preferredDate) {
+        console.log('Missing preferred date');
+        return res.status(400).json({ message: "Preferred date is required" });
+      }
+      
+      if (!preferredTimeSlot) {
+        console.log('Missing preferred time slot');
+        return res.status(400).json({ message: "Preferred time slot is required" });
+      }
+
       // Validate mentor selection
       if (!selectedMentorIds || selectedMentorIds.length < 3 || selectedMentorIds.length > 5) {
+        console.log('Invalid mentor selection:', selectedMentorIds?.length);
         return res.status(400).json({ message: "Please select 3-5 mentors for your council session" });
       }
 
