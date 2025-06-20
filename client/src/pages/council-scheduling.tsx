@@ -17,13 +17,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CalendarDays, Clock, Users, Video, MessageSquare, Check, Star } from "lucide-react";
 import { format, addDays, isBefore, startOfDay } from "date-fns";
+import CalendarAvailability from "@/components/calendar-availability";
 
 const councilBookingSchema = z.object({
   selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
   sessionGoals: z.string().min(10, "Please describe your goals for the session"),
   questions: z.string().optional(),
   preferredDate: z.date(),
-  preferredTimeSlot: z.string(),
+  preferredTime: z.string(),
 });
 
 type CouncilBookingData = z.infer<typeof councilBookingSchema>;
@@ -47,6 +48,8 @@ export default function CouncilScheduling() {
   
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>();
 
   const form = useForm<CouncilBookingData>({
     resolver: zodResolver(councilBookingSchema),
@@ -55,7 +58,7 @@ export default function CouncilScheduling() {
       sessionGoals: "",
       questions: "",
       preferredDate: addDays(new Date(), 7), // Default to next week
-      preferredTimeSlot: "morning",
+      preferredTime: "",
     },
   });
 
@@ -77,7 +80,7 @@ export default function CouncilScheduling() {
         sessionGoals: data.sessionGoals,
         questions: data.questions,
         preferredDate: data.preferredDate.toISOString(),
-        preferredTimeSlot: data.preferredTimeSlot,
+        preferredTimeSlot: data.preferredTime,
       };
       
       const response = await apiRequest("POST", '/api/council-sessions/book', requestBody);
@@ -132,8 +135,9 @@ export default function CouncilScheduling() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           Council Sessions
         </h1>
@@ -331,30 +335,25 @@ export default function CouncilScheduling() {
                 )}
               />
 
-              {/* Time Slot Preference */}
-              <FormField
-                control={form.control}
-                name="preferredTimeSlot"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preferred Time Slot</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a time preference" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning (9 AM - 12 PM)</SelectItem>
-                        <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
-                        <SelectItem value="evening">Evening (5 PM - 8 PM)</SelectItem>
-                        <SelectItem value="flexible">Flexible</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Real Calendar Availability */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-900">Select Date & Time</h4>
+                <p className="text-sm text-slate-600">
+                  Choose a specific date and time when all selected mentors are available.
+                </p>
+                <CalendarAvailability
+                  selectedMentors={selectedMentors}
+                  mentors={mentors || []}
+                  onTimeSelect={(date, time) => {
+                    setSelectedDate(date);
+                    setSelectedTime(time);
+                    form.setValue('preferredDate', date);
+                    form.setValue('preferredTime', time);
+                  }}
+                  selectedDate={selectedDate}
+                  selectedTime={selectedTime}
+                />
+              </div>
 
               {/* Session Goals */}
               <FormField
@@ -414,6 +413,7 @@ export default function CouncilScheduling() {
           </Form>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

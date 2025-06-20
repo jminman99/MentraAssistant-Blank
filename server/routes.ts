@@ -599,6 +599,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mentor availability checking endpoint
+  app.post('/api/mentor-availability', requireAuth, async (req, res) => {
+    try {
+      const { mentorIds, date } = req.body;
+      
+      if (!mentorIds || !Array.isArray(mentorIds) || mentorIds.length === 0) {
+        return res.status(400).json({ message: 'Mentor IDs are required' });
+      }
+      
+      if (!date) {
+        return res.status(400).json({ message: 'Date is required' });
+      }
+
+      // Get mentor availability for the specified date
+      const availability: { [key: number]: string[] } = {};
+      
+      for (const mentorId of mentorIds) {
+        const mentorAvailability = await storage.getMentorAvailability(mentorId);
+        const dayOfWeek = new Date(date).getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Convert day number to day name
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayName = dayNames[dayOfWeek];
+        
+        // Find availability for this day of week
+        const dayAvailability = mentorAvailability.find(
+          avail => {
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const availDayName = dayNames[avail.dayOfWeek];
+            return availDayName === dayName && avail.isActive;
+          }
+        );
+        
+        if (dayAvailability) {
+          // Generate hourly slots from 9 AM to 5 PM by default
+          const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+          
+          // Check for any booked sessions that conflict
+          const existingBookings = await storage.getSessionBookings(undefined, mentorId);
+          const conflictingTimes = existingBookings
+            .filter(booking => {
+              const bookingDate = new Date(booking.scheduledDate);
+              const targetDate = new Date(date);
+              return bookingDate.toDateString() === targetDate.toDateString();
+            })
+            .map(booking => {
+              // Extract time from the full datetime
+              const bookingDate = new Date(booking.scheduledDate);
+              return bookingDate.toTimeString().slice(0, 5); // "HH:MM" format
+            });
+          
+          availability[mentorId] = timeSlots.filter(slot => !conflictingTimes.includes(slot));
+        } else {
+          availability[mentorId] = []; // No availability for this day
+        }
+      }
+      
+      res.json(availability);
+    } catch (error) {
+      console.error('Error checking mentor availability:', error);
+      res.status(500).json({ message: 'Failed to check availability' });
+    }
+  });
+
   // Council Sessions routes
   app.get('/api/council-sessions', requireAuth, async (req, res) => {
     try {

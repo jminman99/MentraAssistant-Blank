@@ -231,7 +231,7 @@ export default function Dashboard() {
                     Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
                     Your council plan includes one monthly council session with 3-5 mentors for $50.
                   </p>
-                  <Link href="/council">
+                  <Link href="/council-scheduling">
                     <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white">
                       Schedule Council Session
                     </Button>
@@ -316,15 +316,27 @@ export default function Dashboard() {
             <Sparkles className="h-5 w-5" />
             <span className="text-xs font-medium">Wisdom</span>
           </button>
-          <button
-            onClick={() => setSelectedTab("human-mentors")}
-            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-              selectedTab === "human-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
-            }`}
-          >
-            <Compass className="h-5 w-5" />
-            <span className="text-xs font-medium">Mentors</span>
-          </button>
+          {user.subscriptionPlan === 'council' ? (
+            <button
+              onClick={() => setSelectedTab("council")}
+              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+                selectedTab === "council" ? "text-primary bg-blue-50" : "text-slate-600"
+              }`}
+            >
+              <Crown className="h-5 w-5" />
+              <span className="text-xs font-medium">Council</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setSelectedTab("human-mentors")}
+              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+                selectedTab === "human-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
+              }`}
+            >
+              <Compass className="h-5 w-5" />
+              <span className="text-xs font-medium">Mentors</span>
+            </button>
+          )}
           <button
             onClick={() => setSelectedTab("sessions")}
             className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
