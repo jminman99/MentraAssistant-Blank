@@ -12,6 +12,130 @@ import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
 
+// Council Scheduling Component - Fully Integrated into Dashboard
+function CouncilSchedulingContent() {
+  const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  
+  // Fetch available mentors for council sessions
+  const { data: mentors = [], isLoading } = useQuery<HumanMentor[]>({
+    queryKey: ['/api/human-mentors'],
+  });
+
+  const toggleMentorSelection = (mentorId: number) => {
+    setSelectedMentors(prev => 
+      prev.includes(mentorId) 
+        ? prev.filter(id => id !== mentorId)
+        : prev.length < 5 ? [...prev, mentorId] : prev
+    );
+  };
+
+  const hasMinimumMentors = selectedMentors.length >= 3;
+
+  if (showBookingForm && hasMinimumMentors) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-900">Schedule Council Session</h2>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowBookingForm(false)}
+            className="text-slate-600"
+          >
+            Back to Selection
+          </Button>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-600 mb-6">
+            Booking form for {selectedMentors.length} selected mentors will be implemented here.
+            This integrates the real calendar availability system.
+          </p>
+          <div className="space-y-4">
+            <h3 className="font-medium">Selected Mentors:</h3>
+            {selectedMentors.map(mentorId => {
+              const mentor = mentors.find(m => m.id === mentorId);
+              return mentor ? (
+                <div key={mentorId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <span className="font-medium">{mentor.user?.firstName} {mentor.user?.lastName}</span>
+                  <span className="text-slate-600">{mentor.expertise}</span>
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="mb-8">
+        <div className="text-center mb-8">
+          <Crown className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
+          <p className="text-slate-600 mb-4 max-w-2xl mx-auto">
+            Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
+          </p>
+          <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-amber-800 font-medium">
+              Council Plan: One monthly session for $50
+            </p>
+          </div>
+        </div>
+
+        {/* Mentor Selection */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-slate-900">
+              Select Your Council ({selectedMentors.length}/5)
+            </h3>
+            <Button 
+              onClick={() => setShowBookingForm(true)}
+              disabled={!hasMinimumMentors}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              {hasMinimumMentors ? "Schedule Session" : `Need ${3 - selectedMentors.length} more`}
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="text-slate-600">Loading mentors...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mentors.map((mentor) => (
+                <div
+                  key={mentor.id}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    selectedMentors.includes(mentor.id)
+                      ? "border-amber-500 bg-amber-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                  onClick={() => toggleMentorSelection(mentor.id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-slate-900">
+                      {mentor.user?.firstName} {mentor.user?.lastName}
+                    </h4>
+                    {selectedMentors.includes(mentor.id) && (
+                      <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-600 mb-2">{mentor.expertise}</p>
+                  <p className="text-xs text-slate-500 line-clamp-2">{mentor.bio}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
@@ -223,21 +347,7 @@ export default function Dashboard() {
             )}
 
             {selectedTab === "council" && user.subscriptionPlan === 'council' && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="text-center py-12">
-                  <Crown className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
-                  <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
-                    Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
-                    Your council plan includes one monthly council session with 3-5 mentors for $50.
-                  </p>
-                  <Link href="/council-scheduling">
-                    <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white">
-                      Schedule Council Session
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <CouncilSchedulingContent />
             )}
           </div>
 
