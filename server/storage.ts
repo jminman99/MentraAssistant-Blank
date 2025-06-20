@@ -149,6 +149,9 @@ export interface IStorage {
   // Council Participant methods  
   getCouncilParticipants(menteeId: number): Promise<CouncilParticipant[]>;
   createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant>;
+  
+  // Council Mentor methods
+  createCouncilMentor(mentor: InsertCouncilMentor): Promise<CouncilMentor>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -765,6 +768,11 @@ export class DatabaseStorage implements IStorage {
 
   async createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant> {
     const [result] = await db.insert(councilParticipants).values(participant).returning();
+    return result;
+  }
+
+  async createCouncilMentor(mentor: InsertCouncilMentor): Promise<CouncilMentor> {
+    const [result] = await db.insert(councilMentors).values(mentor).returning();
     return result;
   }
 }

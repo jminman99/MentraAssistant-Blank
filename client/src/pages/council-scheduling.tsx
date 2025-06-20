@@ -9,39 +9,35 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarDays, Clock, Users, Video, MessageSquare } from "lucide-react";
+import { CalendarDays, Clock, Users, Video, MessageSquare, Check, Star } from "lucide-react";
 import { format, addDays, isBefore, startOfDay } from "date-fns";
 
-const councilParticipantSchema = z.object({
+const councilBookingSchema = z.object({
+  selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
   sessionGoals: z.string().min(10, "Please describe your goals for the session"),
   questions: z.string().optional(),
+  preferredDate: z.date(),
+  preferredTimeSlot: z.string(),
 });
 
-type CouncilParticipantData = z.infer<typeof councilParticipantSchema>;
+type CouncilBookingData = z.infer<typeof councilBookingSchema>;
 
-interface CouncilSession {
+interface HumanMentor {
   id: number;
-  title: string;
-  description?: string;
-  scheduledDate: string;
-  duration: number;
-  maxMentees: number;
-  currentMentees: number;
-  meetingType: string;
-  status: string;
-  mentors: Array<{
-    id: number;
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-    expertise: string;
-    role: string;
-  }>;
+  user: {
+    firstName: string;
+    lastName: string;
+  };
+  expertise: string;
+  bio: string;
+  rating: string | null;
+  hourlyRate: string;
 }
 
 export default function CouncilScheduling() {
@@ -49,281 +45,369 @@ export default function CouncilScheduling() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [selectedSession, setSelectedSession] = useState<CouncilSession | null>(null);
-  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
+  const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
 
-  const form = useForm<CouncilParticipantData>({
-    resolver: zodResolver(councilParticipantSchema),
+  const form = useForm<CouncilBookingData>({
+    resolver: zodResolver(councilBookingSchema),
     defaultValues: {
+      selectedMentorIds: [],
       sessionGoals: "",
       questions: "",
+      preferredDate: addDays(new Date(), 7), // Default to next week
+      preferredTimeSlot: "morning",
     },
   });
 
-  // Fetch upcoming council sessions
-  const { data: councilSessions, isLoading } = useQuery<CouncilSession[]>({
-    queryKey: ['/api/council-sessions'],
+  // Fetch available mentors for council sessions
+  const { data: mentors, isLoading } = useQuery<HumanMentor[]>({
+    queryKey: ['/api/human-mentors'],
   });
 
-  // Fetch user's council registrations
-  const { data: userRegistrations } = useQuery({
-    queryKey: ['/api/council-registrations'],
+  // Fetch user's existing council bookings
+  const { data: userBookings } = useQuery({
+    queryKey: ['/api/council-bookings'],
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: CouncilParticipantData) => {
-      return apiRequest('/api/council-sessions/register', 'POST', {
-        councilSessionId: selectedSession!.id,
-        ...data,
+  // Submit council session booking
+  const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
+    mutationFn: async (data: CouncilBookingData) => {
+      return apiRequest('/api/council-sessions/book', {
+        method: "POST",
+        body: JSON.stringify({
+          ...data,
+          selectedMentorIds: selectedMentors,
+          preferredDate: data.preferredDate.toISOString(),
+        }),
       });
     },
     onSuccess: () => {
       toast({
-        title: "Registration Successful",
-        description: "You've successfully registered for the council session. You'll receive a confirmation email shortly.",
+        title: "Council Session Requested",
+        description: "Your council session request has been submitted. We'll coordinate with your selected mentors and confirm the time within 72 hours.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/council-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/council-registrations'] });
-      setShowRegistrationDialog(false);
-      setSelectedSession(null);
+      setShowBookingDialog(false);
+      setSelectedMentors([]);
+      form.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
-        title: "Registration Failed",
-        description: "Failed to register for the council session. Please try again.",
+        title: "Booking Failed",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSessionSelect = (session: CouncilSession) => {
-    if (session.currentMentees >= session.maxMentees) {
-      toast({
-        title: "Session Full",
-        description: "This council session is currently full. Please check back later or contact support.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setSelectedSession(session);
-    setShowRegistrationDialog(true);
+  const toggleMentorSelection = (mentorId: number) => {
+    setSelectedMentors(prev => {
+      const newSelection = prev.includes(mentorId)
+        ? prev.filter(id => id !== mentorId)
+        : [...prev, mentorId];
+      
+      // Update form value
+      form.setValue('selectedMentorIds', newSelection);
+      return newSelection;
+    });
   };
 
-  const onSubmit = (data: CouncilParticipantData) => {
-    registerMutation.mutate(data);
-  };
+  const canAddMoreMentors = selectedMentors.length < 5;
+  const hasMinimumMentors = selectedMentors.length >= 3;
 
-  const isRegistered = (sessionId: number) => {
-    return userRegistrations?.some((reg: any) => reg.councilSessionId === sessionId);
+  const onSubmit = (data: CouncilBookingData) => {
+    bookCouncilSession(data);
   };
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="space-y-4">
-          <div className="h-8 bg-slate-200 rounded animate-pulse" />
-          <div className="h-64 bg-slate-200 rounded animate-pulse" />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading mentors...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Council Sessions - Group Mentoring
-            </CardTitle>
-            <CardDescription>
-              Join council sessions with 3-5 experienced mentors for comprehensive guidance and diverse perspectives
-            </CardDescription>
-          </CardHeader>
-        </Card>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+          Council Sessions
+        </h1>
+        <p className="text-lg text-slate-600 dark:text-slate-400 mb-4">
+          Build your council of 3-5 mentors for a single one-hour session
+        </p>
+        
+        <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold text-white mb-2">
+            "Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all."
+          </h2>
+          <p className="text-slate-300">
+            Select your panel of mentors and we'll coordinate a single session where all your chosen guides come together to provide comprehensive wisdom for your specific challenge.
+          </p>
+        </div>
+      </div>
 
-        <div className="space-y-6">
-          {councilSessions?.length ? (
-            councilSessions.map((session) => (
-              <Card key={session.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl">{session.title}</CardTitle>
-                      {session.description && (
-                        <CardDescription className="mt-2">
-                          {session.description}
-                        </CardDescription>
-                      )}
-                    </div>
-                    <Badge variant={session.status === 'scheduled' ? 'default' : 'secondary'}>
-                      {session.status}
-                    </Badge>
+      {/* Mentor Selection */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            Select Your Council ({selectedMentors.length}/5)
+          </h2>
+          <div className="flex items-center gap-4">
+            <Badge variant={hasMinimumMentors ? "default" : "secondary"}>
+              {hasMinimumMentors ? "Ready to Book" : `Need ${3 - selectedMentors.length} more`}
+            </Badge>
+            <Button 
+              onClick={() => setShowBookingDialog(true)}
+              disabled={!hasMinimumMentors}
+              className="bg-slate-800 hover:bg-slate-700"
+            >
+              Book Council Session
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mentors?.map((mentor) => (
+            <Card 
+              key={mentor.id} 
+              className={`cursor-pointer transition-all duration-200 ${
+                selectedMentors.includes(mentor.id)
+                  ? 'ring-2 ring-slate-800 bg-slate-50 dark:bg-slate-800'
+                  : 'hover:shadow-md'
+              } ${
+                !canAddMoreMentors && !selectedMentors.includes(mentor.id)
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              onClick={() => {
+                if (canAddMoreMentors || selectedMentors.includes(mentor.id)) {
+                  toggleMentorSelection(mentor.id);
+                }
+              }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    {mentor.user.firstName} {mentor.user.lastName}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {selectedMentors.includes(mentor.id) && (
+                      <Check className="h-5 w-5 text-green-600" />
+                    )}
+                    {mentor.rating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <span className="text-sm">{mentor.rating}</span>
+                      </div>
+                    )}
                   </div>
+                </div>
+                <Badge variant="outline" className="w-fit">
+                  {mentor.expertise}
+                </Badge>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600 dark:text-slate-400 text-sm mb-3 line-clamp-3">
+                  {mentor.bio}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">
+                    ${mentor.hourlyRate}/hour
+                  </span>
+                  <Checkbox 
+                    checked={selectedMentors.includes(mentor.id)}
+                    readOnly
+                    className="pointer-events-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {mentors && mentors.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+              No mentors available
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400">
+              Check back later for available mentors.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Existing Bookings */}
+      {userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Your Council Sessions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {userBookings.map((booking: any) => (
+              <Card key={booking.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">Council Session</CardTitle>
+                  <CardDescription>
+                    {booking.status === 'pending' ? 'Coordinating with mentors...' : booking.status}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Session Details */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CalendarDays className="h-4 w-4" />
-                        {format(new Date(session.scheduledDate), 'EEEE, MMMM do, yyyy')}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {format(new Date(session.scheduledDate), 'h:mm a')} ({session.duration} minutes)
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Video className="h-4 w-4" />
-                        {session.meetingType === 'video' ? 'Video Conference' : 'In Person'}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        {session.currentMentees}/{session.maxMentees} participants
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm">
+                        {booking.preferredDate ? format(new Date(booking.preferredDate), 'PPP') : 'Date TBD'}
+                      </span>
                     </div>
-
-                    {/* Council Mentors */}
-                    <div>
-                      <h4 className="font-medium mb-3">Council Mentors ({session.mentors?.length || 0})</h4>
-                      <div className="space-y-2">
-                        {session.mentors?.map((mentor) => (
-                          <div key={mentor.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
-                            <div>
-                              <p className="font-medium text-sm">
-                                {mentor.user.firstName} {mentor.user.lastName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {mentor.expertise}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {mentor.role === 'lead_mentor' ? 'Lead' : 'Mentor'}
-                            </Badge>
-                          </div>
-                        )) || (
-                          <p className="text-sm text-muted-foreground">
-                            Mentors will be assigned closer to the session date
-                          </p>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm">{booking.preferredTimeSlot || 'Time TBD'}</span>
                     </div>
-                  </div>
-
-                  <div className="mt-6 flex gap-3">
-                    {isRegistered(session.id) ? (
-                      <Badge variant="secondary" className="px-4 py-2">
-                        Registered
-                      </Badge>
-                    ) : (
-                      <Button
-                        onClick={() => handleSessionSelect(session)}
-                        disabled={session.currentMentees >= session.maxMentees || session.status !== 'scheduled'}
-                        className="flex items-center gap-2"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        {session.currentMentees >= session.maxMentees ? 'Session Full' : 'Join Council'}
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                      Back to Dashboard
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm">{booking.mentorCount || 0} mentors</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Council Sessions Available</h3>
-                <p className="text-muted-foreground mb-4">
-                  Council sessions are scheduled regularly. Check back soon or contact support for upcoming sessions.
-                </p>
-                <Button onClick={() => navigate('/dashboard')}>
-                  Back to Dashboard
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+            ))}
+          </div>
         </div>
+      )}
 
-        {/* Registration Dialog */}
-        <Dialog open={showRegistrationDialog} onOpenChange={setShowRegistrationDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Register for Council Session</DialogTitle>
-              <DialogDescription>
-                {selectedSession && (
-                  <>
-                    {selectedSession.title} - {format(new Date(selectedSession.scheduledDate), 'MMM do, yyyy at h:mm a')}
-                  </>
-                )}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="sessionGoals"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Session Goals *</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="What would you like to accomplish in this council session? What challenges are you facing?"
-                          className="resize-none"
-                          rows={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      {/* Booking Dialog */}
+      <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Book Your Council Session</DialogTitle>
+            <DialogDescription>
+              Schedule a one-hour session with your selected {selectedMentors.length} mentors. We'll coordinate their calendars and confirm the best time.
+            </DialogDescription>
+          </DialogHeader>
 
-                <FormField
-                  control={form.control}
-                  name="questions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Questions for the Council (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Any specific questions you'd like the council to address?"
-                          className="resize-none"
-                          rows={3}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={registerMutation.isPending}
-                    className="flex-1"
-                  >
-                    {registerMutation.isPending ? "Registering..." : "Register for Council"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowRegistrationDialog(false)}
-                  >
-                    Cancel
-                  </Button>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Selected Mentors Summary */}
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Your Selected Council:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {mentors?.filter(m => selectedMentors.includes(m.id)).map(mentor => (
+                    <Badge key={mentor.id} variant="secondary">
+                      {mentor.user.firstName} {mentor.user.lastName} - {mentor.expertise}
+                    </Badge>
+                  ))}
                 </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+              </div>
+
+              {/* Preferred Date */}
+              <FormField
+                control={form.control}
+                name="preferredDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Date</FormLabel>
+                    <FormControl>
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                        className="rounded-md border"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Time Slot Preference */}
+              <FormField
+                control={form.control}
+                name="preferredTimeSlot"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Time Slot</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a time preference" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning (9 AM - 12 PM)</SelectItem>
+                        <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
+                        <SelectItem value="evening">Evening (5 PM - 8 PM)</SelectItem>
+                        <SelectItem value="flexible">Flexible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Session Goals */}
+              <FormField
+                control={form.control}
+                name="sessionGoals"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Session Goals</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe what you want to accomplish in this council session..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Questions */}
+              <FormField
+                control={form.control}
+                name="questions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Specific Questions (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any specific questions you'd like to discuss with your council..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBookingDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isBooking}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700"
+                >
+                  {isBooking ? "Submitting..." : "Request Council Session"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -627,6 +627,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Council session booking endpoint - allows users to select 3-5 mentors for a single session
+  app.post('/api/council-sessions/book', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      // Check if user has council plan access
+      if (user.subscriptionPlan !== 'council') {
+        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+      
+      const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
+
+      // Validate mentor selection
+      if (!selectedMentorIds || selectedMentorIds.length < 3 || selectedMentorIds.length > 5) {
+        return res.status(400).json({ message: "Please select 3-5 mentors for your council session" });
+      }
+
+      // Create council session with coordination data
+      const councilSession = await storage.createCouncilSession({
+        title: `Council Session for ${user.firstName} ${user.lastName}`,
+        description: sessionGoals,
+        scheduledDate: new Date(preferredDate),
+        duration: 60, // 1 hour
+        maxMentees: 1,
+        currentMentees: 1,
+        meetingType: 'video',
+        status: 'pending',
+        organizationId: user.organizationId || 1,
+        // Enhanced coordination fields
+        proposedTimeSlots: JSON.stringify([{
+          date: preferredDate,
+          timeSlot: preferredTimeSlot,
+          priority: 1
+        }]),
+        mentorResponseDeadline: new Date(Date.now() + 72 * 60 * 60 * 1000), // 72 hours from now
+        finalTimeConfirmed: false,
+        coordinatorNotes: `User prefers ${preferredTimeSlot} on ${new Date(preferredDate).toLocaleDateString()}`,
+        mentorMinimum: 3,
+        mentorMaximum: 5,
+        coordinationStatus: 'pending'
+      });
+
+      // Add the user as the mentee participant
+      await storage.createCouncilParticipant({
+        councilSessionId: councilSession.id,
+        menteeId: user.id,
+        sessionGoals,
+        questions: questions || null,
+      });
+
+      // Add each selected mentor to the session using the councilMentors table
+      for (const mentorId of selectedMentorIds) {
+        await storage.createCouncilMentor({
+          councilSessionId: councilSession.id,
+          humanMentorId: mentorId,
+          role: 'mentor',
+          confirmed: false,
+          availabilityResponse: 'pending',
+          responseDate: null,
+          availableTimeSlots: null,
+          conflictNotes: null,
+          alternativeProposals: null,
+          notificationSent: false,
+          lastReminderSent: null,
+        });
+      }
+
+      res.json({ 
+        message: "Council session booking submitted successfully",
+        sessionId: councilSession.id,
+        coordinationStatus: 'pending'
+      });
+    } catch (error) {
+      console.error("Error booking council session:", error);
+      res.status(500).json({ message: "Failed to book council session" });
+    }
+  });
+
+  // Get user's council bookings
+  app.get('/api/council-bookings', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      // Check if user has council plan access
+      if (user.subscriptionPlan !== 'council') {
+        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+
+      const bookings = await storage.getCouncilParticipants(user.id);
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching council bookings:", error);
+      res.status(500).json({ message: "Failed to fetch council bookings" });
+    }
+  });
+
   app.post('/api/council-sessions/register', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
