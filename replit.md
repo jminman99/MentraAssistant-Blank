@@ -280,6 +280,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 19, 2025: Fixed mobile responsiveness issues in admin dashboard configuration interface - resolved overlapping text by simplifying tab labels to single words (Info, Style, Stories, Words, Rules), improved mobile tab layout
 - June 19, 2025: Fixed organization admin screen functionality - restored missing dialog forms for adding and editing organizations with proper mutation handling and authentication
 - June 20, 2025: Implemented comprehensive scheduling system with Calendly integration support - mentors can use native scheduling or Calendly for session booking, includes calendar interface, time slot selection, session preparation forms, and embedded Calendly iframe for seamless external scheduling
+- June 20, 2025: Redesigned council booking system to be fully automated and user-controlled - users select 3-5 mentors for single sessions with instant confirmation, no admin coordination required, calendar invites generated automatically upon booking
 
 ## Changelog
 

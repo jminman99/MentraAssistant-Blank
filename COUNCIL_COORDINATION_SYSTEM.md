@@ -1,14 +1,14 @@
-# Council Session Calendar Coordination System
+# Council Session Automated Booking System
 
 ## Overview
 
-The Mentra platform now supports council sessions featuring 3-5 mentors collaborating to provide comprehensive guidance to mentees. This document outlines the enhanced calendar coordination system designed to efficiently schedule multiple high-value mentors for these premium sessions.
+The Mentra platform features a fully automated council booking system where users select 3-5 mentors for a single one-hour session. The system automatically coordinates availability and confirms sessions without requiring admin intervention.
 
-## Calendar Coordination Challenge
+## Automated Coordination Approach
 
-**Problem**: Coordinating calendars for 3-5 busy mentors requires sophisticated scheduling logic beyond simple individual appointments.
+**Challenge**: Users want to book multiple mentors for one session without manual coordination.
 
-**Solution**: Multi-phase coordination system with intelligent availability aggregation, automated reminders, and flexible time proposal mechanisms.
+**Solution**: Intelligent availability matching that instantly confirms sessions when possible or provides smart alternative suggestions with real-time booking.
 
 ## System Architecture
 

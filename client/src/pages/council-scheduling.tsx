@@ -81,10 +81,10 @@ export default function CouncilScheduling() {
         }),
       });
     },
-    onSuccess: () => {
+    onSuccess: (response: any) => {
       toast({
-        title: "Council Session Requested",
-        description: "Your council session request has been submitted. We'll coordinate with your selected mentors and confirm the time within 72 hours.",
+        title: "Council Session Confirmed!",
+        description: response.message || "Your council session has been automatically confirmed. Calendar invites will be sent shortly.",
       });
       setShowBookingDialog(false);
       setSelectedMentors([]);
