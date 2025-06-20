@@ -67,14 +67,27 @@ export default function Dashboard() {
               >
                 Wisdom Guides
               </button>
-              <button 
-                onClick={() => setSelectedTab("human-mentors")}
-                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
-                  selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
-                }`}
-              >
-                Experienced Guides
-              </button>
+              {user.subscriptionPlan === 'council' && (
+                <button 
+                  onClick={() => setSelectedTab("council")}
+                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1 ${
+                    selectedTab === "council" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
+                  }`}
+                >
+                  <Crown className="w-3 h-3" />
+                  <span>Council</span>
+                </button>
+              )}
+              {user.subscriptionPlan !== 'council' && (
+                <button 
+                  onClick={() => setSelectedTab("human-mentors")}
+                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
+                    selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
+                  }`}
+                >
+                  Experienced Guides
+                </button>
+              )}
               <button 
                 onClick={() => setSelectedTab("sessions")}
                 className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
@@ -91,17 +104,6 @@ export default function Dashboard() {
               >
                 Plan & Usage
               </button>
-              {user.subscriptionPlan === 'council' && (
-                <button 
-                  onClick={() => setSelectedTab("council")}
-                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1 ${
-                    selectedTab === "council" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
-                  }`}
-                >
-                  <Crown className="w-3 h-3" />
-                  <span>Council</span>
-                </button>
-              )}
               {(user.role === 'admin' || user.role === 'super_admin') && (
                 <Link href="/admin">
                   <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
@@ -173,7 +175,7 @@ export default function Dashboard() {
           <div className="lg:col-span-2">
             {selectedTab === "ai-mentors" && <ChatInterface />}
             
-            {selectedTab === "human-mentors" && (
+            {selectedTab === "human-mentors" && user.subscriptionPlan !== 'council' && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-slate-900">Human Mentors</h2>
@@ -227,7 +229,7 @@ export default function Dashboard() {
                   <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
                   <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
                     Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
-                    Select 3-5 mentors for a single one-hour session focused on your specific challenges.
+                    Your council plan includes one monthly council session with 3-5 mentors for $50.
                   </p>
                   <Link href="/council">
                     <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white">
@@ -256,15 +258,28 @@ export default function Dashboard() {
                   <Sparkles className="h-4 w-4 mr-2" />
                   Wisdom Guides
                 </Button>
-                <Button 
-                  variant={selectedTab === "human-mentors" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTab("human-mentors")}
-                  className="w-full justify-start"
-                >
-                  <Compass className="h-4 w-4 mr-2" />
-                  Human Mentors
-                </Button>
+                {user.subscriptionPlan === 'council' && (
+                  <Button 
+                    variant={selectedTab === "council" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTab("council")}
+                    className="w-full justify-start"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Council Sessions
+                  </Button>
+                )}
+                {user.subscriptionPlan !== 'council' && (
+                  <Button 
+                    variant={selectedTab === "human-mentors" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTab("human-mentors")}
+                    className="w-full justify-start"
+                  >
+                    <Compass className="h-4 w-4 mr-2" />
+                    Human Mentors
+                  </Button>
+                )}
                 <Button 
                   variant={selectedTab === "sessions" ? "default" : "outline"}
                   size="sm"

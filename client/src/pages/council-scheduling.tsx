@@ -145,9 +145,14 @@ export default function CouncilScheduling() {
           <h2 className="text-xl font-semibold text-white mb-2">
             "Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all."
           </h2>
-          <p className="text-slate-300">
+          <p className="text-slate-300 mb-3">
             Select your panel of mentors and we'll coordinate a single session where all your chosen guides come together to provide comprehensive wisdom for your specific challenge.
           </p>
+          <div className="bg-amber-500/20 border border-amber-400/30 rounded-lg p-3">
+            <p className="text-amber-100 font-medium">
+              Council Plan: One monthly council session included for $50
+            </p>
+          </div>
         </div>
       </div>
 
@@ -217,7 +222,7 @@ export default function CouncilScheduling() {
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">
-                    ${mentor.hourlyRate}/hour
+                    Council Member
                   </span>
                   <Checkbox 
                     checked={selectedMentors.includes(mentor.id)}
