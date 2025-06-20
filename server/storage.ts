@@ -104,6 +104,28 @@ export interface IStorage {
   createMentorLifeStory(story: InsertMentorLifeStory): Promise<MentorLifeStory>;
   updateMentorLifeStory(id: number, updates: Partial<MentorLifeStory>): Promise<MentorLifeStory | undefined>;
   deleteMentorLifeStory(id: number): Promise<void>;
+
+  // Session Booking methods
+  getSessionBookings(userId?: number, mentorId?: number): Promise<(SessionBooking & { mentee: User, humanMentor: HumanMentor & { user: User } })[]>;
+  getSessionBooking(id: number): Promise<(SessionBooking & { mentee: User, humanMentor: HumanMentor & { user: User } }) | undefined>;
+  createSessionBooking(booking: InsertSessionBooking): Promise<SessionBooking>;
+  updateSessionBooking(id: number, updates: Partial<SessionBooking>): Promise<SessionBooking | undefined>;
+  cancelSessionBooking(id: number, reason?: string): Promise<SessionBooking | undefined>;
+
+  // Mentor Availability methods
+  getMentorAvailability(mentorId: number): Promise<MentorAvailability[]>;
+  createMentorAvailability(availability: InsertMentorAvailability): Promise<MentorAvailability>;
+  updateMentorAvailability(id: number, updates: Partial<MentorAvailability>): Promise<MentorAvailability | undefined>;
+  deleteMentorAvailability(id: number): Promise<void>;
+
+  // Mentor Unavailability methods
+  getMentorUnavailability(mentorId: number): Promise<MentorUnavailability[]>;
+  createMentorUnavailability(unavailability: InsertMentorUnavailability): Promise<MentorUnavailability>;
+  deleteMentorUnavailability(id: number): Promise<void>;
+
+  // Council Participant methods
+  getCouncilParticipants(sessionBookingId: number): Promise<(CouncilParticipant & { humanMentor: HumanMentor & { user: User } })[]>;
+  addCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -538,6 +560,144 @@ export class DatabaseStorage implements IStorage {
       .update(mentorLifeStories)
       .set({ isActive: false })
       .where(eq(mentorLifeStories.id, id));
+  }
+
+  // Session Booking methods
+  async getSessionBookings(userId?: number, mentorId?: number): Promise<(SessionBooking & { mentee: User, humanMentor: HumanMentor & { user: User } })[]> {
+    const mentorUsers = alias(users, 'mentorUsers');
+    
+    let query = db.select({
+      ...getTableColumns(sessionBookings),
+      mentee: getTableColumns(users),
+      humanMentor: {
+        ...getTableColumns(humanMentors),
+        user: getTableColumns(mentorUsers)
+      }
+    })
+    .from(sessionBookings)
+    .innerJoin(users, eq(sessionBookings.menteeId, users.id))
+    .innerJoin(humanMentors, eq(sessionBookings.humanMentorId, humanMentors.id))
+    .innerJoin(mentorUsers, eq(humanMentors.userId, mentorUsers.id));
+
+    if (userId) {
+      query = query.where(eq(sessionBookings.menteeId, userId));
+    }
+    if (mentorId) {
+      query = query.where(eq(sessionBookings.humanMentorId, mentorId));
+    }
+
+    const results = await query.orderBy(sessionBookings.scheduledDate);
+    return results as any;
+  }
+
+  async getSessionBooking(id: number): Promise<(SessionBooking & { mentee: User, humanMentor: HumanMentor & { user: User } }) | undefined> {
+    const mentorUsers = alias(users, 'mentorUsers');
+    
+    const [result] = await db.select({
+      ...getTableColumns(sessionBookings),
+      mentee: getTableColumns(users),
+      humanMentor: {
+        ...getTableColumns(humanMentors),
+        user: getTableColumns(mentorUsers)
+      }
+    })
+    .from(sessionBookings)
+    .innerJoin(users, eq(sessionBookings.menteeId, users.id))
+    .innerJoin(humanMentors, eq(sessionBookings.humanMentorId, humanMentors.id))
+    .innerJoin(mentorUsers, eq(humanMentors.userId, mentorUsers.id))
+    .where(eq(sessionBookings.id, id));
+
+    return result as any;
+  }
+
+  async createSessionBooking(booking: InsertSessionBooking): Promise<SessionBooking> {
+    const [result] = await db.insert(sessionBookings).values(booking).returning();
+    return result;
+  }
+
+  async updateSessionBooking(id: number, updates: Partial<SessionBooking>): Promise<SessionBooking | undefined> {
+    const [result] = await db
+      .update(sessionBookings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(sessionBookings.id, id))
+      .returning();
+    return result;
+  }
+
+  async cancelSessionBooking(id: number, reason?: string): Promise<SessionBooking | undefined> {
+    const [result] = await db
+      .update(sessionBookings)
+      .set({ 
+        status: 'cancelled',
+        sessionNotes: reason ? `Cancellation reason: ${reason}` : 'Session cancelled',
+        updatedAt: new Date() 
+      })
+      .where(eq(sessionBookings.id, id))
+      .returning();
+    return result;
+  }
+
+  // Mentor Availability methods
+  async getMentorAvailability(mentorId: number): Promise<MentorAvailability[]> {
+    return await db.select().from(mentorAvailability)
+      .where(and(eq(mentorAvailability.humanMentorId, mentorId), eq(mentorAvailability.isActive, true)))
+      .orderBy(mentorAvailability.dayOfWeek, mentorAvailability.startTime);
+  }
+
+  async createMentorAvailability(availability: InsertMentorAvailability): Promise<MentorAvailability> {
+    const [result] = await db.insert(mentorAvailability).values(availability).returning();
+    return result;
+  }
+
+  async updateMentorAvailability(id: number, updates: Partial<MentorAvailability>): Promise<MentorAvailability | undefined> {
+    const [result] = await db
+      .update(mentorAvailability)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(mentorAvailability.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteMentorAvailability(id: number): Promise<void> {
+    await db.delete(mentorAvailability).where(eq(mentorAvailability.id, id));
+  }
+
+  // Mentor Unavailability methods
+  async getMentorUnavailability(mentorId: number): Promise<MentorUnavailability[]> {
+    return await db.select().from(mentorUnavailability)
+      .where(eq(mentorUnavailability.humanMentorId, mentorId))
+      .orderBy(mentorUnavailability.startDate);
+  }
+
+  async createMentorUnavailability(unavailability: InsertMentorUnavailability): Promise<MentorUnavailability> {
+    const [result] = await db.insert(mentorUnavailability).values(unavailability).returning();
+    return result;
+  }
+
+  async deleteMentorUnavailability(id: number): Promise<void> {
+    await db.delete(mentorUnavailability).where(eq(mentorUnavailability.id, id));
+  }
+
+  // Council Participant methods
+  async getCouncilParticipants(sessionBookingId: number): Promise<(CouncilParticipant & { humanMentor: HumanMentor & { user: User } })[]> {
+    const results = await db.select({
+      ...getTableColumns(councilParticipants),
+      humanMentor: {
+        ...getTableColumns(humanMentors),
+        user: getTableColumns(users)
+      }
+    })
+    .from(councilParticipants)
+    .innerJoin(humanMentors, eq(councilParticipants.humanMentorId, humanMentors.id))
+    .innerJoin(users, eq(humanMentors.userId, users.id))
+    .where(eq(councilParticipants.sessionBookingId, sessionBookingId));
+
+    return results as any;
+  }
+
+  async addCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant> {
+    const [result] = await db.insert(councilParticipants).values(participant).returning();
+    return result;
   }
 }
 

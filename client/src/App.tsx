@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
+import Scheduling from "@/pages/scheduling";
 import { useAuth } from "@/lib/auth";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/welcome" component={Welcome} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
+      <Route path="/schedule/:mentorId" component={user ? Scheduling : Login} />
       <Route path="/mentor-application" component={MentorApplication} />
       <Route path="/admin" component={AdminRoute} />
       <Route component={NotFound} />

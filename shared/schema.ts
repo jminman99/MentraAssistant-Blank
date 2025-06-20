@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal, varchar, time } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -55,6 +55,19 @@ export const humanMentors = pgTable("human_mentors", {
   availability: jsonb("availability").notNull(), // JSON object with availability schedule
   isActive: boolean("is_active").notNull().default(true),
   organizationId: integer("organization_id").notNull(),
+  
+  // Calendly Integration
+  calendlyUrl: text("calendly_url"), // e.g., "https://calendly.com/john-mentor"
+  calendlyApiKey: text("calendly_api_key"), // Encrypted Calendly API key
+  calendlyEventTypes: jsonb("calendly_event_types"), // Store available event types
+  useCalendly: boolean("use_calendly").default(false),
+  
+  // Native Scheduling Settings
+  defaultSessionDuration: integer("default_session_duration").default(30), // minutes
+  bufferTime: integer("buffer_time").default(15), // minutes between sessions
+  advanceBookingDays: integer("advance_booking_days").default(30), // how far ahead can be booked
+  timezone: varchar("timezone", { length: 50 }).default("America/New_York"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -195,6 +208,80 @@ export const mentorApplications = pgTable("mentor_applications", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Session Bookings - Enhanced mentoring sessions with scheduling
+export const sessionBookings = pgTable("session_bookings", {
+  id: serial("id").primaryKey(),
+  menteeId: integer("mentee_id").notNull().references(() => users.id),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  sessionType: varchar("session_type", { length: 20 }).notNull(), // 'individual', 'council'
+  duration: integer("duration").notNull().default(30), // minutes
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
+  
+  // Meeting details
+  meetingType: varchar("meeting_type", { length: 20 }).notNull(), // 'video', 'in_person', 'calendly'
+  location: text("location"), // For in-person meetings
+  videoLink: text("video_link"), // For video meetings (Zoom, Teams, etc.)
+  calendlyEventId: text("calendly_event_id"), // Calendly event ID if booked via Calendly
+  calendlyEventUrl: text("calendly_event_url"), // Calendly join link
+  
+  // Preparation and goals
+  sessionGoals: text("session_goals"),
+  preparationNotes: text("preparation_notes"),
+  menteeQuestions: text("mentee_questions"),
+  
+  // Status and outcomes
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
+  sessionNotes: text("session_notes"),
+  followUpActions: text("follow_up_actions"),
+  mentorRating: integer("mentor_rating"), // 1-5 stars
+  menteeRating: integer("mentee_rating"), // 1-5 stars
+  feedback: text("feedback"),
+  
+  // Reminders and notifications
+  reminderSent: boolean("reminder_sent").default(false),
+  confirmationSent: boolean("confirmation_sent").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Council Session Participants (for group sessions)
+export const councilParticipants = pgTable("council_participants", {
+  id: serial("id").primaryKey(),
+  sessionBookingId: integer("session_booking_id").notNull().references(() => sessionBookings.id),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  role: varchar("role", { length: 20 }).notNull().default("mentor"), // 'mentor', 'lead_mentor'
+  joinedAt: timestamp("joined_at"),
+  leftAt: timestamp("left_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Mentor Availability Slots (for native scheduling)
+export const mentorAvailability = pgTable("mentor_availability", {
+  id: serial("id").primaryKey(),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 1 = Monday, etc.
+  startTime: varchar("start_time", { length: 8 }).notNull(), // e.g., "09:00:00"
+  endTime: varchar("end_time", { length: 8 }).notNull(), // e.g., "17:00:00"
+  timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Mentor Unavailability (for blocking specific times)
+export const mentorUnavailability = pgTable("mentor_unavailability", {
+  id: serial("id").primaryKey(),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  reason: text("reason"),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringPattern: varchar("recurring_pattern", { length: 50 }), // 'weekly', 'monthly', etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   organization: one(organizations, {
@@ -301,6 +388,43 @@ export const mentorApplicationsRelations = relations(mentorApplications, ({ one 
   }),
 }));
 
+export const sessionBookingsRelations = relations(sessionBookings, ({ one, many }) => ({
+  mentee: one(users, {
+    fields: [sessionBookings.menteeId],
+    references: [users.id],
+  }),
+  humanMentor: one(humanMentors, {
+    fields: [sessionBookings.humanMentorId],
+    references: [humanMentors.id],
+  }),
+  councilParticipants: many(councilParticipants),
+}));
+
+export const councilParticipantsRelations = relations(councilParticipants, ({ one }) => ({
+  sessionBooking: one(sessionBookings, {
+    fields: [councilParticipants.sessionBookingId],
+    references: [sessionBookings.id],
+  }),
+  humanMentor: one(humanMentors, {
+    fields: [councilParticipants.humanMentorId],
+    references: [humanMentors.id],
+  }),
+}));
+
+export const mentorAvailabilityRelations = relations(mentorAvailability, ({ one }) => ({
+  humanMentor: one(humanMentors, {
+    fields: [mentorAvailability.humanMentorId],
+    references: [humanMentors.id],
+  }),
+}));
+
+export const mentorUnavailabilityRelations = relations(mentorUnavailability, ({ one }) => ({
+  humanMentor: one(humanMentors, {
+    fields: [mentorUnavailability.humanMentorId],
+    references: [humanMentors.id],
+  }),
+}));
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -398,8 +522,38 @@ export const insertMentorLifeStorySchema = createInsertSchema(mentorLifeStories)
   updatedAt: true,
 });
 
+export const insertSessionBookingSchema = createInsertSchema(sessionBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCouncilParticipantSchema = createInsertSchema(councilParticipants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMentorAvailabilitySchema = createInsertSchema(mentorAvailability).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMentorUnavailabilitySchema = createInsertSchema(mentorUnavailability).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type MentorLifeStory = typeof mentorLifeStories.$inferSelect;
 export type InsertMentorLifeStory = z.infer<typeof insertMentorLifeStorySchema>;
+export type SessionBooking = typeof sessionBookings.$inferSelect;
+export type InsertSessionBooking = z.infer<typeof insertSessionBookingSchema>;
+export type CouncilParticipant = typeof councilParticipants.$inferSelect;
+export type InsertCouncilParticipant = z.infer<typeof insertCouncilParticipantSchema>;
+export type MentorAvailability = typeof mentorAvailability.$inferSelect;
+export type InsertMentorAvailability = z.infer<typeof insertMentorAvailabilitySchema>;
+export type MentorUnavailability = typeof mentorUnavailability.$inferSelect;
+export type InsertMentorUnavailability = z.infer<typeof insertMentorUnavailabilitySchema>;
 
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

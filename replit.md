@@ -279,6 +279,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 19, 2025: Added mentor life stories database schema with categorized narratives, lessons, keywords, and emotional tones for authentic AI responses
 - June 19, 2025: Fixed mobile responsiveness issues in admin dashboard configuration interface - resolved overlapping text by simplifying tab labels to single words (Info, Style, Stories, Words, Rules), improved mobile tab layout
 - June 19, 2025: Fixed organization admin screen functionality - restored missing dialog forms for adding and editing organizations with proper mutation handling and authentication
+- June 20, 2025: Implemented comprehensive scheduling system with Calendly integration support - mentors can use native scheduling or Calendly for session booking, includes calendar interface, time slot selection, session preparation forms, and embedded Calendly iframe for seamless external scheduling
 
 ## Changelog
 

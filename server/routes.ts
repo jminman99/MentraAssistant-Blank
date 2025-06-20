@@ -747,6 +747,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Session Booking Routes
+  app.get("/api/session-bookings", requireAuth, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.user?.id);
+      const mentorId = req.query.mentorId ? parseInt(req.query.mentorId as string) : undefined;
+      
+      const bookings = await storage.getSessionBookings(userId, mentorId);
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching session bookings:", error);
+      res.status(500).json({ message: "Failed to fetch session bookings" });
+    }
+  });
+
+  app.post("/api/session-bookings", requireAuth, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.user?.id);
+      const bookingData = {
+        ...req.body,
+        menteeId: userId,
+      };
+      
+      const booking = await storage.createSessionBooking(bookingData);
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error creating session booking:", error);
+      res.status(500).json({ message: "Failed to create session booking" });
+    }
+  });
+
+  // Calendly Integration Routes
+  app.get("/api/mentors/:id/calendly-info", async (req, res) => {
+    try {
+      const mentorId = parseInt(req.params.id);
+      const mentor = await storage.getHumanMentor(mentorId);
+      
+      if (!mentor) {
+        return res.status(404).json({ message: "Mentor not found" });
+      }
+      
+      res.json({
+        calendlyUrl: mentor.calendlyUrl,
+        useCalendly: mentor.useCalendly || false,
+        eventTypes: mentor.calendlyEventTypes || []
+      });
+    } catch (error) {
+      console.error("Error fetching Calendly data:", error);
+      res.status(500).json({ message: "Failed to fetch Calendly data" });
+    }
+  });
+
+  // Get available time slots for a mentor
+  app.get("/api/mentors/:id/available-slots", async (req, res) => {
+    try {
+      const mentorId = parseInt(req.params.id);
+      const date = req.query.date as string;
+      
+      if (!date) {
+        return res.status(400).json({ message: "Date parameter required" });
+      }
+      
+      const mentor = await storage.getHumanMentor(mentorId);
+      if (!mentor) {
+        return res.status(404).json({ message: "Mentor not found" });
+      }
+      
+      // If mentor uses Calendly, return Calendly integration info
+      if (mentor.useCalendly) {
+        return res.json({
+          useCalendly: true,
+          calendlyUrl: mentor.calendlyUrl,
+          message: "This mentor uses Calendly for scheduling"
+        });
+      }
+      
+      // Generate available slots for native scheduling
+      const dayOfWeek = new Date(date).getDay();
+      const slots = [
+        { startTime: "09:00", endTime: "09:30", available: true },
+        { startTime: "10:00", endTime: "10:30", available: true },
+        { startTime: "11:00", endTime: "11:30", available: true },
+        { startTime: "14:00", endTime: "14:30", available: true },
+        { startTime: "15:00", endTime: "15:30", available: true },
+        { startTime: "16:00", endTime: "16:30", available: true },
+      ];
+      
+      res.json({ slots, useCalendly: false });
+    } catch (error) {
+      console.error("Error fetching available slots:", error);
+      res.status(500).json({ message: "Failed to fetch available slots" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup for real-time chat
