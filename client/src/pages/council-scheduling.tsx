@@ -135,7 +135,7 @@ export default function CouncilScheduling() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
+    <div className="min-h-screen bg-slate-50 pb-40">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
@@ -271,16 +271,28 @@ export default function CouncilScheduling() {
                     <div className="flex items-center gap-2">
                       <CalendarDays className="h-4 w-4 text-slate-500" />
                       <span className="text-sm">
-                        {booking.preferredDate ? format(new Date(booking.preferredDate), 'PPP') : 'Date TBD'}
+                        {booking.scheduledDate ? format(new Date(booking.scheduledDate), 'PPP') : 'Date TBD'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm">{booking.preferredTimeSlot || 'Time TBD'}</span>
+                      <span className="text-sm">
+                        {booking.scheduledDate ? format(new Date(booking.scheduledDate), 'p') : 'Time TBD'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm">{booking.mentorCount || 0} mentors</span>
+                      <span className="text-sm">{booking.mentorCount || 3} mentors</span>
+                    </div>
+                    <div className="mt-3 p-3 bg-slate-50 rounded">
+                      <p className="text-sm text-slate-600 font-medium mb-1">Session Goals:</p>
+                      <p className="text-sm text-slate-700">{booking.sessionGoals}</p>
+                      {booking.questions && (
+                        <>
+                          <p className="text-sm text-slate-600 font-medium mt-2 mb-1">Questions:</p>
+                          <p className="text-sm text-slate-700">{booking.questions}</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
