@@ -92,12 +92,15 @@ export default function Dashboard() {
                 Plan & Usage
               </button>
               {user.subscriptionPlan === 'council' && (
-                <Link href="/council">
-                  <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
-                    <Crown className="w-3 h-3" />
-                    <span>Council</span>
-                  </button>
-                </Link>
+                <button 
+                  onClick={() => setSelectedTab("council")}
+                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1 ${
+                    selectedTab === "council" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
+                  }`}
+                >
+                  <Crown className="w-3 h-3" />
+                  <span>Council</span>
+                </button>
               )}
               {(user.role === 'admin' || user.role === 'super_admin') && (
                 <Link href="/admin">
@@ -213,6 +216,24 @@ export default function Dashboard() {
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Sessions</h3>
                   <UpcomingSessions compact />
+                </div>
+              </div>
+            )}
+
+            {selectedTab === "council" && user.subscriptionPlan === 'council' && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div className="text-center py-12">
+                  <Crown className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
+                  <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
+                    Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
+                    Select 3-5 mentors for a single one-hour session focused on your specific challenges.
+                  </p>
+                  <Link href="/council">
+                    <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white">
+                      Schedule Council Session
+                    </Button>
+                  </Link>
                 </div>
               </div>
             )}
