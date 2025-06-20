@@ -72,14 +72,16 @@ export default function CouncilScheduling() {
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {
-      return apiRequest('/api/council-sessions/book', {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          selectedMentorIds: selectedMentors,
-          preferredDate: data.preferredDate.toISOString(),
-        }),
-      });
+      const requestBody = {
+        selectedMentorIds: data.selectedMentorIds,
+        sessionGoals: data.sessionGoals,
+        questions: data.questions,
+        preferredDate: data.preferredDate.toISOString(),
+        preferredTimeSlot: data.preferredTimeSlot,
+      };
+      
+      const response = await apiRequest("POST", '/api/council-sessions/book', requestBody);
+      return response.json();
     },
     onSuccess: (response: any) => {
       toast({
@@ -170,7 +172,7 @@ export default function CouncilScheduling() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mentors?.map((mentor) => (
+          {mentors?.map((mentor: HumanMentor) => (
             <Card 
               key={mentor.id} 
               className={`cursor-pointer transition-all duration-200 ${
@@ -219,7 +221,6 @@ export default function CouncilScheduling() {
                   </span>
                   <Checkbox 
                     checked={selectedMentors.includes(mentor.id)}
-                    readOnly
                     className="pointer-events-none"
                   />
                 </div>
