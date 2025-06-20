@@ -51,7 +51,7 @@ import {
   type MentorLifeStory,
   type InsertMentorLifeStory
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc, asc, isNull, getTableColumns } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
@@ -147,8 +147,8 @@ export interface IStorage {
   createCouncilSession(session: InsertCouncilSession): Promise<CouncilSession>;
   
   // Council Participant methods  
-  getCouncilParticipants(menteeId: number): Promise<CouncilParticipant[]>;
-  createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant>;
+  getCouncilParticipants(menteeId: number): Promise<any[]>;
+  createCouncilParticipant(participant: any): Promise<any>;
   
   // Council Mentor methods
   createCouncilMentor(mentor: InsertCouncilMentor): Promise<CouncilMentor>;
@@ -759,16 +759,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Council Participant methods
-  async getCouncilParticipants(menteeId: number): Promise<CouncilParticipant[]> {
-    const results = await db.select()
-      .from(councilParticipants)
-      .where(eq(councilParticipants.menteeId, menteeId));
-    return results;
+  async getCouncilParticipants(menteeId: number): Promise<any[]> {
+    const result = await pool.query(`
+      SELECT * FROM council_participants WHERE mentee_id = $1
+    `, [menteeId]);
+    return result.rows;
   }
 
-  async createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant> {
-    const [result] = await db.insert(councilParticipants).values(participant).returning();
-    return result;
+  async createCouncilParticipant(participant: any): Promise<any> {
+    const result = await pool.query(`
+      INSERT INTO council_participants (council_session_id, mentee_id, session_goals, questions, status)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `, [
+      participant.councilSessionId,
+      participant.menteeId,
+      participant.sessionGoals,
+      participant.questions,
+      participant.status || 'registered'
+    ]);
+    
+    return result.rows[0];
   }
 
   async createCouncilMentor(mentor: InsertCouncilMentor): Promise<CouncilMentor> {

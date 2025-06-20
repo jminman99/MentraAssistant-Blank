@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         councilSessionId: councilSession.id,
         menteeId: user.id,
         sessionGoals,
-        questions: questions || null,
+        questions,
       });
 
       // Add each selected mentor to the session with confirmed status

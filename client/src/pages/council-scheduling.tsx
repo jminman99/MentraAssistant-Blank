@@ -136,7 +136,7 @@ export default function CouncilScheduling() {
           Council Sessions
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 mb-4">
-          Build your council of 3-5 mentors for a single one-hour session
+          Build your council of 3-5 mentors for <strong>ONE single one-hour session</strong> where all mentors participate together
         </p>
         
         <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 rounded-lg mb-8">

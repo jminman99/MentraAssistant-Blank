@@ -293,12 +293,8 @@ export const councilParticipants = pgTable("council_participants", {
   menteeId: integer("mentee_id").notNull().references(() => users.id),
   sessionGoals: text("session_goals"),
   questions: text("questions"),
-  joinedAt: timestamp("joined_at"),
-  leftAt: timestamp("left_at"),
-  rating: integer("rating"), // 1-5 stars
-  feedback: text("feedback"),
-  status: varchar("status", { length: 20 }).notNull().default("registered"), // 'registered', 'attended', 'no_show'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  registrationDate: timestamp("registration_date").defaultNow(),
+  status: varchar("status", { length: 20 }).default("registered"),
 });
 
 // Mentor Availability Slots (for native scheduling)
