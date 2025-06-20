@@ -589,6 +589,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Council Sessions routes
+  app.get('/api/council-sessions', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const orgId = user.organizationId || 1;
+      
+      // Get upcoming council sessions with mentors
+      const sessions = await storage.getCouncilSessions(orgId);
+      res.json(sessions);
+    } catch (error) {
+      console.error('Error fetching council sessions:', error);
+      res.status(500).json({ message: 'Failed to fetch council sessions' });
+    }
+  });
+
+  app.get('/api/council-registrations', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const registrations = await storage.getCouncilParticipants(user.id);
+      res.json(registrations);
+    } catch (error) {
+      console.error('Error fetching council registrations:', error);
+      res.status(500).json({ message: 'Failed to fetch council registrations' });
+    }
+  });
+
+  app.post('/api/council-sessions/register', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { councilSessionId, sessionGoals, questions } = req.body;
+
+      // Check if user is already registered
+      const existingRegistration = await storage.getCouncilParticipants(user.id);
+      const isAlreadyRegistered = existingRegistration.some((reg: any) => 
+        reg.councilSessionId === councilSessionId
+      );
+
+      if (isAlreadyRegistered) {
+        return res.status(400).json({ message: 'Already registered for this council session' });
+      }
+
+      // Register user for council session
+      const participant = await storage.createCouncilParticipant({
+        councilSessionId,
+        menteeId: user.id,
+        sessionGoals,
+        questions: questions || null,
+        status: 'registered'
+      });
+
+      res.json(participant);
+    } catch (error) {
+      console.error('Error registering for council session:', error);
+      res.status(500).json({ message: 'Failed to register for council session' });
+    }
+  });
+
   // Super admin routes for user management
   app.get('/api/super-admin/users', requireSuperAdmin, async (req: any, res) => {
     try {

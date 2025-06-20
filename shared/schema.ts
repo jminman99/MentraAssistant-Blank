@@ -96,12 +96,7 @@ export const mentoringSessions = pgTable("mentoring_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const councilSessions = pgTable("council_sessions", {
-  id: serial("id").primaryKey(),
-  sessionId: integer("session_id").notNull(),
-  humanMentorId: integer("human_mentor_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// Removed duplicate - council sessions defined below
 
 export const semanticConfigurations = pgTable("semantic_configurations", {
   id: serial("id").primaryKey(),
@@ -212,9 +207,9 @@ export const mentorApplications = pgTable("mentor_applications", {
 export const sessionBookings = pgTable("session_bookings", {
   id: serial("id").primaryKey(),
   menteeId: integer("mentee_id").notNull().references(() => users.id),
-  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  humanMentorId: integer("human_mentor_id").references(() => humanMentors.id), // Primary mentor for individual sessions, null for council
   sessionType: varchar("session_type", { length: 20 }).notNull(), // 'individual', 'council'
-  duration: integer("duration").notNull().default(30), // minutes
+  duration: integer("duration").notNull().default(30), // minutes - 30 for individual, 60 for council
   scheduledDate: timestamp("scheduled_date").notNull(),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
   
@@ -246,14 +241,47 @@ export const sessionBookings = pgTable("session_bookings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Council Session Participants (for group sessions)
+// Council Sessions - Group sessions with 3-5 mentors
+export const councilSessions = pgTable("council_sessions", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  duration: integer("duration").notNull().default(60), // Council sessions are always 60 minutes
+  timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
+  maxMentees: integer("max_mentees").notNull().default(5), // Maximum mentees per council session
+  currentMentees: integer("current_mentees").notNull().default(0),
+  meetingType: varchar("meeting_type", { length: 20 }).notNull().default("video"),
+  videoLink: text("video_link"),
+  location: text("location"),
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'active', 'completed', 'cancelled'
+  organizationId: integer("organization_id").references(() => organizations.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Council Session Mentors (3-5 mentors per council session)
+export const councilMentors = pgTable("council_mentors", {
+  id: serial("id").primaryKey(),
+  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  role: varchar("role", { length: 20 }).notNull().default("mentor"), // 'lead_mentor', 'mentor'
+  confirmed: boolean("confirmed").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Council Session Participants (mentees who join council sessions)
 export const councilParticipants = pgTable("council_participants", {
   id: serial("id").primaryKey(),
-  sessionBookingId: integer("session_booking_id").notNull().references(() => sessionBookings.id),
-  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
-  role: varchar("role", { length: 20 }).notNull().default("mentor"), // 'mentor', 'lead_mentor'
+  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id),
+  menteeId: integer("mentee_id").notNull().references(() => users.id),
+  sessionGoals: text("session_goals"),
+  questions: text("questions"),
   joinedAt: timestamp("joined_at"),
   leftAt: timestamp("left_at"),
+  rating: integer("rating"), // 1-5 stars
+  feedback: text("feedback"),
+  status: varchar("status", { length: 20 }).notNull().default("registered"), // 'registered', 'attended', 'no_show'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -349,15 +377,13 @@ export const mentoringSessionsRelations = relations(mentoringSessions, ({ one, m
   councilMembers: many(councilSessions),
 }));
 
-export const councilSessionsRelations = relations(councilSessions, ({ one }) => ({
-  session: one(mentoringSessions, {
-    fields: [councilSessions.sessionId],
-    references: [mentoringSessions.id],
+export const councilSessionsRelations = relations(councilSessions, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [councilSessions.organizationId],
+    references: [organizations.id],
   }),
-  humanMentor: one(humanMentors, {
-    fields: [councilSessions.humanMentorId],
-    references: [humanMentors.id],
-  }),
+  councilMentors: many(councilMentors),
+  councilParticipants: many(councilParticipants),
 }));
 
 export const semanticConfigurationsRelations = relations(semanticConfigurations, ({ one }) => ({
@@ -401,13 +427,13 @@ export const sessionBookingsRelations = relations(sessionBookings, ({ one, many 
 }));
 
 export const councilParticipantsRelations = relations(councilParticipants, ({ one }) => ({
-  sessionBooking: one(sessionBookings, {
-    fields: [councilParticipants.sessionBookingId],
-    references: [sessionBookings.id],
+  councilSession: one(councilSessions, {
+    fields: [councilParticipants.councilSessionId],
+    references: [councilSessions.id],
   }),
-  humanMentor: one(humanMentors, {
-    fields: [councilParticipants.humanMentorId],
-    references: [humanMentors.id],
+  mentee: one(users, {
+    fields: [councilParticipants.menteeId],
+    references: [users.id],
   }),
 }));
 
@@ -482,6 +508,45 @@ export const insertMentorApplicationSchema = createInsertSchema(mentorApplicatio
   updatedAt: true,
 });
 
+export const insertSessionBookingSchema = createInsertSchema(sessionBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCouncilSessionSchema = createInsertSchema(councilSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCouncilMentorSchema = createInsertSchema(councilMentors).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCouncilParticipantSchema = createInsertSchema(councilParticipants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMentorAvailabilitySchema = createInsertSchema(mentorAvailability).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMentorUnavailabilitySchema = createInsertSchema(mentorUnavailability).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMentorLifeStorySchema = createInsertSchema(mentorLifeStories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -516,38 +581,14 @@ export type InsertBrandingConfiguration = z.infer<typeof insertBrandingConfigura
 export type MentorApplication = typeof mentorApplications.$inferSelect;
 export type InsertMentorApplication = z.infer<typeof insertMentorApplicationSchema>;
 
-export const insertMentorLifeStorySchema = createInsertSchema(mentorLifeStories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertSessionBookingSchema = createInsertSchema(sessionBookings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCouncilParticipantSchema = createInsertSchema(councilParticipants).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertMentorAvailabilitySchema = createInsertSchema(mentorAvailability).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertMentorUnavailabilitySchema = createInsertSchema(mentorUnavailability).omit({
-  id: true,
-  createdAt: true,
-});
-
 export type MentorLifeStory = typeof mentorLifeStories.$inferSelect;
 export type InsertMentorLifeStory = z.infer<typeof insertMentorLifeStorySchema>;
 export type SessionBooking = typeof sessionBookings.$inferSelect;
 export type InsertSessionBooking = z.infer<typeof insertSessionBookingSchema>;
+export type CouncilSession = typeof councilSessions.$inferSelect;
+export type InsertCouncilSession = z.infer<typeof insertCouncilSessionSchema>;
+export type CouncilMentor = typeof councilMentors.$inferSelect;
+export type InsertCouncilMentor = z.infer<typeof insertCouncilMentorSchema>;
 export type CouncilParticipant = typeof councilParticipants.$inferSelect;
 export type InsertCouncilParticipant = z.infer<typeof insertCouncilParticipantSchema>;
 export type MentorAvailability = typeof mentorAvailability.$inferSelect;

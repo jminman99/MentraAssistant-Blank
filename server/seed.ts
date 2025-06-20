@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, organizations, aiMentors, humanMentors } from "@shared/schema";
+import { users, organizations, aiMentors, humanMentors, councilSessions, councilMentors } from "@shared/schema";
 import bcrypt from "bcrypt";
 
 async function seed() {
@@ -173,6 +173,74 @@ async function seed() {
     }
 
     console.log("✅ Created human mentors");
+
+    // Create council sessions
+    const councilSessionsData = [
+      {
+        title: "Leadership Council: Building High-Performance Teams",
+        description: "Join three experienced leaders for an intensive 60-minute session on building and managing high-performance teams. Perfect for new managers and seasoned leaders looking to elevate their team's performance.",
+        scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
+        duration: 60,
+        maxMentees: 8,
+        currentMentees: 3,
+        meetingType: "video",
+        status: "scheduled",
+        organizationId: org.id,
+      },
+      {
+        title: "Career Transition Council: Navigate Your Next Move",
+        description: "Three career transition experts will guide you through strategic career planning, interview preparation, and negotiation tactics. Ideal for professionals considering a career change.",
+        scheduledDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
+        duration: 60,
+        maxMentees: 6,
+        currentMentees: 2,
+        meetingType: "video",
+        status: "scheduled",
+        organizationId: org.id,
+      },
+      {
+        title: "Entrepreneurship Council: From Idea to Execution",
+        description: "Meet with successful entrepreneurs who have built and scaled multiple businesses. Get insights on validation, funding, team building, and overcoming common startup challenges.",
+        scheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 2 weeks from now
+        duration: 60,
+        maxMentees: 10,
+        currentMentees: 5,
+        meetingType: "video",
+        status: "scheduled",
+        organizationId: org.id,
+      }
+    ];
+
+    const createdCouncilSessions = [];
+    for (const sessionData of councilSessionsData) {
+      const [session] = await db.insert(councilSessions).values(sessionData).returning();
+      createdCouncilSessions.push(session);
+    }
+
+    // Assign mentors to council sessions
+    const councilMentorAssignments = [
+      // Leadership Council session - 3 mentors
+      { councilSessionId: createdCouncilSessions[0].id, humanMentorId: createdHumanMentors[0].id, role: "lead" },
+      { councilSessionId: createdCouncilSessions[0].id, humanMentorId: createdHumanMentors[1].id, role: "co-mentor" },
+      { councilSessionId: createdCouncilSessions[0].id, humanMentorId: createdHumanMentors[2].id, role: "co-mentor" },
+      
+      // Career Transition Council - 3 mentors
+      { councilSessionId: createdCouncilSessions[1].id, humanMentorId: createdHumanMentors[1].id, role: "lead" },
+      { councilSessionId: createdCouncilSessions[1].id, humanMentorId: createdHumanMentors[0].id, role: "co-mentor" },
+      { councilSessionId: createdCouncilSessions[1].id, humanMentorId: createdHumanMentors[2].id, role: "co-mentor" },
+      
+      // Entrepreneurship Council - 4 mentors
+      { councilSessionId: createdCouncilSessions[2].id, humanMentorId: createdHumanMentors[0].id, role: "lead" },
+      { councilSessionId: createdCouncilSessions[2].id, humanMentorId: createdHumanMentors[1].id, role: "co-mentor" },
+      { councilSessionId: createdCouncilSessions[2].id, humanMentorId: createdHumanMentors[2].id, role: "co-mentor" },
+      { councilSessionId: createdCouncilSessions[2].id, humanMentorId: createdHumanMentors[3].id, role: "co-mentor" },
+    ];
+
+    for (const assignment of councilMentorAssignments) {
+      await db.insert(councilMentors).values(assignment);
+    }
+
+    console.log("✅ Created council sessions with mentor assignments");
     console.log("🎉 Database seeded successfully!");
     console.log("\n📋 Demo credentials:");
     console.log("Any new user can register, or use existing mentors:");

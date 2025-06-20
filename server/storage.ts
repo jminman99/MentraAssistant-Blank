@@ -6,6 +6,11 @@ import {
   chatMessages, 
   mentoringSessions,
   councilSessions,
+  councilMentors,
+  councilParticipants,
+  sessionBookings,
+  mentorAvailability,
+  mentorUnavailability,
   semanticConfigurations,
   mentorPersonalities,
   brandingConfigurations,
@@ -23,6 +28,18 @@ import {
   type InsertChatMessage,
   type MentoringSession,
   type InsertMentoringSession,
+  type CouncilSession,
+  type InsertCouncilSession,
+  type CouncilMentor,
+  type InsertCouncilMentor,
+  type CouncilParticipant,
+  type InsertCouncilParticipant,
+  type SessionBooking,
+  type InsertSessionBooking,
+  type MentorAvailability,
+  type InsertMentorAvailability,
+  type MentorUnavailability,
+  type InsertMentorUnavailability,
   type SemanticConfiguration,
   type InsertSemanticConfiguration,
   type MentorPersonality,
@@ -35,7 +52,8 @@ import {
   type InsertMentorLifeStory
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, isNull, getTableColumns } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
   // User methods
@@ -123,9 +141,14 @@ export interface IStorage {
   createMentorUnavailability(unavailability: InsertMentorUnavailability): Promise<MentorUnavailability>;
   deleteMentorUnavailability(id: number): Promise<void>;
 
-  // Council Participant methods
-  getCouncilParticipants(sessionBookingId: number): Promise<(CouncilParticipant & { humanMentor: HumanMentor & { user: User } })[]>;
-  addCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant>;
+  // Council Session methods
+  getCouncilSessions(organizationId: number): Promise<any[]>;
+  getCouncilSession(id: number): Promise<any>;
+  createCouncilSession(session: InsertCouncilSession): Promise<CouncilSession>;
+  
+  // Council Participant methods  
+  getCouncilParticipants(menteeId: number): Promise<CouncilParticipant[]>;
+  createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -678,24 +701,69 @@ export class DatabaseStorage implements IStorage {
     await db.delete(mentorUnavailability).where(eq(mentorUnavailability.id, id));
   }
 
-  // Council Participant methods
-  async getCouncilParticipants(sessionBookingId: number): Promise<(CouncilParticipant & { humanMentor: HumanMentor & { user: User } })[]> {
+  // Council Session methods
+  async getCouncilSessions(organizationId: number): Promise<any[]> {
     const results = await db.select({
-      ...getTableColumns(councilParticipants),
-      humanMentor: {
-        ...getTableColumns(humanMentors),
-        user: getTableColumns(users)
-      }
+      id: councilSessions.id,
+      title: councilSessions.title,
+      description: councilSessions.description,
+      scheduledDate: councilSessions.scheduledDate,
+      duration: councilSessions.duration,
+      maxMentees: councilSessions.maxMentees,
+      currentMentees: councilSessions.currentMentees,
+      meetingType: councilSessions.meetingType,
+      status: councilSessions.status,
+      organizationId: councilSessions.organizationId,
+      createdAt: councilSessions.createdAt,
+      updatedAt: councilSessions.updatedAt
     })
-    .from(councilParticipants)
-    .innerJoin(humanMentors, eq(councilParticipants.humanMentorId, humanMentors.id))
-    .innerJoin(users, eq(humanMentors.userId, users.id))
-    .where(eq(councilParticipants.sessionBookingId, sessionBookingId));
+    .from(councilSessions)
+    .where(eq(councilSessions.organizationId, organizationId));
 
-    return results as any;
+    // Get mentors for each session
+    const sessionsWithMentors = await Promise.all(results.map(async (session) => {
+      const mentors = await db.select({
+        id: councilMentors.id,
+        user: {
+          firstName: users.firstName,
+          lastName: users.lastName
+        },
+        expertise: humanMentors.expertise,
+        role: councilMentors.role
+      })
+      .from(councilMentors)
+      .innerJoin(humanMentors, eq(councilMentors.humanMentorId, humanMentors.id))
+      .innerJoin(users, eq(humanMentors.userId, users.id))
+      .where(eq(councilMentors.councilSessionId, session.id));
+
+      return {
+        ...session,
+        mentors
+      };
+    }));
+
+    return sessionsWithMentors;
   }
 
-  async addCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant> {
+  async getCouncilSession(id: number): Promise<any> {
+    const [session] = await db.select().from(councilSessions).where(eq(councilSessions.id, id));
+    return session;
+  }
+
+  async createCouncilSession(session: InsertCouncilSession): Promise<CouncilSession> {
+    const [result] = await db.insert(councilSessions).values(session).returning();
+    return result;
+  }
+
+  // Council Participant methods
+  async getCouncilParticipants(menteeId: number): Promise<CouncilParticipant[]> {
+    const results = await db.select()
+      .from(councilParticipants)
+      .where(eq(councilParticipants.menteeId, menteeId));
+    return results;
+  }
+
+  async createCouncilParticipant(participant: InsertCouncilParticipant): Promise<CouncilParticipant> {
     const [result] = await db.insert(councilParticipants).values(participant).returning();
     return result;
   }
