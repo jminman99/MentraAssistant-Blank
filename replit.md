@@ -103,6 +103,7 @@ The application is configured for deployment on Replit with the following setup:
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Quality over speed: User values thorough testing and complete implementations over quick fixes that create more issues.
 
 ## Branding Direction
 

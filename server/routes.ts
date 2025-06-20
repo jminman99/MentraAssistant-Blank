@@ -766,6 +766,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please select 3-5 mentors for your council session" });
       }
 
+      // Check for existing council sessions this month
+      const requestedDate = new Date(preferredDate);
+      const requestedMonth = requestedDate.getMonth();
+      const requestedYear = requestedDate.getFullYear();
+      
+      const existingParticipants = await storage.getCouncilParticipants(councilUser.id);
+      const conflictingSessions = await Promise.all(
+        existingParticipants.map(async (participant: any) => {
+          const session = await storage.getCouncilSession(participant.council_session_id);
+          if (session && session.scheduledDate) {
+            const sessionDate = new Date(session.scheduledDate);
+            return sessionDate.getMonth() === requestedMonth && sessionDate.getFullYear() === requestedYear;
+          }
+          return false;
+        })
+      );
+      
+      const hasSessionInRequestedMonth = conflictingSessions.some(Boolean);
+      if (hasSessionInRequestedMonth) {
+        return res.status(400).json({ 
+          message: "Council sessions are limited to one per month. You already have a session scheduled for this month." 
+        });
+      }
+
       // Check mentor availability instantly and create confirmed session
       const selectedDate = new Date(preferredDate);
       const sessionTime = getTimeSlotHour(preferredTimeSlot);

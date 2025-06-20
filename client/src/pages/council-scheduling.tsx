@@ -68,7 +68,7 @@ export default function CouncilScheduling() {
   });
 
   // Fetch user's existing council bookings
-  const { data: userBookings } = useQuery({
+  const { data: userBookings, isLoading: isLoadingBookings } = useQuery({
     queryKey: ['/api/council-bookings'],
   });
 
@@ -252,7 +252,7 @@ export default function CouncilScheduling() {
       </div>
 
       {/* Existing Bookings */}
-      {userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
+      {!isLoadingBookings && userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Your Council Sessions
