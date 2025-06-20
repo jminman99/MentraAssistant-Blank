@@ -228,12 +228,8 @@ function CouncilSchedulingContent() {
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
           <p className="text-slate-600 mb-4 max-w-2xl mx-auto">
             Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
+            Select 3-5 mentors for your comprehensive guidance session.
           </p>
-          <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-amber-800 font-medium">
-              Council Plan: One monthly session for $50
-            </p>
-          </div>
         </div>
 
         {/* Mentor Selection */}
