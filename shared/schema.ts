@@ -256,6 +256,14 @@ export const councilSessions = pgTable("council_sessions", {
   location: text("location"),
   status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'active', 'completed', 'cancelled'
   organizationId: integer("organization_id").references(() => organizations.id),
+  // Enhanced calendar coordination fields
+  proposedTimeSlots: jsonb("proposed_time_slots"), // Array of proposed times for mentor coordination
+  mentorResponseDeadline: timestamp("mentor_response_deadline"), // Deadline for mentors to confirm availability
+  finalTimeConfirmed: boolean("final_time_confirmed").notNull().default(false),
+  coordinatorNotes: text("coordinator_notes"), // Admin notes for coordination
+  mentorMinimum: integer("mentor_minimum").notNull().default(3), // Minimum mentors required
+  mentorMaximum: integer("mentor_maximum").notNull().default(5), // Maximum mentors allowed
+  coordinationStatus: varchar("coordination_status", { length: 30 }).notNull().default("pending"), // 'pending', 'coordinating', 'confirmed', 'failed'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -267,6 +275,14 @@ export const councilMentors = pgTable("council_mentors", {
   humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
   role: varchar("role", { length: 20 }).notNull().default("mentor"), // 'lead_mentor', 'mentor'
   confirmed: boolean("confirmed").default(false),
+  // Enhanced availability tracking
+  availabilityResponse: varchar("availability_response", { length: 20 }).default("pending"), // 'pending', 'available', 'unavailable', 'tentative'
+  responseDate: timestamp("response_date"),
+  availableTimeSlots: jsonb("available_time_slots"), // Mentor's available time slots for this session
+  conflictNotes: text("conflict_notes"), // Notes about scheduling conflicts
+  alternativeProposals: jsonb("alternative_proposals"), // Alternative times proposed by mentor
+  notificationSent: boolean("notification_sent").default(false),
+  lastReminderSent: timestamp("last_reminder_sent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -593,6 +593,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/council-sessions', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      
+      // Check if user has council plan access
+      if (user.subscriptionPlan !== 'council') {
+        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+      
       const orgId = user.organizationId || 1;
       
       // Get upcoming council sessions with mentors
@@ -607,6 +613,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/council-registrations', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      
+      // Check if user has council plan access
+      if (user.subscriptionPlan !== 'council') {
+        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+      
       const registrations = await storage.getCouncilParticipants(user.id);
       res.json(registrations);
     } catch (error) {
@@ -618,6 +630,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/council-sessions/register', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      
+      // Check if user has council plan access
+      if (user.subscriptionPlan !== 'council') {
+        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+      
       const { councilSessionId, sessionGoals, questions } = req.body;
 
       // Check if user is already registered

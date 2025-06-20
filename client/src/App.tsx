@@ -32,6 +32,14 @@ function Router() {
     return <AdminDashboard />;
   };
 
+  const CouncilRoute = () => {
+    if (!user) return <Login />;
+    if (user.subscriptionPlan !== 'council') {
+      return <NotFound />;
+    }
+    return <CouncilScheduling />;
+  };
+
   return (
     <Switch>
       <Route path="/" component={user ? Dashboard : Welcome} />
@@ -39,7 +47,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
       <Route path="/schedule/:mentorId" component={user ? Scheduling : Login} />
-      <Route path="/council" component={user ? CouncilScheduling : Login} />
+      <Route path="/council" component={CouncilRoute} />
       <Route path="/mentor-application" component={MentorApplication} />
       <Route path="/admin" component={AdminRoute} />
       <Route component={NotFound} />

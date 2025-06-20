@@ -91,6 +91,14 @@ export default function Dashboard() {
               >
                 Plan & Usage
               </button>
+              {user.subscriptionPlan === 'council' && (
+                <Link href="/council">
+                  <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
+                    <Crown className="w-3 h-3" />
+                    <span>Council</span>
+                  </button>
+                </Link>
+              )}
               {(user.role === 'admin' || user.role === 'super_admin') && (
                 <Link href="/admin">
                   <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
