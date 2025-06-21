@@ -69,7 +69,6 @@ export default function MentorCard({
                 {showBio && (
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <span className="text-sm font-medium text-slate-900">
-                      {/* Show pricing based on user plan */}
                       Included in Plan
                     </span>
                     <Badge variant="outline" className="text-xs">Available</Badge>
