@@ -61,7 +61,7 @@ export default function MentorCard({
                   <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      <span>30 min</span>
+                      <span>30 min sessions</span>
                     </div>
                   </div>
                 )}

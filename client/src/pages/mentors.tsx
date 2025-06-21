@@ -64,7 +64,7 @@ export default function Mentors() {
 
               <div className="flex items-center space-x-2 text-sm">
                 <Clock className="h-4 w-4 text-blue-600" />
-                <span>{mentor.defaultSessionDuration || 60} min sessions</span>
+                <span>30 min sessions</span>
               </div>
 
               <div className="flex items-center space-x-2">

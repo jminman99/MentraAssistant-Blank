@@ -226,7 +226,9 @@ export default function SessionDetails() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Duration</span>
-                  <span className="text-sm font-medium">30 minutes</span>
+                  <span className="text-sm font-medium">
+                    {session.sessionType === 'council' ? '60 minutes' : '30 minutes'}
+                  </span>
                 </div>
               </div>
 

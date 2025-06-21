@@ -351,6 +351,8 @@ export default function CouncilScheduling() {
                 onDateTimeSelect={handleDateTimeSelect}
                 availabilityData={availabilityData}
                 isLoadingAvailability={isLoadingAvailability}
+                sessionDuration={60}
+                isCouncilMode={true}
               />
             </div>
           )}

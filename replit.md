@@ -297,6 +297,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: UNIFIED post-booking experience - both individual and council sessions now redirect to /sessions page after successful booking with consistent toast messaging and form reset
 - June 21, 2025: FIXED individual session cancellation - corrected API endpoint from `/cancel` suffix to match backend route, individual session cancellation now works properly
 - June 21, 2025: REMOVED hourly rate displays from all mentor profiles - replaced with "Included in Plan" and "Available" messaging to align with subscription-based model where sessions are included in user plans
+- June 21, 2025: UPDATED session durations throughout application - individual sessions are 30 minutes, council sessions are 60 minutes, updated calendar availability component and UI displays
 
 ## Changelog
 
