@@ -222,12 +222,14 @@ export default function CouncilScheduling() {
         setQuestions("");
         setSelectedDateTime(null);
         
-        // FIXED: Await invalidation and use correct key
+        // Invalidate cache to refresh data
         console.log('[DEBUG] Invalidating council-bookings cache...');
         await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
         
-        // Optional: Navigate or show success state
-        console.log('[DEBUG] Cache invalidated, booking should appear in upcoming sessions');
+        // Navigate to sessions page after short delay
+        setTimeout(() => {
+          setLocation('/sessions');
+        }, 1500);
       } else {
         console.log('[DEBUG] Booking failed:', data?.message);
         toast({

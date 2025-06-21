@@ -99,9 +99,17 @@ export default function IndividualBooking() {
         description: `Your 30-minute session with ${selectedMentor?.user.firstName} is confirmed for ${format(selectedDateTime!.date, 'MMMM d, yyyy')} at ${selectedDateTime!.time}.`,
       });
       
-      setCurrentStep('confirmation');
+      // Reset form and navigate to sessions page
+      setSelectedMentor(null);
+      setSelectedDateTime(null);
+      setCurrentStep('mentors');
       queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
+      // Navigate to sessions page after short delay to let user see the success toast
+      setTimeout(() => {
+        setLocation('/sessions');
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
