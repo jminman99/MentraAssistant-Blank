@@ -274,6 +274,15 @@ export default function Sessions() {
           </div>
         </div>
 
+        {/* Temporary Debug Display */}
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+          <h3 className="font-bold">DEBUG INFO:</h3>
+          <p>User: {user ? 'Loaded' : 'Not loaded'}</p>
+          <p>Subscription Plan: {user?.subscriptionPlan || 'undefined'}</p>
+          <p>Is Council User: {user?.subscriptionPlan === 'council' ? 'YES' : 'NO'}</p>
+          <p>Target Route: {getBookingRoute()}</p>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
