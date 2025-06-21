@@ -65,13 +65,13 @@ export default function CalendarAvailability({
     const endHour = 17; // 5 PM
     
     if (duration === 30) {
-      // 30-minute slots
+      // 30-minute slots for individual sessions
       for (let hour = startHour; hour < endHour; hour++) {
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
         slots.push(`${hour.toString().padStart(2, '0')}:30`);
       }
     } else {
-      // 60-minute slots (default)
+      // 60-minute slots for council sessions
       for (let hour = startHour; hour < endHour; hour++) {
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
       }
