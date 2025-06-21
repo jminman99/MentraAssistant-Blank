@@ -7,7 +7,6 @@ import { ChatInterface } from "@/components/chat/chat-interface-fixed";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
-import { BookingModal } from "@/components/booking/booking-modal";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
@@ -288,18 +287,11 @@ function CouncilSchedulingContent() {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedMentor, setSelectedMentor] = useState<HumanMentor | null>(null);
 
   const { data: humanMentors = [] } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
   });
-
-  const handleBookSession = (mentor: HumanMentor) => {
-    setSelectedMentor(mentor);
-    setShowBookingModal(true);
-  };
 
   // Scroll to top when dashboard loads
   useEffect(() => {
@@ -465,14 +457,10 @@ export default function Dashboard() {
                       <div className="text-sm text-slate-400 mt-1">Check back later for new mentors</div>
                     </div>
                   ) : (
-                    humanMentors.map((mentor) => (
-                      <HumanMentorCard
-                        key={mentor.id}
-                        mentor={mentor}
-                        onBook={() => handleBookSession(mentor)}
-                        disabled={user.sessionsUsed >= user.sessionsLimit}
-                      />
-                    ))
+                    <div className="text-center py-8">
+                      <div className="text-slate-500">Individual booking interface coming soon</div>
+                      <div className="text-sm text-slate-400 mt-1">A new clean booking system is being built</div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -618,17 +606,6 @@ export default function Dashboard() {
       </div>
 
       {/* Modals */}
-      {showBookingModal && selectedMentor && (
-        <BookingModal
-          mentor={selectedMentor}
-          user={user}
-          onClose={() => {
-            setShowBookingModal(false);
-            setSelectedMentor(null);
-          }}
-        />
-      )}
-
       {showUpgradeModal && (
         <UpgradeModal
           currentPlan={user.subscriptionPlan}

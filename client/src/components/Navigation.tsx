@@ -22,9 +22,6 @@ export default function Navigation() {
 
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/chat', icon: MessageCircle, label: 'AI Mentors' },
-    { path: '/mentors', icon: Users, label: 'Human Mentors' },
-    { path: '/sessions', icon: Calendar, label: 'My Sessions' },
     { path: '/council', icon: CalendarIcon, label: 'Council' },
   ];
 
