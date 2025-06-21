@@ -43,7 +43,7 @@ export default function CalendarAvailability({
   // Use council props if available, otherwise use individual props
   const mentorIds = selectedMentorIds || selectedMentors || [];
   const handleTimeSelect = onDateTimeSelect || onTimeSelect || (() => {});
-  const detectedCouncilMode = isCouncilMode || Boolean(selectedMentorIds);
+  const detectedCouncilMode = isCouncilMode;
   
   console.log('[DEBUG] CalendarAvailability props:', { 
     mentorIds,
