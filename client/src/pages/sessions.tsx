@@ -345,7 +345,7 @@ export default function Sessions() {
                           return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
                         }).length}/2 Individual + ${councilSessions.filter((s: any) => {
                           const sessionDate = parseISO(s.scheduledDate);
-                          return isSameMonth(sessionDate, new Date()) && s.status !== 'cancelled';
+                          return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
                         }).length}/1 Council`
                       : `${sessions.filter(s => {
                           const sessionDate = parseISO(s.scheduledDate);
