@@ -719,22 +719,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Council session booking endpoint - allows users to select 3-5 mentors for a single session
-  app.post('/api/council-sessions/book', async (req, res) => {
+  app.post('/api/council-sessions/book', requireAuth, async (req, res) => {
     try {
       console.log('Council booking request body:', req.body);
       
-      // For testing, use the council user directly
-      const councilUser = await storage.getUser(9); // Council user ID from create-council-user.js
-      if (!councilUser) {
-        return res.status(404).json({ message: 'Council user not found' });
+      const user = req.user as any;
+      if (!user || !user.id) {
+        return res.status(401).json({ message: 'Authentication required' });
       }
       
-      console.log('Using council user:', councilUser.id, 'plan:', councilUser.subscriptionPlan);
+      console.log('Using authenticated user:', user.id, 'plan:', user.subscriptionPlan);
       
       // Check if user has council plan access
-      if (councilUser.subscriptionPlan !== 'council') {
-        console.log('User does not have council plan:', councilUser.subscriptionPlan);
+      if (user.subscriptionPlan !== 'council') {
+        console.log('User does not have council plan:', user.subscriptionPlan);
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
+      }
+
+      // Check monthly council session limit (1 per month)
+      const currentMonth = new Date();
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      
+      const existingSessions = await storage.getCouncilSessions(user.organizationId || 1);
+      const userSessionsThisMonth = existingSessions.filter((session: any) => {
+        const sessionDate = new Date(session.scheduledDate);
+        return sessionDate >= startOfMonth && sessionDate <= endOfMonth && 
+               session.participants && session.participants.some((p: any) => p.menteeId === user.id);
+      });
+
+      if (userSessionsThisMonth.length >= 1) {
+        return res.status(400).json({ 
+          message: 'Council plan allows only one session per month. Your next session can be booked after ' + 
+                   new Date(endOfMonth.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()
+        });
       }
       
       const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
@@ -771,26 +789,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestedMonth = requestedDate.getMonth();
       const requestedYear = requestedDate.getFullYear();
       
-      const existingParticipants = await storage.getCouncilParticipants(councilUser.id);
-      const conflictingSessions = await Promise.all(
-        existingParticipants.map(async (participant: any) => {
-          const session = await storage.getCouncilSession(participant.council_session_id);
-          if (session && session.scheduledDate) {
-            const sessionDate = new Date(session.scheduledDate);
-            return sessionDate.getMonth() === requestedMonth && sessionDate.getFullYear() === requestedYear;
-          }
-          return false;
-        })
-      );
-      
-      const hasSessionInRequestedMonth = conflictingSessions.some(Boolean);
-      if (hasSessionInRequestedMonth) {
-        return res.status(400).json({ 
-          message: "Council sessions are limited to one per month. You already have a session scheduled for this month.",
-          existingSessions: conflictingSessions.length
-        });
-      }
-
       // Check mentor availability instantly and create confirmed session
       const selectedDate = new Date(preferredDate);
       const sessionTime = getTimeSlotHour(preferredTimeSlot);
@@ -798,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create council session with minimal required fields
       const councilSession = await storage.createCouncilSession({
-        title: `Council Session for ${councilUser.firstName} ${councilUser.lastName}`,
+        title: `Council Session for ${user.firstName} ${user.lastName}`,
         description: sessionGoals,
         scheduledDate: selectedDate,
         duration: 60,
@@ -806,38 +804,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentMentees: 1,
         meetingType: 'video',
         status: 'confirmed',
-        organizationId: councilUser.organizationId || 1
+        organizationId: user.organizationId || 1,
+        proposedTimeSlots: JSON.stringify([{
+          date: selectedDate.toISOString(),
+          timeSlot: preferredTimeSlot,
+          confirmed: true
+        }]),
+        finalTimeConfirmed: true,
+        coordinatorNotes: `Auto-confirmed for ${preferredTimeSlot} on ${selectedDate.toLocaleDateString()}`,
+        coordinationStatus: "confirmed"
       });
 
+      console.log('Created council session:', councilSession.id);
+
       // Add the user as the mentee participant
-      await storage.createCouncilParticipant({
+      const participant = await storage.createCouncilParticipant({
         councilSessionId: councilSession.id,
-        menteeId: councilUser.id,
+        menteeId: user.id,
         sessionGoals,
-        questions,
+        questions: questions || null,
+        status: 'registered'
       });
+
+      console.log('Created participant:', participant.id);
 
       // Add each selected mentor to the session with confirmed status
       for (const mentorId of selectedMentorIds) {
-        await storage.createCouncilMentor({
+        const councilMentor = await storage.createCouncilMentor({
           councilSessionId: councilSession.id,
           humanMentorId: mentorId,
           role: 'mentor',
-          confirmed: true, // Auto-confirmed for instant booking
-          availabilityResponse: 'confirmed',
-          responseDate: new Date(),
-          availableTimeSlots: JSON.stringify([{
-            date: selectedDate.toISOString(),
-            time: preferredTimeSlot,
-            confirmed: true
-          }]),
-          conflictNotes: null,
-          alternativeProposals: null,
-          notificationSent: true,
-          lastReminderSent: null,
+          confirmed: true,
+          availabilityResponse: 'available'
         });
+        console.log('Created council mentor:', councilMentor.id);
       }
 
+      console.log('Council session booking complete');
+
+      // Return success response
       res.json({ 
         success: true,
         message: `Council session confirmed for ${selectedDate.toLocaleDateString()} at ${preferredTimeSlot}. Your mentors will receive calendar invites shortly.`,

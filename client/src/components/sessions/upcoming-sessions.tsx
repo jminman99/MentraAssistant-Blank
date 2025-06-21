@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Video } from "lucide-react";
+import { Calendar, Clock, Video, Users } from "lucide-react";
 import { MentoringSession } from "@/types";
 import { format, parseISO, isFuture } from "date-fns";
 
@@ -9,15 +9,46 @@ interface UpcomingSessionsProps {
 }
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
-  const { data: sessions = [], isLoading } = useQuery<MentoringSession[]>({
+  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<MentoringSession[]>({
     queryKey: ['/api/sessions'],
   });
 
-  const upcomingSessions = sessions
+  // Also fetch council sessions
+  const { data: councilSessions = [], isLoading: councilLoading } = useQuery({
+    queryKey: ['/api/council-bookings'],
+  });
+
+  const isLoading = sessionsLoading || councilLoading;
+
+  // Combine and format both session types
+  const allSessions = [
+    ...sessions.map(session => ({
+      ...session,
+      type: 'individual' as const,
+      scheduledAt: session.scheduledAt,
+      title: session.humanMentor ? 
+        `${session.humanMentor.user.firstName} ${session.humanMentor.user.lastName}` : 
+        'Individual Session'
+    })),
+    ...councilSessions.map((session: any) => ({
+      id: session.sessionId || session.id,
+      type: 'council' as const,
+      scheduledAt: session.scheduledDate,
+      status: session.status,
+      title: 'Council Session',
+      duration: 60,
+      mentorCount: session.mentors?.length || 0,
+      sessionGoals: session.sessionGoals
+    }))
+  ];
+
+  const upcomingSessions = allSessions
     .filter(session => 
-      session.status === 'scheduled' && 
+      session.status === 'scheduled' || session.status === 'confirmed' && 
+      session.scheduledAt && 
       isFuture(parseISO(session.scheduledAt))
     )
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
 
   if (isLoading) {
@@ -57,15 +88,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-slate-900 text-sm">
-                {session.humanMentor
-                  ? `${session.humanMentor.user.firstName} ${session.humanMentor.user.lastName}`
-                  : session.type === 'council'
-                  ? 'Council Session'
-                  : 'Mentor Session'
-                }
+                {session.type === 'council' ? 'Council Session' : session.title}
               </h4>
               <p className="text-xs text-slate-600">
-                {session.topic || session.humanMentor?.expertise || 'General Mentorship'}
+                {session.type === 'council' 
+                  ? `${session.mentorCount || 'Multiple'} mentors • ${session.sessionGoals || 'Comprehensive guidance'}`
+                  : session.topic || session.humanMentor?.expertise || 'General Mentorship'
+                }
               </p>
               <div className="flex items-center space-x-3 mt-1">
                 <div className="flex items-center text-xs text-slate-500">
@@ -77,8 +106,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                   {format(parseISO(session.scheduledAt), 'h:mm a')}
                 </div>
                 <div className="flex items-center text-xs text-slate-500">
-                  <Video className="h-3 w-3 mr-1" />
-                  {session.duration} min
+                  {session.type === 'council' ? (
+                    <Users className="h-3 w-3 mr-1" />
+                  ) : (
+                    <Video className="h-3 w-3 mr-1" />
+                  )}
+                  {session.duration || 60} min
                 </div>
               </div>
             </div>
