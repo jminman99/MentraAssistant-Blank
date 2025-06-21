@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
 import CouncilScheduling from "@/pages/council-scheduling-new";
+import IndividualBooking from "@/pages/individual-booking";
+import Sessions from "@/pages/sessions";
 import MentorAvailability from "@/pages/MentorAvailability";
 import SessionDetails from "@/pages/SessionDetails";
 import Mentors from "@/pages/mentors";
@@ -42,12 +44,22 @@ function Router() {
     return <CouncilScheduling />;
   };
 
+  const IndividualBookingRoute = () => {
+    if (!user) return <Login />;
+    if (!['individual', 'council'].includes(user.subscriptionPlan)) {
+      return <NotFound />;
+    }
+    return <IndividualBooking />;
+  };
+
   return (
     <Switch>
       <Route path="/" component={user ? Dashboard : Welcome} />
       <Route path="/welcome" component={Welcome} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
+      <Route path="/individual-booking" component={IndividualBookingRoute} />
+      <Route path="/sessions" component={user ? Sessions : Login} />
       <Route path="/council" component={CouncilRoute} />
       <Route path="/council-scheduling" component={CouncilRoute} />
       <Route path="/mentor-application" component={MentorApplication} />

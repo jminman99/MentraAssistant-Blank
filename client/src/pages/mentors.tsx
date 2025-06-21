@@ -74,10 +74,10 @@ export default function Mentors() {
               <div className="pt-2">
                 <Button 
                   className="w-full"
-                  disabled
+                  onClick={() => setLocation('/individual-booking')}
                 >
                   <Video className="h-4 w-4 mr-2" />
-                  Booking Available Soon
+                  Book Session
                 </Button>
               </div>
             </CardContent>

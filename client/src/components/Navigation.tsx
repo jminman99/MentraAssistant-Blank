@@ -22,6 +22,8 @@ export default function Navigation() {
 
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
+    { path: '/individual-booking', icon: Users, label: 'Book Session' },
+    { path: '/sessions', icon: Calendar, label: 'My Sessions' },
     { path: '/council', icon: CalendarIcon, label: 'Council' },
   ];
 

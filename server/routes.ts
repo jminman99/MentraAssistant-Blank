@@ -1234,6 +1234,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Individual or Council subscription required for session booking' });
       }
 
+      // Check monthly session limit (2 sessions per month as per PRD)
+      const currentMonth = new Date();
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfCurrentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      
+      const currentMonthBookings = await storage.getSessionBookings(user.id);
+      const activeBookingsThisMonth = currentMonthBookings.filter(booking => {
+        const bookingDate = new Date(booking.scheduledDate);
+        return bookingDate >= startOfMonth && 
+               bookingDate <= endOfCurrentMonth && 
+               booking.status !== 'cancelled';
+      });
+
+      if (activeBookingsThisMonth.length >= 2) {
+        console.log('[DEBUG] Monthly session limit reached:', activeBookingsThisMonth.length);
+        return res.status(403).json({ message: "You've used all your monthly sessions. Your limit resets next month." });
+      }
+
       // Use Zod validation like the working endpoints
       const data = insertSessionBookingSchema.parse(req.body);
       console.log('[DEBUG] Individual session validation passed:', JSON.stringify(data, null, 2));
@@ -1269,7 +1287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         sessionId: session.id,
         message: `Individual session booked successfully for ${new Date(data.scheduledAt).toLocaleDateString()}`,
-        session: session
+        session: session,
+        sessionsUsedThisMonth: activeBookingsThisMonth.length + 1
       });
       
     } catch (error) {

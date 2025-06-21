@@ -458,8 +458,12 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="text-slate-500">Individual booking interface coming soon</div>
-                      <div className="text-sm text-slate-400 mt-1">A new clean booking system is being built</div>
+                      <div className="text-slate-500 mb-4">Ready to book your individual session?</div>
+                      <Link href="/individual-booking">
+                        <Button size="lg">
+                          Book Individual Session
+                        </Button>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -468,7 +472,14 @@ export default function Dashboard() {
             
             {selectedTab === "sessions" && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-6">My Sessions</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-slate-900">My Sessions</h2>
+                  <Link href="/sessions">
+                    <Button variant="outline" size="sm">
+                      View All Sessions
+                    </Button>
+                  </Link>
+                </div>
                 <UpcomingSessions />
               </div>
             )}
@@ -527,15 +538,16 @@ export default function Dashboard() {
                     Human Mentors
                   </Button>
                 )}
-                <Button 
-                  variant={selectedTab === "sessions" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTab("sessions")}
-                  className="w-full justify-start"
-                >
-                  <Star className="h-4 w-4 mr-2" />
-                  My Sessions
-                </Button>
+                <Link href="/sessions">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    My Sessions
+                  </Button>
+                </Link>
                 <Button 
                   variant={selectedTab === "plan" ? "default" : "outline"}
                   size="sm"
@@ -584,15 +596,12 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Mentors</span>
             </button>
           )}
-          <button
-            onClick={() => setSelectedTab("sessions")}
-            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-              selectedTab === "sessions" ? "text-primary bg-blue-50" : "text-slate-600"
-            }`}
-          >
-            <Star className="h-5 w-5 text-slate-700" />
-            <span className="text-xs font-medium">Sessions</span>
-          </button>
+          <Link href="/sessions">
+            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+              <Star className="h-5 w-5 text-slate-700" />
+              <span className="text-xs font-medium">Sessions</span>
+            </button>
+          </Link>
           <button
             onClick={() => setSelectedTab("plan")}
             className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
