@@ -359,7 +359,7 @@ export default function Dashboard() {
                   selectedTab === "sessions" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
-                Journey Sessions
+                My Sessions
               </button>
               <button 
                 onClick={() => setSelectedTab("plan")}
