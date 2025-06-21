@@ -294,6 +294,14 @@ export default function CouncilScheduling() {
         </div>
       )}
 
+      {/* Debug: Show raw data */}
+      <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
+        <p>Debug - isLoadingBookings: {isLoadingBookings.toString()}</p>
+        <p>Debug - bookingsError: {bookingsError?.message || 'none'}</p>
+        <p>Debug - userBookings length: {userBookings?.length || 0}</p>
+        <p>Debug - userBookings data: {JSON.stringify(userBookings, null, 2).substring(0, 200)}...</p>
+      </div>
+
       {/* Display loading, error, or sessions */}
       {isLoadingBookings ? (
         <div className="mb-8 text-center">
@@ -303,7 +311,7 @@ export default function CouncilScheduling() {
         <div className="mb-8 text-center text-red-600">
           <p>Error loading sessions: {bookingsError.message}</p>
         </div>
-      ) : userBookings.length > 0 ? (
+      ) : userBookings && userBookings.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Your Council Sessions ({userBookings.length})
