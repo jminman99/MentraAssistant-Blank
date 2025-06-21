@@ -293,8 +293,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: RESOLVED session booking validation and authentication issues - simplified validation schema to handle null session goals properly, fixed database field mapping in storage layer, updated UI to clearly indicate session goals are optional, enhanced error handling and debugging for booking failures, individual subscription users can now successfully book sessions with test@example.com account working
 - June 21, 2025: CONFIRMED separate module architecture - Individual 1x1 sessions use `/api/sessions` endpoint with `session_bookings` table, while Council sessions use `/api/council-sessions/book` with separate `council_sessions`, `council_participants`, `council_mentors` tables, fixed authentication issues in individual session booking endpoint
 - June 21, 2025: COMPLETED individual session booking system - fixed all validation and authentication issues, simplified endpoint logic for 1x1 mentor sessions, manual database inserts working and API endpoint fully operational for test@example.com user with individual subscription plan
-- June 21, 2025: UNIFIED calendar interface for individual and council booking - both systems now use the same CalendarAvailability component with proper calendar on left and time slots on right, no more separate day boxes for individual booking
-- June 21, 2025: Implemented robust individual booking hook with proper error handling and TanStack Query integration for better state management and user experience
+- June 21, 2025: REBUILT individual booking page from scratch using council booking pattern as template - created scheduling-new.tsx with unified CalendarAvailability component, proper layout structure, and working booking functionality
+- June 21, 2025: Cleaned up old individual booking implementation and hooks, replaced with clean architecture that mirrors council booking exactly
 
 ## Changelog
 

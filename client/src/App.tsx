@@ -9,7 +9,7 @@ import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
-import Scheduling from "@/pages/scheduling";
+import IndividualScheduling from "@/pages/scheduling-new";
 import CouncilScheduling from "@/pages/council-scheduling-new";
 import MentorAvailability from "@/pages/MentorAvailability";
 import BookSession from "@/pages/BookSession";
