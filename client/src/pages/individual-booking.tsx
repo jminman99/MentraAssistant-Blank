@@ -6,9 +6,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, User, Star, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, User, Star, ArrowLeft, CheckCircle2, Video } from "lucide-react";
 import { format, addDays, startOfMonth, endOfMonth, isSameMonth, parseISO } from "date-fns";
 import CalendarAvailability from "@/components/calendar-availability";
+import MentorCard from "@/components/mentor-card";
+import SessionUsageBadge from "@/components/session-usage-badge";
+import SessionConfirmation from "@/components/session-confirmation";
 import { HumanMentor } from "@/types";
 import { useLocation } from "wouter";
 
@@ -178,30 +181,17 @@ export default function IndividualBooking() {
   }
 
   // Confirmation step
-  if (currentStep === 'confirmation') {
+  if (currentStep === 'confirmation' && selectedMentor && selectedDateTime) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-6" />
-              <h1 className="text-2xl font-bold text-slate-900 mb-4">Session Confirmed!</h1>
-              <p className="text-slate-600 mb-6">
-                Your session with {selectedMentor?.user.firstName} {selectedMentor?.user.lastName} is scheduled for{' '}
-                {selectedDateTime && format(selectedDateTime.date, 'MMMM d, yyyy')} at {selectedDateTime?.time}.
-              </p>
-              <div className="space-y-3">
-                <Button onClick={() => setLocation('/dashboard')} className="w-full">
-                  Return to Dashboard
-                </Button>
-                <Button variant="outline" onClick={handleBackToMentors} className="w-full">
-                  Book Another Session
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <SessionConfirmation
+        type="individual"
+        mentor={selectedMentor}
+        date={selectedDateTime.date}
+        time={selectedDateTime.time}
+        duration={30}
+        onViewSessions={() => setLocation('/sessions')}
+        onBookAnother={handleBackToMentors}
+      />
     );
   }
 
@@ -355,11 +345,7 @@ export default function IndividualBooking() {
             {/* Calendar */}
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Choose Date & Time</CardTitle>
-                  <p className="text-sm text-slate-600">Select an available 30-minute time slot</p>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <CalendarAvailability
                     selectedDate={selectedDateTime?.date}
                     selectedTime={selectedDateTime?.time}
@@ -367,6 +353,7 @@ export default function IndividualBooking() {
                     selectedMentorIds={[selectedMentor.id]}
                     mentors={mentors}
                     sessionDuration={30}
+                    isCouncilMode={false}
                   />
                   
                   {selectedDateTime && (

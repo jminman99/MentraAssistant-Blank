@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, Clock, Users, CheckCircle, Star } from "lucide-react";
+import { CalendarDays, Clock, Users, CheckCircle, Star, Video, ArrowLeft, X } from "lucide-react";
 import { format } from "date-fns";
 import CalendarAvailability from "@/components/calendar-availability";
+import MentorCard from "@/components/mentor-card";
 
 interface HumanMentor {
   id: number;
@@ -264,12 +266,22 @@ export default function CouncilScheduling() {
   return (
     <div className="container mx-auto px-4 py-8 pb-40 lg:pb-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-          Council Sessions
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mb-8">
-          Book a one-hour session with 3-5 mentors for comprehensive guidance.
-        </p>
+        <div className="mb-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/dashboard')}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+            Council Sessions
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-8">
+            Book a one-hour session with 3-5 mentors for comprehensive guidance.
+          </p>
+        </div>
 
         {/* Display council sessions */}
         <CouncilSessionsList />
