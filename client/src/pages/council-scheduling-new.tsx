@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,11 +27,17 @@ interface HumanMentor {
 function CouncilSessionsList() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading || !user) {
+      setIsLoading(authLoading);
+      return;
+    }
+
     const fetchSessions = async () => {
       try {
-        console.log('Fetching council sessions...');
+        console.log('Fetching council sessions for authenticated user...');
         const response = await fetch('/api/council-bookings', {
           credentials: 'include'
         });
@@ -38,23 +45,25 @@ function CouncilSessionsList() {
         if (response.ok) {
           const data = await response.json();
           console.log('Received sessions data:', data);
-          setSessions(data || []);
+          setSessions(Array.isArray(data) ? data : []);
         } else {
           console.error('Failed to fetch sessions, status:', response.status);
+          setSessions([]);
         }
       } catch (error) {
         console.error('Error fetching sessions:', error);
+        setSessions([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSessions();
-    const interval = setInterval(fetchSessions, 3000);
+    const interval = setInterval(fetchSessions, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user, authLoading]);
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="mb-8 text-center">
         <p>Loading your council sessions...</p>
@@ -68,12 +77,7 @@ function CouncilSessionsList() {
         Your Council Sessions ({sessions.length})
       </h2>
       
-      {/* Debug info */}
-      <div className="mb-4 p-3 bg-slate-100 rounded text-sm">
-        <p>Debug: Found {sessions.length} sessions</p>
-        <p>Loading: {isLoading.toString()}</p>
-        <p>Sessions: {JSON.stringify(sessions.map(s => ({id: s.id, date: s.scheduledDate})), null, 2)}</p>
-      </div>
+
       
       {sessions.length === 0 ? (
         <div className="text-center">
