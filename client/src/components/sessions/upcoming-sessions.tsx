@@ -173,7 +173,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Keep Session</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => cancelSession(session.id)}
+                        onClick={() => cancelSession(session.sessionId || session.id)}
                         className="bg-red-600 hover:bg-red-700"
                       >
                         Cancel Session

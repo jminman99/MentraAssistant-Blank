@@ -761,18 +761,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'You can only cancel your own sessions' });
       }
 
-      // Delete the session and related data using SQL tool
+      // Delete the session and related data
       console.log(`Deleting council session ${sessionId} for user ${user.id}`);
       
-      // Use SQL to delete the session and related data
-      await storage.db.transaction(async (tx) => {
-        // Delete participants
-        await tx.delete(councilParticipants).where(eq(councilParticipants.councilSessionId, sessionId));
-        // Delete mentors
-        await tx.delete(councilMentors).where(eq(councilMentors.councilSessionId, sessionId));
-        // Delete the session
-        await tx.delete(councilSessions).where(eq(councilSessions.id, sessionId));
-      });
+      // Import necessary modules
+      const { db } = await import('./db.js');
+      const { councilSessions, councilParticipants, councilMentors } = await import('../shared/schema.js');
+      const { eq } = await import('drizzle-orm');
+      
+      // Delete in order: participants, mentors, then session
+      await db.delete(councilParticipants).where(eq(councilParticipants.councilSessionId, sessionId));
+      await db.delete(councilMentors).where(eq(councilMentors.councilSessionId, sessionId));
+      await db.delete(councilSessions).where(eq(councilSessions.id, sessionId));
 
       res.json({ 
         message: 'Council session cancelled successfully',
@@ -858,9 +858,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedDate = new Date(preferredDate);
       const sessionTime = getTimeSlotHour(preferredTimeSlot);
       const sessionMinutes = getTimeSlotMinutes(preferredTimeSlot);
+      // Set the time correctly in UTC to preserve the selected time
       selectedDate.setUTCHours(sessionTime, sessionMinutes, 0, 0);
       
-      console.log('Selected date and time:', selectedDate, 'from slot:', preferredTimeSlot);
+      console.log('Selected date and time:', selectedDate, 'from slot:', preferredTimeSlot, 'UTC hours set to:', sessionTime);
 
       // Create council session with minimal required fields
       const councilSession = await storage.createCouncilSession({
