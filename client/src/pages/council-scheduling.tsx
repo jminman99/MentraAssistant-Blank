@@ -80,8 +80,21 @@ export default function CouncilScheduling() {
         preferredTimeSlot: data.preferredTime,
       };
       
-      const response = await apiRequest("POST", '/api/council-sessions/book', requestBody);
-      return response.json();
+      const response = await fetch('/api/council-sessions/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return result;
     },
     onSuccess: (response: any) => {
       toast({
@@ -92,6 +105,9 @@ export default function CouncilScheduling() {
       setSelectedMentors([]);
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      
+      // Refresh to show updated sessions
+      window.location.reload();
     },
     onError: (error: Error) => {
       toast({

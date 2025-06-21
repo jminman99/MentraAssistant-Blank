@@ -189,7 +189,21 @@ export default function CouncilScheduling() {
         preferredTimeSlot: selectedDateTime.time,
       };
       
-      return await apiRequest("POST", '/api/council-sessions/book', requestBody);
+      const response = await fetch('/api/council-sessions/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return result;
     },
     onSuccess: () => {
       toast({
@@ -201,8 +215,12 @@ export default function CouncilScheduling() {
       setSessionGoals("");
       setQuestions("");
       setSelectedDateTime(null);
+      
+      // Refresh to show updated sessions
+      window.location.reload();
     },
     onError: (error: any) => {
+      console.error('Council booking error:', error);
       toast({
         title: "Booking failed",
         description: error.message || "Failed to book council session",
