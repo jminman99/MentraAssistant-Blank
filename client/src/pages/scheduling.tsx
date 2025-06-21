@@ -242,22 +242,26 @@ export default function Scheduling() {
           </CardHeader>
         </Card>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Calendar Section */}
+        <div className="grid md:grid-cols-1 gap-6">
+          {/* Unified Calendar Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5" />
-                Select Date
+                Select Date and Time
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                className="rounded-md border"
+              <CalendarAvailability
+                onDateTimeSelect={(date, time) => {
+                  setSelectedDate(date);
+                  setSelectedTime(time);
+                }}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                availabilityData={availability}
+                mentorId={mentorId}
+                sessionType="individual"
               />
             </CardContent>
           </Card>

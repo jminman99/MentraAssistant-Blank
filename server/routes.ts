@@ -1219,9 +1219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sessions', requireAuth, async (req: any, res) => {
     try {
       const user = req.user;
-      const data = req.body;
       
-      console.log('[DEBUG] Individual session booking request:', JSON.stringify(data, null, 2));
+      console.log('[DEBUG] Individual session booking request:', JSON.stringify(req.body, null, 2));
       console.log('[DEBUG] Authenticated user:', user ? { id: user.id, email: user.email, plan: user.subscriptionPlan } : 'No user');
       
       if (!user || !user.id) {
@@ -1235,45 +1234,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Individual or Council subscription required for session booking' });
       }
 
-      // Validate required fields
-      if (!data.humanMentorId || !data.scheduledAt) {
-        console.log('[DEBUG] Missing required fields');
-        return res.status(400).json({ message: 'Missing required fields: humanMentorId and scheduledAt' });
-      }
-
-      // Parse and validate mentor ID
-      const humanMentorId = parseInt(data.humanMentorId);
-      if (isNaN(humanMentorId)) {
-        console.log('[DEBUG] Invalid mentor ID:', data.humanMentorId);
-        return res.status(400).json({ message: 'Invalid mentor ID' });
-      }
-
-      // Parse and validate date
-      const scheduledDate = new Date(data.scheduledAt);
-      if (isNaN(scheduledDate.getTime())) {
-        console.log('[DEBUG] Invalid date format:', data.scheduledAt);
-        return res.status(400).json({ message: 'Invalid date format' });
-      }
-
-      // Check if date is in the future
-      if (scheduledDate <= new Date()) {
-        console.log('[DEBUG] Date is not in the future');
-        return res.status(400).json({ message: 'Please select a future date and time' });
-      }
+      // Use Zod validation like the working endpoints
+      const data = insertSessionBookingSchema.parse(req.body);
+      console.log('[DEBUG] Individual session validation passed:', JSON.stringify(data, null, 2));
       
       // Generate unique Jitsi room ID
       const jitsiRoomId = `mentra-session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
       
       const sessionData = {
         menteeId: user.id,
-        humanMentorId: humanMentorId,
-        sessionType: 'individual',
-        duration: parseInt(data.duration) || 60,
-        scheduledDate: scheduledDate,
-        timezone: data.timezone || 'America/New_York',
-        meetingType: data.meetingType || 'video',
+        humanMentorId: data.humanMentorId,
+        sessionType: data.sessionType || 'individual',
+        duration: data.duration,
+        scheduledDate: data.scheduledAt,
+        timezone: data.timezone,
+        meetingType: data.meetingType,
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
-        sessionGoals: data.sessionGoals || null,
+        sessionGoals: data.sessionGoals,
         status: 'confirmed'
       };
       
@@ -1291,12 +1268,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ 
         success: true,
         sessionId: session.id,
-        message: `Individual session booked successfully for ${scheduledDate.toLocaleDateString()}`,
+        message: `Individual session booked successfully for ${data.scheduledAt.toLocaleDateString()}`,
         session: session
       });
       
     } catch (error) {
       console.error('[ERROR] Individual session booking failed:', error);
+      if (error instanceof z.ZodError) {
+        console.log('[DEBUG] Individual session Zod validation errors:', JSON.stringify(error.errors, null, 2));
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
       res.status(500).json({ message: 'Failed to create session: ' + (error as Error).message });
     }
   });
