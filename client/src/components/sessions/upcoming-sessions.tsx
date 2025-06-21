@@ -85,8 +85,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     ...councilSessions.map((session: any) => {
       console.log('Processing council session:', session);
       return {
-        id: session.sessionId || session.id,
-        sessionId: session.sessionId || session.id,
+        id: session.id, // This is the participant ID from storage
+        sessionId: session.sessionId, // This is the actual session ID
+        participantId: session.id, // Explicitly store participant ID for cancellation
         type: 'council' as const,
         scheduledAt: session.scheduledDate,
         status: session.status,
@@ -205,7 +206,11 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Keep Session</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => cancelCouncilSession(session.id)}
+                        onClick={() => {
+                          const participantId = (session as any).participantId || session.id;
+                          console.log(`[DEBUG] Cancelling session with participantId: ${participantId}, sessionId: ${(session as any).sessionId}`);
+                          cancelCouncilSession(participantId);
+                        }}
                         className="bg-red-600 hover:bg-red-700"
                       >
                         Cancel Session
