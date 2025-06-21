@@ -58,11 +58,29 @@ export default function CalendarAvailability({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Generate time slots (9 AM to 5 PM in 1-hour intervals)
-  const timeSlots = [
-    "09:00", "10:00", "11:00", "12:00", 
-    "13:00", "14:00", "15:00", "16:00", "17:00"
-  ];
+  // Generate time slots based on session duration
+  const generateTimeSlots = (duration: number) => {
+    const slots = [];
+    const startHour = 9; // 9 AM
+    const endHour = 17; // 5 PM
+    
+    if (duration === 30) {
+      // 30-minute slots
+      for (let hour = startHour; hour < endHour; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`);
+        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
+    } else {
+      // 60-minute slots (default)
+      for (let hour = startHour; hour < endHour; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      }
+    }
+    
+    return slots;
+  };
+  
+  const timeSlots = generateTimeSlots(detectedCouncilMode ? 60 : sessionDuration);
 
   useEffect(() => {
     if (date) {
