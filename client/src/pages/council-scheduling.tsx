@@ -454,7 +454,7 @@ export default function CouncilScheduling() {
                 <Button
                   onClick={handleBookSession}
                   disabled={isBooking || !sessionGoals.trim()}
-                  className="w-full"
+                  className="w-full mb-8"
                   size="lg"
                 >
                   {isBooking ? 'Booking Session...' : 'Book Council Session ($50)'}
@@ -579,7 +579,7 @@ export default function CouncilScheduling() {
                 <Button
                   type="submit"
                   disabled={isBooking}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 mb-6"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700"
                 >
                   {isBooking ? "Submitting..." : "Request Council Session"}
                 </Button>
