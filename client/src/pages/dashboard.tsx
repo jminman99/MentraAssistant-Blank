@@ -566,35 +566,26 @@ export default function Dashboard() {
       {/* Bottom Navigation for Mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40">
         <div className="flex items-center justify-around py-2">
-          <button
-            onClick={() => setSelectedTab("ai-mentors")}
-            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-              selectedTab === "ai-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
-            }`}
-          >
-            <Sparkles className="h-5 w-5" />
-            <span className="text-xs font-medium">Wisdom</span>
-          </button>
+          <Link href="/mentors">
+            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+              <Sparkles className="h-5 w-5" />
+              <span className="text-xs font-medium">Wisdom</span>
+            </button>
+          </Link>
           {user.subscriptionPlan === 'council' ? (
-            <button
-              onClick={() => setSelectedTab("council")}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                selectedTab === "council" ? "text-primary bg-blue-50" : "text-slate-600"
-              }`}
-            >
-              <Crown className="h-5 w-5" />
-              <span className="text-xs font-medium">Council</span>
-            </button>
+            <Link href="/council-scheduling-new">
+              <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+                <Crown className="h-5 w-5" />
+                <span className="text-xs font-medium">Council</span>
+              </button>
+            </Link>
           ) : (
-            <button
-              onClick={() => setSelectedTab("human-mentors")}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                selectedTab === "human-mentors" ? "text-primary bg-blue-50" : "text-slate-600"
-              }`}
-            >
-              <Compass className="h-5 w-5" />
-              <span className="text-xs font-medium">Mentors</span>
-            </button>
+            <Link href="/individual-booking">
+              <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+                <Compass className="h-5 w-5" />
+                <span className="text-xs font-medium">Mentors</span>
+              </button>
+            </Link>
           )}
           <Link href="/sessions">
             <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
