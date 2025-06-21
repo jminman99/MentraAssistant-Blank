@@ -288,6 +288,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: Fixed critical council session display issue - corrected database field mapping between `scheduled_date` and `scheduledDate` causing sessions to not render in UI
 - June 21, 2025: Removed all yellow theming elements and replaced with black/slate color scheme throughout the application
 - June 21, 2025: Implemented proper monthly council session limits - system now prevents multiple bookings per month as required by business rules
+- June 21, 2025: FIXED council sessions display - completely rewrote council scheduling page with direct fetch logic, council sessions now properly display with dates, times, and session goals for user ID 9 (council@example.com)
 
 ## Changelog
 

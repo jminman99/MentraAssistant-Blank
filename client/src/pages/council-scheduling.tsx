@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -67,18 +67,7 @@ export default function CouncilScheduling() {
     queryKey: ['/api/human-mentors'],
   });
 
-  // Fetch user's existing council bookings using the existing apiRequest system
-  const { 
-    data: userBookings = [], 
-    isLoading: isLoadingBookings, 
-    error: bookingsError 
-  } = useQuery({
-    queryKey: ['/api/council-bookings'], // Use the full API path with leading slash
-    retry: 3,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-    refetchInterval: 5000,
-  });
+
 
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
@@ -285,29 +274,8 @@ export default function CouncilScheduling() {
         </div>
       )}
 
-      {/* Debug: Show raw data */}
-      <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
-        <p>Debug - isLoadingBookings: {isLoadingBookings.toString()}</p>
-        <p>Debug - bookingsError: {bookingsError?.message || 'none'}</p>
-        <p>Debug - userBookings length: {userBookings?.length || 0}</p>
-        <p>Debug - userBookings type: {typeof userBookings}</p>
-        <p>Debug - userBookings data: {JSON.stringify(userBookings, null, 2).substring(0, 400)}...</p>
-      </div>
-
-      {/* Display loading, error, or sessions */}
-      {isLoadingBookings ? (
-        <div className="mb-8 text-center">
-          <p>Loading your council sessions...</p>
-        </div>
-      ) : bookingsError ? (
-        <div className="mb-8 text-center text-red-600">
-          <p>Error loading sessions: {bookingsError.message}</p>
-        </div>
-      ) : userBookings && userBookings.length > 0 ? (
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Your Council Sessions ({userBookings.length})
-          </h2>
+      {/* Display council sessions */}
+      <CouncilSessionsList />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {userBookings.map((booking: any) => (
               <Card key={booking.sessionId || booking.id}>

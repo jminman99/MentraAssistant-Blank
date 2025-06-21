@@ -10,7 +10,7 @@ import NotFound from "@/pages/not-found";
 import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Scheduling from "@/pages/scheduling";
-import CouncilScheduling from "@/pages/council-scheduling";
+import CouncilScheduling from "@/pages/council-scheduling-new";
 import { useAuth } from "@/lib/auth";
 
 function Router() {
