@@ -133,7 +133,7 @@ export default function CouncilScheduling() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl pb-40">
+      <div className="container mx-auto px-4 py-8 max-w-6xl pb-32 lg:pb-8">
         <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           Council Sessions
@@ -562,7 +562,7 @@ export default function CouncilScheduling() {
                 <Button
                   type="submit"
                   disabled={isBooking}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 mb-6"
                 >
                   {isBooking ? "Submitting..." : "Request Council Session"}
                 </Button>

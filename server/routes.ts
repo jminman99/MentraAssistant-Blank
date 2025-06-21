@@ -752,6 +752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
       }
 
+      const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
+
       // Check monthly council session limit (1 per month)
       const requestedDate = new Date(preferredDate);
       const requestedMonth = requestedDate.getMonth();
@@ -779,8 +781,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Council plan allows only one session per month. You already have a session scheduled for ${monthName}.`
         });
       }
-      
-      const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
 
       // Validate required fields
       if (!selectedMentorIds || !Array.isArray(selectedMentorIds) || selectedMentorIds.length < 3 || selectedMentorIds.length > 5) {
@@ -807,7 +807,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedDate = new Date(preferredDate);
       const sessionTime = getTimeSlotHour(preferredTimeSlot);
       const sessionMinutes = getTimeSlotMinutes(preferredTimeSlot);
-      selectedDate.setHours(sessionTime, sessionMinutes, 0, 0);
+      selectedDate.setUTCHours(sessionTime, sessionMinutes, 0, 0);
+      
+      console.log('Selected date and time:', selectedDate, 'from slot:', preferredTimeSlot);
 
       // Create council session with minimal required fields
       const councilSession = await storage.createCouncilSession({
