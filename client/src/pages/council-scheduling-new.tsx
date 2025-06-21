@@ -30,22 +30,27 @@ function CouncilSessionsList() {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
+        console.log('Fetching council sessions...');
         const response = await fetch('/api/council-bookings', {
           credentials: 'include'
         });
+        console.log('Response status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('Received sessions data:', data);
           setSessions(data || []);
+        } else {
+          console.error('Failed to fetch sessions, status:', response.status);
         }
       } catch (error) {
-        console.error('Failed to fetch sessions:', error);
+        console.error('Error fetching sessions:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSessions();
-    const interval = setInterval(fetchSessions, 2000);
+    const interval = setInterval(fetchSessions, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -62,6 +67,14 @@ function CouncilSessionsList() {
       <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
         Your Council Sessions ({sessions.length})
       </h2>
+      
+      {/* Debug info */}
+      <div className="mb-4 p-3 bg-slate-100 rounded text-sm">
+        <p>Debug: Found {sessions.length} sessions</p>
+        <p>Loading: {isLoading.toString()}</p>
+        <p>Sessions: {JSON.stringify(sessions.map(s => ({id: s.id, date: s.scheduledDate})), null, 2)}</p>
+      </div>
+      
       {sessions.length === 0 ? (
         <div className="text-center">
           <p className="text-slate-600 dark:text-slate-400">No council sessions scheduled yet.</p>
