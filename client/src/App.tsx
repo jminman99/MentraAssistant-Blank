@@ -11,6 +11,11 @@ import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Scheduling from "@/pages/scheduling";
 import CouncilScheduling from "@/pages/council-scheduling-new";
+import MentorAvailability from "@/pages/MentorAvailability";
+import BookSession from "@/pages/BookSession";
+import SessionDetails from "@/pages/SessionDetails";
+import Mentors from "@/pages/mentors";
+import Sessions from "@/pages/sessions";
 import { useAuth } from "@/lib/auth";
 
 function Router() {

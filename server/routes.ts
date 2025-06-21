@@ -10,7 +10,9 @@ import {
   insertMentoringSessionSchema,
   insertSemanticConfigurationSchema,
   insertMentorPersonalitySchema,
-  insertMentorApplicationSchema
+  insertMentorApplicationSchema,
+  insertMentorAvailabilitySchema,
+  insertSessionBookingSchema
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
@@ -1265,44 +1267,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get available time slots for a mentor
-  app.get("/api/mentors/:id/available-slots", async (req, res) => {
+  // Mentor Availability Routes
+  app.get('/api/mentor-availability', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      // Check if user is a mentor
+      const mentor = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
+      const userMentor = mentor.find(m => m.userId === user.id);
+      
+      if (!userMentor) {
+        return res.status(403).json({ message: 'Only mentors can access this endpoint' });
+      }
+      
+      const availability = await storage.getMentorAvailability(userMentor.id);
+      res.json(availability);
+    } catch (error) {
+      console.error('Error fetching mentor availability:', error);
+      res.status(500).json({ message: 'Failed to fetch availability' });
+    }
+  });
+
+  app.post('/api/mentor-availability', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const data = insertMentorAvailabilitySchema.parse(req.body);
+      
+      // Check if user is a mentor
+      const mentors = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
+      const userMentor = mentors.find(m => m.userId === user.id);
+      
+      if (!userMentor) {
+        return res.status(403).json({ message: 'Only mentors can manage availability' });
+      }
+      
+      const availability = await storage.createMentorAvailability({
+        ...data,
+        humanMentorId: userMentor.id
+      });
+      
+      res.status(201).json(availability);
+    } catch (error) {
+      console.error('Error creating availability:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create availability' });
+    }
+  });
+
+  app.delete('/api/mentor-availability/:id', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const availabilityId = parseInt(req.params.id);
+      
+      // Check if user is a mentor and owns this availability slot
+      const mentors = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
+      const userMentor = mentors.find(m => m.userId === user.id);
+      
+      if (!userMentor) {
+        return res.status(403).json({ message: 'Only mentors can manage availability' });
+      }
+      
+      await storage.deleteMentorAvailability(availabilityId);
+      res.json({ message: 'Availability slot deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting availability:', error);
+      res.status(500).json({ message: 'Failed to delete availability' });
+    }
+  });
+
+  // Get mentor availability for booking (public endpoint)
+  app.get('/api/mentor-availability/:mentorId', async (req, res) => {
+    try {
+      const mentorId = parseInt(req.params.mentorId);
+      const availability = await storage.getMentorAvailability(mentorId);
+      res.json(availability);
+    } catch (error) {
+      console.error('Error fetching mentor availability:', error);
+      res.status(500).json({ message: 'Failed to fetch availability' });
+    }
+  });
+
+  // Get human mentor details
+  app.get('/api/human-mentors/:id', async (req, res) => {
     try {
       const mentorId = parseInt(req.params.id);
-      const date = req.query.date as string;
-      
-      if (!date) {
-        return res.status(400).json({ message: "Date parameter required" });
-      }
-      
       const mentor = await storage.getHumanMentor(mentorId);
+      
       if (!mentor) {
-        return res.status(404).json({ message: "Mentor not found" });
+        return res.status(404).json({ message: 'Mentor not found' });
       }
       
-      // If mentor uses Calendly, return Calendly integration info
-      if (mentor.useCalendly) {
-        return res.json({
-          useCalendly: true,
-          calendlyUrl: mentor.calendlyUrl,
-          message: "This mentor uses Calendly for scheduling"
-        });
-      }
-      
-      // Generate available slots for native scheduling
-      const dayOfWeek = new Date(date).getDay();
-      const slots = [
-        { startTime: "09:00", endTime: "09:30", available: true },
-        { startTime: "10:00", endTime: "10:30", available: true },
-        { startTime: "11:00", endTime: "11:30", available: true },
-        { startTime: "14:00", endTime: "14:30", available: true },
-        { startTime: "15:00", endTime: "15:30", available: true },
-        { startTime: "16:00", endTime: "16:30", available: true },
-      ];
-      
-      res.json({ slots, useCalendly: false });
+      res.json(mentor);
     } catch (error) {
-      console.error("Error fetching available slots:", error);
-      res.status(500).json({ message: "Failed to fetch available slots" });
+      console.error('Error fetching mentor:', error);
+      res.status(500).json({ message: 'Failed to fetch mentor' });
+    }
+  });
+
+  // Enhanced Session Booking Routes with Jitsi Integration
+  app.post('/api/session-bookings', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const data = insertSessionBookingSchema.parse(req.body);
+      
+      // Generate unique Jitsi room ID
+      const jitsiRoomId = `mentra-session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      
+      const booking = await storage.createSessionBooking({
+        ...data,
+        menteeId: user.id,
+        jitsiRoomId
+      });
+      
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error('Error creating session booking:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create session booking' });
+    }
+  });
+
+  app.get('/api/session-bookings/:id', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const sessionId = parseInt(req.params.id);
+      
+      const session = await storage.getSessionBooking(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+      
+      // Check if user is the mentee or the mentor
+      const isAuthorized = session.menteeId === user.id || 
+                          session.humanMentor?.userId === user.id;
+      
+      if (!isAuthorized) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      res.json(session);
+    } catch (error) {
+      console.error('Error fetching session:', error);
+      res.status(500).json({ message: 'Failed to fetch session' });
+    }
+  });
+
+  app.delete('/api/session-bookings/:id', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const sessionId = parseInt(req.params.id);
+      
+      const session = await storage.getSessionBooking(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+      
+      // Check if user is the mentee or the mentor
+      const isAuthorized = session.menteeId === user.id || 
+                          session.humanMentor?.userId === user.id;
+      
+      if (!isAuthorized) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      const cancelledSession = await storage.cancelSessionBooking(sessionId, 'Cancelled by user');
+      res.json(cancelledSession);
+    } catch (error) {
+      console.error('Error cancelling session:', error);
+      res.status(500).json({ message: 'Failed to cancel session' });
     }
   });
 

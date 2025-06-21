@@ -1,5 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal, varchar, time } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql, eq, gte, lte, ne } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -92,6 +92,7 @@ export const mentoringSessions = pgTable("mentoring_sessions", {
   notes: text("notes"),
   rating: integer("rating"), // 1-5 stars
   feedback: text("feedback"),
+  jitsiRoomId: text("jitsi_room_id"), // Unique Jitsi Meet room identifier
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -539,7 +540,6 @@ export const insertCouncilMentorSchema = createInsertSchema(councilMentors).omit
 
 export const insertCouncilParticipantSchema = createInsertSchema(councilParticipants).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertMentorAvailabilitySchema = createInsertSchema(mentorAvailability).omit({
