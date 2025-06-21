@@ -224,7 +224,7 @@ export default function CouncilScheduling() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-32">
+    <div className="container mx-auto px-4 py-8 pb-40">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           Council Sessions
@@ -344,7 +344,7 @@ export default function CouncilScheduling() {
                 <Button
                   onClick={handleBookSession}
                   disabled={isBooking || !sessionGoals.trim()}
-                  className="w-full"
+                  className="w-full mb-8"
                   size="lg"
                 >
                   {isBooking ? 'Booking Session...' : 'Book Council Session ($50)'}

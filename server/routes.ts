@@ -20,12 +20,28 @@ import { generateAIResponse } from "./ai";
 
 // Helper function to convert time slot to hour
 function getTimeSlotHour(timeSlot: string): number {
+  // Handle specific time formats like "09:00", "14:30", etc.
+  if (timeSlot.includes(':')) {
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    return hours;
+  }
+  
+  // Handle generic time slots
   switch (timeSlot) {
     case 'morning': return 10; // 10 AM
     case 'afternoon': return 14; // 2 PM
     case 'evening': return 17; // 5 PM
     default: return 10; // Default to morning
   }
+}
+
+// Helper function to get minutes from time slot
+function getTimeSlotMinutes(timeSlot: string): number {
+  if (timeSlot.includes(':')) {
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    return minutes || 0;
+  }
+  return 0; // Default to 0 minutes for generic slots
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -737,21 +753,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check monthly council session limit (1 per month)
-      const currentMonth = new Date();
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const requestedDate = new Date(preferredDate);
+      const requestedMonth = requestedDate.getMonth();
+      const requestedYear = requestedDate.getFullYear();
       
-      const existingSessions = await storage.getCouncilSessions(user.organizationId || 1);
-      const userSessionsThisMonth = existingSessions.filter((session: any) => {
-        const sessionDate = new Date(session.scheduledDate);
-        return sessionDate >= startOfMonth && sessionDate <= endOfMonth && 
-               session.participants && session.participants.some((p: any) => p.menteeId === user.id);
-      });
+      // Get user's existing council participants
+      const existingParticipants = await storage.getCouncilParticipants(user.id);
+      
+      // Check for sessions in the same month as the requested date
+      const sessionsInRequestedMonth = await Promise.all(
+        existingParticipants.map(async (participant: any) => {
+          const session = await storage.getCouncilSession(participant.council_session_id);
+          if (session && session.scheduledDate) {
+            const sessionDate = new Date(session.scheduledDate);
+            return sessionDate.getMonth() === requestedMonth && sessionDate.getFullYear() === requestedYear;
+          }
+          return false;
+        })
+      );
 
-      if (userSessionsThisMonth.length >= 1) {
+      const hasSessionInRequestedMonth = sessionsInRequestedMonth.some(Boolean);
+      if (hasSessionInRequestedMonth) {
+        const monthName = new Date(requestedYear, requestedMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         return res.status(400).json({ 
-          message: 'Council plan allows only one session per month. Your next session can be booked after ' + 
-                   new Date(endOfMonth.getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()
+          message: `Council plan allows only one session per month. You already have a session scheduled for ${monthName}.`
         });
       }
       
@@ -777,22 +802,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Missing preferred time slot');
         return res.status(400).json({ message: "Preferred time slot is required" });
       }
-
-      // Validate mentor selection
-      if (!selectedMentorIds || selectedMentorIds.length < 3 || selectedMentorIds.length > 5) {
-        console.log('Invalid mentor selection:', selectedMentorIds?.length);
-        return res.status(400).json({ message: "Please select 3-5 mentors for your council session" });
-      }
-
-      // Check for existing council sessions this month
-      const requestedDate = new Date(preferredDate);
-      const requestedMonth = requestedDate.getMonth();
-      const requestedYear = requestedDate.getFullYear();
       
       // Check mentor availability instantly and create confirmed session
       const selectedDate = new Date(preferredDate);
       const sessionTime = getTimeSlotHour(preferredTimeSlot);
-      selectedDate.setHours(sessionTime, 0, 0, 0);
+      const sessionMinutes = getTimeSlotMinutes(preferredTimeSlot);
+      selectedDate.setHours(sessionTime, sessionMinutes, 0, 0);
 
       // Create council session with minimal required fields
       const councilSession = await storage.createCouncilSession({
