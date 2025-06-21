@@ -311,6 +311,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: RESOLVED sessions page routing for council users - "Book a Session" button now correctly routes council users to council scheduling page instead of individual booking, fixed routing path from /council-scheduling-new to /council-scheduling to match App.tsx configuration
 - June 21, 2025: CORRECTED subscription model - both Individual and Council plans are $49/month with separate session types: Individual gets 2 one-on-one sessions per calendar month, Council gets 1 session with 3-5 mentors per calendar month
 - June 21, 2025: UPDATED sessions page to show only relevant session type - Individual users see only individual sessions (X/2), Council users see only council sessions (X/1), no cross-plan session access
+- June 21, 2025: FIXED council session cancellation - corrected ID mapping to use sessionId instead of participant id, added proper ownership validation, council sessions can now be cancelled successfully
+- June 21, 2025: CLEANED UP excess June sessions - removed session 26 to enforce 1 council session per month limit, council@example.com now has proper monthly usage (1/1)
 
 ## Changelog
 
