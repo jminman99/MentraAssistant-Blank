@@ -761,10 +761,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'You can only cancel your own sessions' });
       }
 
-      // Delete the session and related data
-      await db.delete(councilSessions).where(eq(councilSessions.id, sessionId));
-      await db.delete(councilParticipants).where(eq(councilParticipants.councilSessionId, sessionId));
-      await db.delete(councilMentors).where(eq(councilMentors.councilSessionId, sessionId));
+      // Delete the session and related data using SQL tool
+      console.log(`Deleting council session ${sessionId} for user ${user.id}`);
+      
+      // Use SQL to delete the session and related data
+      await storage.db.transaction(async (tx) => {
+        // Delete participants
+        await tx.delete(councilParticipants).where(eq(councilParticipants.councilSessionId, sessionId));
+        // Delete mentors
+        await tx.delete(councilMentors).where(eq(councilMentors.councilSessionId, sessionId));
+        // Delete the session
+        await tx.delete(councilSessions).where(eq(councilSessions.id, sessionId));
+      });
 
       res.json({ 
         message: 'Council session cancelled successfully',
