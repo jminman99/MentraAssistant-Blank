@@ -1,0 +1,106 @@
+# 🛠️ CONTEXT
+• Node/Express backend with tables `councilParticipants` + `councilSessions`.
+• React 18 + React-Query frontend (list key = ['council-bookings']).
+• Need to:   1) cancel a council session   2) refresh Upcoming tab.
+• Previous bug:   ReferenceError: db is not defined  (cancel route).
+
+# 🔧 DO ALL OF THIS
+
+────────────────────────────────────────────────────
+1️⃣  BACKEND  (routes/council/cancelSession.ts)
+────────────────────────────────────────────────────
+```ts
+// 👉  Make sure `db` import exists at top of file
+import { db } from '../lib/db'               // adjust path to your project
+
+import { eq } from 'drizzle-orm';            // if you use drizzle
+import { councilParticipants, councilSessions } from '../schema'; // adjust
+
+export const addCancelRoute = (app, requireAuth) => {
+  // PATCH /api/council-sessions/:participantId/cancel
+  app.patch('/api/council-sessions/:participantId/cancel', requireAuth, async (req, res) => {
+    try {
+      const participantId = Number(req.params.participantId);
+      const { id: userId } = req.user as any;
+
+      // 1. Join participant + session
+      const record = await db.select({
+        participantId: councilParticipants.id,
+        menteeId: councilParticipants.menteeId,
+        sessionId: councilSessions.id,
+      })
+      .from(councilParticipants)
+      .innerJoin(councilSessions, eq(councilParticipants.councilSessionId, councilSessions.id))
+      .where(eq(councilParticipants.id, participantId))
+      .limit(1)
+      .then(r => r[0]);
+
+      if (!record) return res.status(404).json({ message: 'Not found' });
+      if (record.menteeId !== userId) return res.status(403).json({ message: 'Forbidden' });
+
+      // 2. Soft-cancel in one transaction
+      await db.transaction(async trx => {
+        await trx.update(councilParticipants)
+          .set({ status: 'cancelled' })
+          .where(eq(councilParticipants.id, participantId));
+
+        await trx.update(councilSessions)
+          .set({ status: 'cancelled' })
+          .where(eq(councilSessions.id, record.sessionId));
+      });
+
+      res.json({ success: true, participantId });
+    } catch (e) {
+      console.error('Cancel error', e);
+      res.status(500).json({ message: 'Cancel failed' });
+    }
+  });
+};
+
+────────────────────────────────────────────────────
+2️⃣  FRONTEND  (useMutation)
+────────────────────────────────────────────────────
+```ts
+const { mutate: cancelCouncilSession } = useMutation({
+  mutationFn: async (participantId: number) => {
+    const res = await fetch(`/api/council-sessions/${participantId}/cancel`, { method: 'PATCH' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Cancel failed');
+    return json;
+  },
+  onSuccess: async () => {
+    toast({ title: 'Session cancelled' });
+    await queryClient.invalidateQueries({ queryKey: ['council-bookings'] }); // key must match list
+  },
+});
+
+<Button variant="destructive" onClick={() => cancelCouncilSession(participantId)}>
+  Cancel
+</Button>
+
+────────────────────────────────────────────────────
+3️⃣  OPTIONAL DB CONSTRAINT (one per month)
+────────────────────────────────────────────────────
+```sql
+ALTER TABLE council_sessions
+ADD CONSTRAINT uniq_user_month
+UNIQUE (user_id, date_trunc('month', scheduled_date));
+
+
+────────────────────────────────────────────────────
+4️⃣  VERIFICATION CHECKLIST
+────────────────────────────────────────────────────
+✓ Book a session → appears in Upcoming  
+✓ Click Cancel → toast “Session cancelled”  
+✓ Upcoming list refreshes (no manual reload)  
+✓ GET /api/council-bookings returns status = "cancelled" or row hidden by filter  
+✓ DB shows both participant & session rows status = cancelled  
+✓ Booking another session in same month now succeeds  
+────────────────────────────────────────────────────
+
+Run through the checklist.
+	•	If POST succeeds but Cancel 500s, re-check the db import path.
+	•	If Cancel works but list doesn’t refresh, verify React-Query key matches exactly (['council-bookings']).
+	•	If UI still shows cancelled rows, filter status !== 'cancelled' in list view.
+
+Stop only when every checklist item passes.

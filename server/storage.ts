@@ -860,3 +860,6 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Export db for use in routes that need direct access
+export { db } from "./db";

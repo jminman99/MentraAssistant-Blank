@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { storage } from "./storage";
+import { storage, db } from "./storage";
 import { z } from "zod";
 import { 
   loginSchema, 
@@ -13,6 +13,8 @@ import {
   insertMentorApplicationSchema
 } from "@shared/schema";
 import bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
+import { councilParticipants, councilSessions } from "@shared/schema";
 import session from "express-session";
 import passport from "./auth-strategies";
 
@@ -961,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Cancel request - participantId: ${participantId}, userId: ${userId}`);
 
       // Load participant + session in one JOIN
-      const record = await db
+      const record = await storage.db
         .select({
           participantId: councilParticipants.id,
           menteeId: councilParticipants.menteeId,
@@ -991,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Cancelling session ${record.sessionId} for participant ${participantId}`);
 
       // Soft-cancel in a single transaction
-      await db.transaction(async (trx) => {
+      await storage.db.transaction(async (trx) => {
         await trx
           .update(councilParticipants)
           .set({ status: 'cancelled' })
