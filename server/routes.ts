@@ -853,21 +853,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's council bookings with session details
-  app.get('/api/council-bookings', async (req, res) => {
+  app.get('/api/council-bookings', requireAuth, async (req, res) => {
     try {
-      // For testing without authentication, use council user directly
-      const councilUser = await storage.getUser(9);
-      if (!councilUser) {
-        return res.status(404).json({ message: 'Council user not found' });
+      const user = req.user as any;
+      const targetUser = user || await storage.getUser(9); // Fallback for testing
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
       }
       
       // Check if user has council plan access
-      if (councilUser.subscriptionPlan !== 'council') {
+      if (targetUser.subscriptionPlan !== 'council') {
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
       }
 
       // Get council participants for the user
-      const participants = await storage.getCouncilParticipants(councilUser.id);
+      const participants = await storage.getCouncilParticipants(targetUser.id);
       
       // Get full session details for each participation
       const sessionsWithDetails = await Promise.all(

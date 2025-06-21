@@ -68,8 +68,11 @@ export default function CouncilScheduling() {
   });
 
   // Fetch user's existing council bookings
-  const { data: userBookings, isLoading: isLoadingBookings } = useQuery({
+  const { data: userBookings, isLoading: isLoadingBookings, error: bookingsError } = useQuery({
     queryKey: ['/api/council-bookings'],
+    retry: 3,
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   // Submit council session booking
@@ -251,8 +254,35 @@ export default function CouncilScheduling() {
         )}
       </div>
 
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-4 bg-gray-100 rounded">
+          <p>Loading: {isLoadingBookings ? 'true' : 'false'}</p>
+          <p>Error: {bookingsError ? 'true' : 'false'}</p>
+          <p>Bookings type: {typeof userBookings}</p>
+          <p>Bookings length: {Array.isArray(userBookings) ? userBookings.length : 'not array'}</p>
+          <p>Bookings data: {userBookings ? JSON.stringify(userBookings).substring(0, 200) : 'null'}</p>
+        </div>
+      )}
+
+      {/* Show error if bookings failed to load */}
+      {bookingsError && (
+        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h3 className="text-red-800 font-medium">Error loading sessions</h3>
+          <p className="text-red-600 text-sm">{bookingsError.message}</p>
+        </div>
+      )}
+
+      {/* Show if no sessions */}
+      {!isLoadingBookings && !bookingsError && (!userBookings || userBookings.length === 0) && (
+        <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-lg text-center">
+          <h3 className="text-slate-700 font-medium mb-2">No Council Sessions Yet</h3>
+          <p className="text-slate-600 text-sm">Your scheduled council sessions will appear here.</p>
+        </div>
+      )}
+
       {/* Existing Bookings */}
-      {!isLoadingBookings && userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
+      {!isLoadingBookings && !bookingsError && userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Your Council Sessions
