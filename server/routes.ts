@@ -1215,39 +1215,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Session Routes (for compatibility with existing frontend)
+  // Individual Session Booking Endpoint (1x1 sessions)
   app.post('/api/sessions', requireAuth, async (req: any, res) => {
     try {
       const user = req.user;
       const data = req.body;
       
-      console.log('[DEBUG] Session booking request:', JSON.stringify(data, null, 2));
-      console.log('[DEBUG] User:', user.id, user.email);
-      console.log('[DEBUG] Request headers:', JSON.stringify(req.headers, null, 2));
+      console.log('[DEBUG] Individual session booking request:', JSON.stringify(data, null, 2));
+      console.log('[DEBUG] Authenticated user:', user ? { id: user.id, email: user.email, plan: user.subscriptionPlan } : 'No user');
       
-      // Simple validation - just check required fields
-      if (!data.humanMentorId || !data.scheduledAt) {
-        console.log('[DEBUG] Missing required fields');
-        return res.status(400).json({ 
-          message: 'Missing required fields: humanMentorId and scheduledAt' 
-        });
+      if (!user || !user.id) {
+        console.log('[DEBUG] Authentication failed');
+        return res.status(401).json({ message: 'Authentication required' });
       }
 
-      // Parse date
+      // Check subscription access for individual sessions
+      if (!['individual', 'council'].includes(user.subscriptionPlan)) {
+        console.log('[DEBUG] Invalid subscription plan:', user.subscriptionPlan);
+        return res.status(403).json({ message: 'Individual or Council subscription required for session booking' });
+      }
+
+      // Validate required fields
+      if (!data.humanMentorId || !data.scheduledAt) {
+        console.log('[DEBUG] Missing required fields');
+        return res.status(400).json({ message: 'Missing required fields: humanMentorId and scheduledAt' });
+      }
+
+      // Parse and validate mentor ID
+      const humanMentorId = parseInt(data.humanMentorId);
+      if (isNaN(humanMentorId)) {
+        console.log('[DEBUG] Invalid mentor ID:', data.humanMentorId);
+        return res.status(400).json({ message: 'Invalid mentor ID' });
+      }
+
+      // Parse and validate date
       const scheduledDate = new Date(data.scheduledAt);
       if (isNaN(scheduledDate.getTime())) {
-        console.log('[DEBUG] Invalid date format');
-        return res.status(400).json({ 
-          message: 'Invalid date format' 
-        });
+        console.log('[DEBUG] Invalid date format:', data.scheduledAt);
+        return res.status(400).json({ message: 'Invalid date format' });
       }
 
       // Check if date is in the future
       if (scheduledDate <= new Date()) {
-        console.log('[DEBUG] Date must be in the future');
-        return res.status(400).json({ 
-          message: 'Please select a future date and time' 
-        });
+        console.log('[DEBUG] Date is not in the future');
+        return res.status(400).json({ message: 'Please select a future date and time' });
       }
       
       // Generate unique Jitsi room ID
@@ -1255,36 +1266,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessionData = {
         menteeId: user.id,
-        humanMentorId: parseInt(data.humanMentorId),
-        sessionType: data.sessionType || 'individual',
+        humanMentorId: humanMentorId,
+        sessionType: 'individual',
         duration: parseInt(data.duration) || 60,
         scheduledDate: scheduledDate,
         timezone: data.timezone || 'America/New_York',
-        meetingType: data.meetingType || 'video',
+        meetingType: 'video',
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
         sessionGoals: data.sessionGoals || null,
         status: 'confirmed'
       };
       
-      console.log('[DEBUG] Creating session with data:', sessionData);
+      console.log('[DEBUG] Creating individual session with:', JSON.stringify(sessionData, null, 2));
       
-      try {
-        const session = await storage.createSessionBooking(sessionData);
-        console.log('[DEBUG] Session created successfully:', session.id);
-        
-        // Update user's session count
-        await storage.updateUser(user.id, {
-          sessionsUsed: user.sessionsUsed + 1
-        });
-        
-        res.status(201).json(session);
-      } catch (dbError) {
-        console.error('[DEBUG] Database error:', dbError);
-        return res.status(500).json({ message: 'Database error: ' + (dbError as Error).message });
-      }
+      const session = await storage.createSessionBooking(sessionData);
+      console.log('[DEBUG] Individual session created successfully:', session.id);
+      
+      // Update user's session count
+      await storage.updateUser(user.id, {
+        sessionsUsed: (user.sessionsUsed || 0) + 1
+      });
+      
+      res.status(201).json(session);
+      
     } catch (error) {
-      console.error('Error creating session:', error);
-      res.status(500).json({ message: 'Failed to create session' });
+      console.error('[ERROR] Individual session booking failed:', error);
+      res.status(500).json({ message: 'Failed to create session: ' + (error as Error).message });
     }
   });
 
