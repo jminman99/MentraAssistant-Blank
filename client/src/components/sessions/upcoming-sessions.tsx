@@ -101,20 +101,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
 
   const upcomingSessions = allSessions
     .filter(session => {
-      console.log('[DEBUG] Filtering session:', session);
       const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
       const hasScheduledAt = !!session.scheduledAt;
       const isFutureSession = hasScheduledAt ? isFuture(parseISO(session.scheduledAt)) : false;
-      
-      console.log('[DEBUG] Session filter check:', {
-        id: session.id,
-        status: session.status,
-        isValidStatus,
-        hasScheduledAt,
-        scheduledAt: session.scheduledAt,
-        isFutureSession,
-        passed: isValidStatus && hasScheduledAt && isFutureSession
-      });
       
       return isValidStatus && hasScheduledAt && isFutureSession;
     })

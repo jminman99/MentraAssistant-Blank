@@ -76,7 +76,6 @@ export default function Sessions() {
   );
   const pastSessions = sessions.filter(session => 
     session.status === 'completed' || 
-    session.status === 'cancelled' ||
     ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(parseISO(session.scheduledDate), now))
   );
 
@@ -256,7 +255,7 @@ export default function Sessions() {
                   <div className="text-2xl font-bold text-slate-900">
                     {sessions.filter(s => {
                       const sessionDate = parseISO(s.scheduledDate);
-                      return isSameMonth(sessionDate, new Date()) && s.status !== 'cancelled';
+                      return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
                     }).length}/2
                   </div>
                   <div className="text-sm text-slate-600">Monthly Usage</div>

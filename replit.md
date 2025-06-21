@@ -300,6 +300,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: UPDATED session durations throughout application - individual sessions are 30 minutes, council sessions are 60 minutes, updated calendar availability component and UI displays
 - June 21, 2025: FIXED calendar availability UX issues - removed red X marks from individual session time slots, all 30-minute intervals now show as available for individual booking, fixed sessions API 500 error by updating getUserSessions method
 - June 21, 2025: RESOLVED calendar component infinite API loop - created optimized calendar-availability-fixed component with proper memoization and eliminated excessive mentor availability API calls, individual sessions no longer trigger availability checks
+- June 21, 2025: FIXED session status filtering - canceled sessions no longer appear in past sessions list, past sessions now only show completed sessions and scheduled sessions with past dates
 
 ## Changelog
 
