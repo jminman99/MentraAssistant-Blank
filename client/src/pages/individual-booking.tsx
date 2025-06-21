@@ -44,15 +44,15 @@ export default function IndividualBooking() {
     enabled: hasAccess,
   });
 
-  // Calculate monthly session usage
-  const currentMonth = new Date();
-  const currentMonthBookings = userBookings.filter(booking => {
+  // Calculate monthly session usage for the selected booking month
+  const selectedBookingMonth = selectedDateTime?.date || new Date();
+  const selectedMonthBookings = userBookings.filter(booking => {
     const bookingDate = parseISO(booking.scheduledDate);
-    return isSameMonth(bookingDate, currentMonth) && 
+    return isSameMonth(bookingDate, selectedBookingMonth) && 
            booking.status !== 'cancelled';
   });
   const monthlyLimit = 2; // As per PRD
-  const sessionsUsed = currentMonthBookings.length;
+  const sessionsUsed = selectedMonthBookings.length;
   const canBookMore = sessionsUsed < monthlyLimit;
 
   // Book session mutation
@@ -124,8 +124,8 @@ export default function IndividualBooking() {
   const handleBookSession = () => {
     if (!canBookMore) {
       toast({
-        title: "Monthly Limit Reached",
-        description: "You've used all your monthly sessions. Your limit resets next month.",
+        title: "Monthly Limit Reached", 
+        description: `You've used all ${monthlyLimit} sessions for ${selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'this month'}. Try selecting a different month.`,
         variant: "destructive",
       });
       return;
@@ -228,10 +228,10 @@ export default function IndividualBooking() {
           {/* Monthly usage indicator */}
           <div className="mt-4 flex items-center gap-2">
             <Badge variant={canBookMore ? "secondary" : "destructive"}>
-              {sessionsUsed}/{monthlyLimit} sessions used this month
+              {sessionsUsed}/{monthlyLimit} sessions for {selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'selected month'}
             </Badge>
             {!canBookMore && (
-              <span className="text-sm text-red-600">Monthly limit reached - resets next month</span>
+              <span className="text-sm text-red-600">Monthly limit reached for {selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'selected month'}</span>
             )}
           </div>
         </div>
