@@ -225,8 +225,8 @@ export default function SessionDetails() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-slate-500">Rate</span>
-                  <span className="text-sm font-medium">${session.humanMentor?.hourlyRate}/hour</span>
+                  <span className="text-sm text-slate-500">Duration</span>
+                  <span className="text-sm font-medium">30 minutes</span>
                 </div>
               </div>
 

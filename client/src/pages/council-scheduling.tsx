@@ -384,7 +384,7 @@ export default function CouncilScheduling() {
                               </span>
                             </div>
                             <span className="text-sm text-slate-600 dark:text-slate-400">
-                              ${mentor.hourlyRate}/hr
+                              Available
                             </span>
                           </div>
                         </div>

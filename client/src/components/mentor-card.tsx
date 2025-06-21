@@ -85,7 +85,7 @@ export default function MentorCard({
                 )}
                 
                 <Badge variant="secondary" className="text-xs">
-                  ${mentor.hourlyRate}/hr
+                  Available
                 </Badge>
               </div>
             </div>

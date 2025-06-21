@@ -56,8 +56,9 @@ export default function Mentors() {
                   <span className="text-slate-500">({mentor.totalSessions} sessions)</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  <span>${mentor.hourlyRate}/hr</span>
+                  <Badge variant="outline" className="text-xs">
+                    Included in Plan
+                  </Badge>
                 </div>
               </div>
 
