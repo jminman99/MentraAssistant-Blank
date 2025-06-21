@@ -1271,7 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         duration: parseInt(data.duration) || 60,
         scheduledDate: scheduledDate,
         timezone: data.timezone || 'America/New_York',
-        meetingType: 'video',
+        meetingType: data.meetingType || 'video',
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
         sessionGoals: data.sessionGoals || null,
         status: 'confirmed'
@@ -1287,7 +1287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionsUsed: (user.sessionsUsed || 0) + 1
       });
       
-      res.status(201).json(session);
+      // Return success response matching council booking format
+      res.status(201).json({ 
+        success: true,
+        sessionId: session.id,
+        message: `Individual session booked successfully for ${scheduledDate.toLocaleDateString()}`,
+        session: session
+      });
       
     } catch (error) {
       console.error('[ERROR] Individual session booking failed:', error);

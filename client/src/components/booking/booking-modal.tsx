@@ -35,16 +35,22 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      console.log('[DEBUG] Booking success response:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
+      // Handle both old and new response formats
+      const message = data.message || `Your ${sessionType} session with ${mentor.user.firstName} is confirmed.`;
+      
       toast({
         title: "Session Booked!",
-        description: `Your ${sessionType} session with ${mentor.user.firstName} is confirmed.`,
+        description: message,
       });
       onClose();
     },
     onError: (error: any) => {
+      console.error('[DEBUG] Booking error:', error);
       toast({
         title: "Booking Failed",
         description: error.message || "Please try again",
