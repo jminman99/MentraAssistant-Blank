@@ -235,14 +235,14 @@ export default function CalendarAvailability({
       </div>
 
       {selectedDate && selectedTime && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CheckCircle className="h-5 w-5 text-blue-600" />
             <div>
-              <p className="font-medium text-green-800">
-                Session Scheduled
+              <p className="font-medium text-blue-800">
+                Time Selected
               </p>
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-blue-600">
                 {format(selectedDate, 'MMMM d, yyyy')} at {selectedTime}
               </p>
             </div>
