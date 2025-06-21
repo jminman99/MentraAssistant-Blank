@@ -735,11 +735,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify user owns this session by checking participants
       const participants = await storage.getCouncilParticipants(user.id);
-      const userParticipant = participants.find((p: any) => p.council_session_id === sessionId);
+      console.log(`[DEBUG] User ${user.id} participants:`, participants);
+      console.log(`[DEBUG] Looking for session ID:`, sessionId);
+      
+      const userParticipant = participants.find((p: any) => p.sessionId === sessionId);
       
       if (!userParticipant) {
+        console.log(`[DEBUG] No matching participant found for session ${sessionId}`);
         return res.status(403).json({ message: 'You can only cancel your own sessions' });
       }
+      
+      console.log(`[DEBUG] Found matching participant:`, userParticipant);
 
       // Delete the session and related data
       console.log(`Deleting council session ${sessionId} for user ${user.id}`);
