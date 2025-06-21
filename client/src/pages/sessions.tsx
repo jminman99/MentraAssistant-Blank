@@ -38,6 +38,17 @@ export default function Sessions() {
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("upcoming");
 
+  // Debug user subscription plan
+  console.log('[DEBUG] Sessions page user:', user);
+  console.log('[DEBUG] User subscription plan:', user?.subscriptionPlan);
+  
+  // Helper function to get booking route
+  const getBookingRoute = () => {
+    const isCouncilUser = user?.subscriptionPlan === 'council';
+    console.log('[DEBUG] Is council user?', isCouncilUser);
+    return isCouncilUser ? '/council-scheduling-new' : '/individual-booking';
+  };
+
   // Fetch user's session bookings
   const { data: sessions = [], isLoading } = useQuery<SessionBooking[]>({
     queryKey: ['/api/session-bookings'],
@@ -275,7 +286,7 @@ export default function Sessions() {
                 }
               </p>
             </div>
-            <Link href={user?.subscriptionPlan === 'council' ? '/council-scheduling-new' : '/individual-booking'}>
+            <Link href={getBookingRoute()}>
               <Button>
                 <User className="h-4 w-4 mr-2" />
                 Book New Session
@@ -336,7 +347,7 @@ export default function Sessions() {
                       : 'Book your next individual session with a mentor'
                     }
                   </p>
-                  <Link href={user?.subscriptionPlan === 'council' ? '/council-scheduling-new' : '/individual-booking'}>
+                  <Link href={getBookingRoute()}>
                     <Button>
                       {user?.subscriptionPlan === 'council' ? 'Book Your First Council Session' : 'Book Your First Session'}
                     </Button>
