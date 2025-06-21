@@ -9,7 +9,7 @@ import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import MentorApplication from "@/pages/mentor-application";
 import AdminDashboard from "@/pages/admin-dashboard";
-import IndividualSession from "@/pages/individual-session";
+import FreshIndividualBooking from "@/pages/fresh-individual-booking";
 import CouncilScheduling from "@/pages/council-scheduling-new";
 import MentorAvailability from "@/pages/MentorAvailability";
 import BookSession from "@/pages/BookSession";
@@ -51,7 +51,7 @@ function Router() {
       <Route path="/welcome" component={Welcome} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
-      <Route path="/schedule/:mentorId" component={user ? IndividualSession : Login} />
+      <Route path="/schedule/:mentorId" component={user ? FreshIndividualBooking : Login} />
       <Route path="/council" component={CouncilRoute} />
       <Route path="/council-scheduling" component={CouncilRoute} />
       <Route path="/mentor-application" component={MentorApplication} />
