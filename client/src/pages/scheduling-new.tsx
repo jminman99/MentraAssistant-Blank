@@ -112,10 +112,10 @@ export default function IndividualScheduling() {
   });
 
   const handleBookSession = () => {
-    if (!selectedDateTime || !sessionGoals.trim() || !mentorId) {
+    if (!selectedDateTime || !mentorId) {
       toast({
         title: "Missing information",
-        description: "Please select a date/time and enter session goals.",
+        description: "Please select a date and time for your session.",
         variant: "destructive",
       });
       return;
@@ -205,7 +205,7 @@ export default function IndividualScheduling() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="session-goals" className="text-base font-medium">
-                  What do you hope to accomplish in this session?
+                  What do you hope to accomplish in this session? (Optional)
                 </Label>
                 <Textarea
                   id="session-goals"
@@ -219,7 +219,7 @@ export default function IndividualScheduling() {
 
               <Button
                 onClick={handleBookSession}
-                disabled={isBooking || !sessionGoals.trim()}
+                disabled={isBooking || !selectedDateTime}
                 className="w-full mb-8"
                 size="lg"
               >

@@ -44,6 +44,10 @@ export default function CalendarAvailability({
     mentorsLength: mentors?.length,
     isCouncilMode 
   });
+  
+  // Override to force council mode interface for both individual and council booking
+  const displayMentorIds = selectedMentorIds || selectedMentors || [];
+  const isDisplayingCalendar = displayMentorIds.length > 0;
   const [date, setDate] = useState<Date | undefined>(selectedDate || new Date());
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,10 +59,10 @@ export default function CalendarAvailability({
   ];
 
   useEffect(() => {
-    if (date && mentorIds.length > 0) {
+    if (date && displayMentorIds.length > 0) {
       checkAvailability(date);
     }
-  }, [date, mentorIds]);
+  }, [date, displayMentorIds]);
 
   const checkAvailability = async (selectedDate: Date) => {
     setLoading(true);
@@ -68,7 +72,7 @@ export default function CalendarAvailability({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorIds: mentorIds,
+          mentorIds: displayMentorIds,
           date: format(selectedDate, 'yyyy-MM-dd')
         })
       });
@@ -200,13 +204,13 @@ export default function CalendarAvailability({
             </div>
           )}
 
-          {date && mentorIds.length > 0 && (
+          {date && displayMentorIds.length > 0 && (
             <div className="mt-4 p-3 bg-slate-50 rounded-lg">
               <p className="text-xs text-slate-600 mb-2">
-                Selected mentors: {mentorIds.length}
+                Selected mentors: {displayMentorIds.length}
               </p>
               <div className="flex flex-wrap gap-1">
-                {mentorIds.map(mentorId => {
+                {displayMentorIds.map(mentorId => {
                   const mentor = mentors?.find(m => m.id === mentorId);
                   return (
                     <Badge key={mentorId} variant="secondary" className="text-xs">
