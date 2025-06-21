@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, Video, User, X, ExternalLink, Star, ArrowLeft, Home, Users, MessageSquare } from "lucide-react";
 import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
 import { useAuth } from "@/lib/auth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface SessionBooking {
   id: number;
@@ -37,6 +37,7 @@ export default function Sessions() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("upcoming");
+  const [, setLocation] = useLocation();
 
   // Debug user subscription plan
   console.log('[DEBUG] Sessions page user:', user);
@@ -47,6 +48,13 @@ export default function Sessions() {
     const isCouncilUser = user?.subscriptionPlan === 'council';
     console.log('[DEBUG] Is council user?', isCouncilUser);
     return isCouncilUser ? '/council-scheduling-new' : '/individual-booking';
+  };
+
+  // Helper function to navigate to booking page
+  const handleBookNewSession = () => {
+    const route = getBookingRoute();
+    console.log('[DEBUG] Navigating to:', route);
+    setLocation(route);
   };
 
   // Fetch user's session bookings
@@ -295,12 +303,10 @@ export default function Sessions() {
                 }
               </p>
             </div>
-            <Link href={getBookingRoute()}>
-              <Button>
-                <User className="h-4 w-4 mr-2" />
-                Book New Session
-              </Button>
-            </Link>
+            <Button onClick={handleBookNewSession}>
+              <User className="h-4 w-4 mr-2" />
+              Book New Session
+            </Button>
           </div>
 
           {/* Session Usage Summary */}
@@ -356,11 +362,9 @@ export default function Sessions() {
                       : 'Book your next individual session with a mentor'
                     }
                   </p>
-                  <Link href={getBookingRoute()}>
-                    <Button>
-                      {user?.subscriptionPlan === 'council' ? 'Book Your First Council Session' : 'Book Your First Session'}
-                    </Button>
-                  </Link>
+                  <Button onClick={handleBookNewSession}>
+                    {user?.subscriptionPlan === 'council' ? 'Book Your First Council Session' : 'Book Your First Session'}
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
