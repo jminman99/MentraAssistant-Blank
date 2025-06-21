@@ -201,7 +201,7 @@ function CouncilSchedulingContent() {
                 <Button
                   type="submit"
                   disabled={isBooking || !selectedDate || !selectedTime}
-                  className="bg-amber-500 hover:bg-amber-600"
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
                 >
                   {isBooking ? "Booking..." : "Book Council Session"}
                 </Button>
@@ -224,7 +224,7 @@ function CouncilSchedulingContent() {
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div className="mb-8">
         <div className="text-center mb-8">
-          <Crown className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+          <Crown className="h-16 w-16 text-slate-700 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Council Sessions</h2>
           <p className="text-slate-600 mb-4 max-w-2xl mx-auto">
             Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all.
@@ -602,7 +602,7 @@ export default function Dashboard() {
               selectedTab === "sessions" ? "text-primary bg-blue-50" : "text-slate-600"
             }`}
           >
-            <Star className="h-5 w-5" />
+            <Star className="h-5 w-5 text-slate-700" />
             <span className="text-xs font-medium">Sessions</span>
           </button>
           <button
@@ -611,7 +611,7 @@ export default function Dashboard() {
               selectedTab === "plan" ? "text-primary bg-blue-50" : "text-slate-600"
             }`}
           >
-            <Crown className="h-5 w-5" />
+            <Crown className="h-5 w-5 text-slate-700" />
             <span className="text-xs font-medium">Plan</span>
           </button>
         </div>
