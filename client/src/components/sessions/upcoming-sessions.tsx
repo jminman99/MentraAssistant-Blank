@@ -83,7 +83,16 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         'Individual Session'
     })),
     ...councilSessions.map((session: any) => {
-      console.log('Processing council session:', session);
+      console.log('[DEBUG] Processing council session for upcoming:', session);
+      console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
+      console.log('[DEBUG] Session status:', session.status);
+      const sessionDate = session.scheduledDate ? parseISO(session.scheduledDate) : null;
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      console.log('[DEBUG] Session date:', sessionDate);
+      console.log('[DEBUG] Start of today:', startOfToday);
+      console.log('[DEBUG] Is today or future?', sessionDate ? sessionDate >= startOfToday : false);
+      
       return {
         id: session.id, // This is the participant ID from storage
         sessionId: session.sessionId, // This is the actual session ID
@@ -93,22 +102,47 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         status: session.status,
         title: 'Council Session',
         duration: session.duration || 60,
+        sessionGoals: session.sessionGoals,
+        questions: session.questions,
+        description: session.description,
         mentorCount: session.mentorCount || 3,
-        sessionGoals: session.sessionGoals
       };
     })
   ];
+  
+  console.log('[DEBUG] All sessions combined:', allSessions);
 
   const upcomingSessions = allSessions
     .filter(session => {
       const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
       const hasScheduledAt = !!session.scheduledAt;
-      const isFutureSession = hasScheduledAt ? isFuture(parseISO(session.scheduledAt)) : false;
       
-      return isValidStatus && hasScheduledAt && isFutureSession;
+      // Show sessions from today onwards (including past sessions from today)
+      const sessionDate = hasScheduledAt ? parseISO(session.scheduledAt) : null;
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const isTodayOrFuture = sessionDate ? sessionDate >= startOfToday : false;
+      
+      console.log('[DEBUG] Filtering session:', {
+        id: session.id,
+        type: session.type,
+        status: session.status,
+        scheduledAt: session.scheduledAt,
+        isValidStatus,
+        hasScheduledAt,
+        isTodayOrFuture,
+        sessionDate,
+        startOfToday
+      });
+      
+      return isValidStatus && hasScheduledAt && isTodayOrFuture;
     })
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
+    
+  console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
+  console.log('[DEBUG] Total sessions found:', allSessions.length);
+  console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
 
   if (isLoading) {
     return (
