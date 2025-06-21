@@ -25,8 +25,17 @@ export default function CalendarAvailability({
   mentors, 
   onTimeSelect,
   selectedDate,
-  selectedTime 
+  selectedTime,
+  selectedMentorIds,
+  onDateTimeSelect,
+  availabilityData,
+  isLoadingAvailability
 }: CalendarAvailabilityProps) {
+  
+  // Use council props if available, otherwise use individual props
+  const mentorIds = selectedMentorIds || selectedMentors || [];
+  const handleTimeSelect = onDateTimeSelect || onTimeSelect || (() => {});
+  const isCouncilMode = Boolean(selectedMentorIds);
   const [date, setDate] = useState<Date | undefined>(selectedDate || new Date());
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,10 +47,10 @@ export default function CalendarAvailability({
   ];
 
   useEffect(() => {
-    if (date && selectedMentors.length > 0) {
+    if (date && mentorIds.length > 0) {
       checkAvailability(date);
     }
-  }, [date, selectedMentors]);
+  }, [date, mentorIds]);
 
   const checkAvailability = async (selectedDate: Date) => {
     setLoading(true);
@@ -51,7 +60,7 @@ export default function CalendarAvailability({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mentorIds: selectedMentors,
+          mentorIds: mentorIds,
           date: format(selectedDate, 'yyyy-MM-dd')
         })
       });
@@ -94,9 +103,9 @@ export default function CalendarAvailability({
   const checkMentorAvailability = (availabilityData: any, time: string) => {
     const unavailableMentors: string[] = [];
     
-    selectedMentors.forEach(mentorId => {
-      const mentor = mentors.find(m => m.id === mentorId);
-      const mentorAvailability = availabilityData[mentorId];
+    mentorIds.forEach(mentorId => {
+      const mentor = mentors?.find(m => m.id === mentorId);
+      const mentorAvailability = availabilityData?.[mentorId];
       
       if (!mentorAvailability || !mentorAvailability.includes(time)) {
         unavailableMentors.push(mentor?.user?.firstName || 'Unknown');
@@ -109,9 +118,9 @@ export default function CalendarAvailability({
     };
   };
 
-  const handleTimeSelect = (time: string) => {
+  const handleTimeClick = (time: string) => {
     if (date) {
-      onTimeSelect(date, time);
+      handleTimeSelect(date, time);
     }
   };
 
@@ -149,7 +158,7 @@ export default function CalendarAvailability({
             Available Times for {date ? format(date, 'MMMM d, yyyy') : 'Selected Date'}
           </h4>
           
-          {loading ? (
+          {(loading || isLoadingAvailability) ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
             </div>
@@ -161,7 +170,7 @@ export default function CalendarAvailability({
                   variant={isSlotSelected(slot.time) ? "default" : "outline"}
                   size="sm"
                   disabled={!slot.available}
-                  onClick={() => handleTimeSelect(slot.time)}
+                  onClick={() => handleTimeClick(slot.time)}
                   className={`justify-start text-left h-auto py-2 ${
                     slot.available 
                       ? isSlotSelected(slot.time)
@@ -183,14 +192,14 @@ export default function CalendarAvailability({
             </div>
           )}
 
-          {date && selectedMentors.length > 0 && (
+          {date && mentorIds.length > 0 && (
             <div className="mt-4 p-3 bg-slate-50 rounded-lg">
               <p className="text-xs text-slate-600 mb-2">
-                Selected mentors: {selectedMentors.length}
+                Selected mentors: {mentorIds.length}
               </p>
               <div className="flex flex-wrap gap-1">
-                {selectedMentors.map(mentorId => {
-                  const mentor = mentors.find(m => m.id === mentorId);
+                {mentorIds.map(mentorId => {
+                  const mentor = mentors?.find(m => m.id === mentorId);
                   return (
                     <Badge key={mentorId} variant="secondary" className="text-xs">
                       {mentor?.user?.firstName} {mentor?.user?.lastName}
