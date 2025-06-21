@@ -241,7 +241,7 @@ function CouncilSchedulingContent() {
             <Button 
               onClick={() => setShowBookingForm(true)}
               disabled={!hasMinimumMentors}
-              className="bg-amber-500 hover:bg-amber-600"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
             >
               {hasMinimumMentors ? "Schedule Session" : `Need ${3 - selectedMentors.length} more`}
             </Button>
@@ -258,7 +258,7 @@ function CouncilSchedulingContent() {
                   key={mentor.id}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedMentors.includes(mentor.id)
-                      ? "border-amber-500 bg-amber-50"
+                      ? "border-slate-700 bg-slate-100"
                       : "border-slate-200 hover:border-slate-300"
                   }`}
                   onClick={() => toggleMentorSelection(mentor.id)}
@@ -268,7 +268,7 @@ function CouncilSchedulingContent() {
                       {mentor.user?.firstName} {mentor.user?.lastName}
                     </h4>
                     {selectedMentors.includes(mentor.id) && (
-                      <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 bg-slate-700 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs">✓</span>
                       </div>
                     )}

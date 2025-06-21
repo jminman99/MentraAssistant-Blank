@@ -71,8 +71,9 @@ export default function CouncilScheduling() {
   const { data: userBookings, isLoading: isLoadingBookings, error: bookingsError } = useQuery({
     queryKey: ['/api/council-bookings'],
     retry: 3,
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   // Submit council session booking
@@ -155,8 +156,8 @@ export default function CouncilScheduling() {
           <p className="text-slate-300 mb-3">
             Select your panel of mentors and we'll coordinate a single session where all your chosen guides come together to provide comprehensive wisdom for your specific challenge.
           </p>
-          <div className="bg-amber-500/20 border border-amber-400/30 rounded-lg p-3">
-            <p className="text-amber-100 font-medium">
+          <div className="bg-slate-700/20 border border-slate-600/30 rounded-lg p-3">
+            <p className="text-slate-100 font-medium">
               Council Plan: One monthly council session included for $50
             </p>
           </div>
@@ -254,16 +255,15 @@ export default function CouncilScheduling() {
         )}
       </div>
 
-      {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-4 bg-gray-100 rounded">
-          <p>Loading: {isLoadingBookings ? 'true' : 'false'}</p>
-          <p>Error: {bookingsError ? 'true' : 'false'}</p>
-          <p>Bookings type: {typeof userBookings}</p>
-          <p>Bookings length: {Array.isArray(userBookings) ? userBookings.length : 'not array'}</p>
-          <p>Raw data: {userBookings ? `Array with ${userBookings.length} items` : 'null/undefined'}</p>
-        </div>
-      )}
+      {/* Debug info - Force show sessions if they exist */}
+      <div className="mb-4 p-4 bg-blue-100 rounded border">
+        <h3 className="font-bold text-blue-900 mb-2">Debug Information</h3>
+        <p>Loading: {isLoadingBookings ? 'true' : 'false'}</p>
+        <p>Error: {bookingsError ? bookingsError.message : 'none'}</p>
+        <p>Bookings type: {typeof userBookings}</p>
+        <p>Bookings length: {Array.isArray(userBookings) ? userBookings.length : 'not array'}</p>
+        <p>Sessions count: {userBookings ? userBookings.length : 0}</p>
+      </div>
 
       {/* Show error if bookings failed to load */}
       {bookingsError && (
@@ -281,7 +281,7 @@ export default function CouncilScheduling() {
         </div>
       )}
 
-      {/* Council Sessions Display */}
+      {/* Force display sessions for testing */}
       {userBookings && Array.isArray(userBookings) && userBookings.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
@@ -309,6 +309,9 @@ export default function CouncilScheduling() {
                       <span className="text-sm">
                         {booking.scheduledDate ? format(new Date(booking.scheduledDate), 'p') : 'Time TBD'}
                       </span>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Session ID: {booking.sessionId} | Status: {booking.status}
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-slate-500" />

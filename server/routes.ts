@@ -867,12 +867,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get council participants for the user
       const participants = await storage.getCouncilParticipants(user.id);
+      console.log(`Found ${participants.length} participants for user ${user.id}:`, participants);
       
       // Get full session details for each participation
       const sessionsWithDetails = await Promise.all(
         participants.map(async (participant: any) => {
           const session = await storage.getCouncilSession(participant.council_session_id);
-          return {
+          const sessionData = {
             id: participant.id,
             sessionId: session?.id,
             title: session?.title || 'Council Session',
@@ -885,9 +886,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             registrationDate: participant.registration_date,
             mentorCount: 3 // Default for council sessions
           };
+          console.log('Session data for participant:', participant.id, sessionData);
+          return sessionData;
         })
       );
 
+      console.log(`Returning ${sessionsWithDetails.length} sessions:`, sessionsWithDetails);
       res.json(sessionsWithDetails);
     } catch (error) {
       console.error("Error fetching council bookings:", error);
