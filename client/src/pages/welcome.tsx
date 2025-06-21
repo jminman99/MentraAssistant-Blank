@@ -85,7 +85,7 @@ export default function Welcome() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-                {/* AI Wisdom Guides */}
+                {/* AI Wise Guides */}
                 <Card className="mentra-card p-8">
                   <CardContent className="space-y-6 p-0">
                     <div className="flex items-center space-x-3">
@@ -93,7 +93,7 @@ export default function Welcome() {
                         <MessageCircle className="text-white h-6 w-6" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-slate-900">Wisdom Guides</h3>
+                        <h3 className="text-xl font-bold text-slate-900">Wise Guides</h3>
                         <p className="text-slate-600">AI-powered counsel, available anytime</p>
                       </div>
                     </div>

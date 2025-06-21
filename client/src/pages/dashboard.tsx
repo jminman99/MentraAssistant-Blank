@@ -330,7 +330,7 @@ export default function Dashboard() {
                   selectedTab === "ai-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
                 }`}
               >
-                Wisdom Guides
+                Wise Guides
               </button>
               {user.subscriptionPlan === 'council' && (
                 <button 
@@ -514,7 +514,7 @@ export default function Dashboard() {
                   className="w-full justify-start"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Wisdom Guides
+                  Wise Guides
                 </Button>
                 {user.subscriptionPlan === 'council' && (
                   <Button 
