@@ -13,10 +13,10 @@ import { useAuth } from "@/lib/auth";
 import { Link, useLocation } from "wouter";
 
 interface SessionBooking {
-  id: number;
+  id: string | number;
   scheduledDate: string;
   duration: number;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'confirmed';
   meetingType: string;
   videoLink?: string;
   sessionGoals?: string;
@@ -62,13 +62,25 @@ export default function Sessions() {
 
   // Cancel session mutation
   const { mutate: cancelSession } = useMutation({
-    mutationFn: async (sessionId: number) => {
-      const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to cancel session');
+    mutationFn: async (sessionId: string | number) => {
+      // Handle council sessions differently
+      if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
+        const councilId = sessionId.replace('council-', '');
+        const response = await apiRequest('DELETE', `/api/council-sessions/${councilId}/cancel`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to cancel council session');
+        }
+        return response.json();
+      } else {
+        // Handle individual sessions
+        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to cancel session');
+        }
+        return response.json();
       }
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -76,6 +88,7 @@ export default function Sessions() {
         description: "Your session has been cancelled successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
     onError: (error: Error) => {
@@ -127,7 +140,7 @@ export default function Sessions() {
     return isAfter(now, joinWindow) && isBefore(now, sessionDate) && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
-  const handleCancelSession = (sessionId: number) => {
+  const handleCancelSession = (sessionId: string | number) => {
     cancelSession(sessionId);
   };
 
