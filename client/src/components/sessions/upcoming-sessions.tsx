@@ -17,11 +17,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     queryKey: ['/api/sessions'],
   });
 
-  // Cancel council session mutation
-  const { mutate: cancelSession } = useMutation({
-    mutationFn: async (sessionId: number) => {
-      const response = await fetch(`/api/council-sessions/${sessionId}/cancel`, {
-        method: 'DELETE',
+  // FIXED: Cancel council session mutation with proper endpoint
+  const { mutate: cancelCouncilSession } = useMutation({
+    mutationFn: async (participantId: number) => {
+      console.log(`[DEBUG] Cancelling participant ${participantId}`);
+      
+      const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
+        method: 'PATCH',
       });
       
       const result = await response.json();
@@ -30,19 +32,24 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         throw new Error(result.message || 'Failed to cancel session');
       }
       
+      console.log(`[DEBUG] Cancel response:`, result);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      console.log(`[DEBUG] Session cancelled successfully:`, data);
+      
       toast({
         title: "Session Cancelled",
-        description: "Your council session has been cancelled successfully.",
+        description: data.message || "Your council session has been cancelled successfully.",
       });
-      // Force refresh both queries
-      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-      queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
+      
+      // FIXED: Use correct query key and await invalidation
+      await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      console.log(`[DEBUG] Cache invalidated, cancelled session should be hidden`);
     },
     onError: (error: any) => {
+      console.log(`[DEBUG] Cancel error:`, error);
+      
       toast({
         title: "Cancellation Failed", 
         description: error.message || "Failed to cancel session",
@@ -51,13 +58,17 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     },
   });
 
-  // FIXED: Fetch council sessions with debug logging
-  const { data: councilSessions = [], isLoading: councilLoading } = useQuery({
+  // FIXED: Fetch council sessions with debug logging and filter out cancelled
+  const { data: rawCouncilSessions = [], isLoading: councilLoading } = useQuery({
     queryKey: ['/api/council-bookings'],
     staleTime: 0, // Always refetch to ensure fresh data
   });
   
-  console.log('[DEBUG] Council sessions from query:', councilSessions);
+  // Filter out cancelled sessions
+  const councilSessions = rawCouncilSessions.filter((session: any) => session.status !== 'cancelled');
+  
+  console.log('[DEBUG] Raw council sessions:', rawCouncilSessions);
+  console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
 
   const isLoading = sessionsLoading || councilLoading;
 
@@ -194,7 +205,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Keep Session</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => cancelSession(session.sessionId || session.id)}
+                        onClick={() => cancelCouncilSession(session.id)}
                         className="bg-red-600 hover:bg-red-700"
                       >
                         Cancel Session

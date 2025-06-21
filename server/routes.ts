@@ -952,6 +952,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FIXED: Cancel council session with proper transaction and authorization
+  app.patch('/api/council-sessions/:participantId/cancel', requireAuth, async (req, res) => {
+    try {
+      const participantId = Number(req.params.participantId);
+      const { id: userId } = req.user as any;
+
+      console.log(`[DEBUG] Cancel request - participantId: ${participantId}, userId: ${userId}`);
+
+      // Load participant + session in one JOIN
+      const record = await db
+        .select({
+          participantId: councilParticipants.id,
+          menteeId: councilParticipants.menteeId,
+          sessionId: councilSessions.id,
+          sessionTitle: councilSessions.title,
+          scheduledDate: councilSessions.scheduledDate,
+        })
+        .from(councilParticipants)
+        .innerJoin(
+          councilSessions,
+          eq(councilParticipants.councilSessionId, councilSessions.id)
+        )
+        .where(eq(councilParticipants.id, participantId))
+        .limit(1)
+        .then(r => r[0]);
+
+      if (!record) {
+        console.log(`[DEBUG] Participant ${participantId} not found`);
+        return res.status(404).json({ message: 'Session not found' });
+      }
+      
+      if (record.menteeId !== userId) {
+        console.log(`[DEBUG] Authorization failed - record.menteeId: ${record.menteeId}, userId: ${userId}`);
+        return res.status(403).json({ message: 'You can only cancel your own sessions' });
+      }
+
+      console.log(`[DEBUG] Cancelling session ${record.sessionId} for participant ${participantId}`);
+
+      // Soft-cancel in a single transaction
+      await db.transaction(async (trx) => {
+        await trx
+          .update(councilParticipants)
+          .set({ status: 'cancelled' })
+          .where(eq(councilParticipants.id, participantId));
+
+        await trx
+          .update(councilSessions)
+          .set({ status: 'cancelled' })
+          .where(eq(councilSessions.id, record.sessionId));
+      });
+
+      console.log(`[DEBUG] Successfully cancelled session ${record.sessionId}`);
+
+      res.json({ 
+        success: true, 
+        participantId,
+        message: `Session "${record.sessionTitle}" cancelled successfully`
+      });
+    } catch (error) {
+      console.error('[ERROR] Cancel session failed:', error);
+      res.status(500).json({ message: 'Failed to cancel session' });
+    }
+  });
+
   app.post('/api/council-sessions/register', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;

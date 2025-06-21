@@ -812,7 +812,7 @@ export class DatabaseStorage implements IStorage {
     return this.getCouncilParticipantsWithSession(menteeId);
   }
 
-  // CHECK: One booking per user per calendar month
+  // CHECK: One booking per user per calendar month (exclude cancelled sessions)
   async hasExistingCouncilBookingThisMonth(menteeId: number, scheduledDate: Date): Promise<boolean> {
     const startOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), 1);
     const endOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth() + 1, 0, 23, 59, 59);
@@ -825,12 +825,14 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(councilParticipants.menteeId, menteeId),
           gte(councilSessions.scheduledDate, startOfMonth),
-          lte(councilSessions.scheduledDate, endOfMonth)
+          lte(councilSessions.scheduledDate, endOfMonth),
+          // Exclude cancelled sessions for monthly limit check
+          ne(councilSessions.status, 'cancelled')
         )
       );
     
     const count = existingBookings[0]?.count || 0;
-    console.log(`[DEBUG] User ${menteeId} has ${count} bookings for ${scheduledDate.getFullYear()}-${scheduledDate.getMonth() + 1}`);
+    console.log(`[DEBUG] User ${menteeId} has ${count} active bookings for ${scheduledDate.getFullYear()}-${scheduledDate.getMonth() + 1}`);
     
     return count > 0;
   }
