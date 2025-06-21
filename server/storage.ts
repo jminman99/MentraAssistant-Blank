@@ -645,7 +645,7 @@ export class DatabaseStorage implements IStorage {
       humanMentorId: data.humanMentorId,
       sessionType: data.sessionType || 'individual',
       duration: data.duration || 60,
-      scheduledDate: data.scheduledDate,
+      scheduledDate: data.scheduledAt || data.scheduledDate,
       timezone: data.timezone || 'America/New_York',
       meetingType: data.meetingType || 'video',
       location: data.location || null,

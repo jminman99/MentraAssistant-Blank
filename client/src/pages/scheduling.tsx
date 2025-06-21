@@ -70,12 +70,15 @@ export default function Scheduling() {
           title: "Session Booked!",
           description: result.message || "Your session has been scheduled successfully.",
         });
+        queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
         navigate('/dashboard');
       } else {
         const error = await response.json();
+        console.error('[DEBUG] Booking error:', error);
         throw new Error(error.message || 'Booking failed');
       }
     } catch (error: any) {
+      console.error('Booking failed:', error);
       toast({
         title: "Booking Failed",
         description: error.message || "Please try again",

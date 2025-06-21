@@ -1246,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         humanMentorId: data.humanMentorId,
         sessionType: data.sessionType || 'individual',
         duration: data.duration,
-        scheduledDate: data.scheduledAt,
+        scheduledDate: new Date(data.scheduledAt),
         timezone: data.timezone,
         meetingType: data.meetingType,
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
@@ -1268,7 +1268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ 
         success: true,
         sessionId: session.id,
-        message: `Individual session booked successfully for ${data.scheduledAt.toLocaleDateString()}`,
+        message: `Individual session booked successfully for ${new Date(data.scheduledAt).toLocaleDateString()}`,
         session: session
       });
       
