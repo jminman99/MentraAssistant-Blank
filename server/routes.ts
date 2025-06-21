@@ -1208,23 +1208,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check monthly session limit (2 sessions per month as per PRD)
-      const currentMonth = new Date();
-      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endOfCurrentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-based month
       
       const allUserBookings = await storage.getSessionBookings(user.id);
       const activeBookingsThisMonth = allUserBookings.filter(booking => {
         const bookingDate = new Date(booking.scheduledDate);
-        return bookingDate >= startOfMonth && 
-               bookingDate <= endOfCurrentMonth && 
+        return bookingDate.getFullYear() === currentYear && 
+               bookingDate.getMonth() === currentMonth && 
                booking.status !== 'cancelled';
       });
 
       console.log('[DEBUG] Monthly booking check:', {
         totalBookings: allUserBookings.length,
         activeThisMonth: activeBookingsThisMonth.length,
-        startOfMonth: startOfMonth.toISOString(),
-        endOfMonth: endOfCurrentMonth.toISOString()
+        currentYear,
+        currentMonth: currentMonth + 1, // Display as 1-based for clarity
+        bookingDetails: activeBookingsThisMonth.map(b => ({
+          id: b.id,
+          date: b.scheduledDate,
+          status: b.status
+        }))
       });
 
       if (activeBookingsThisMonth.length >= 2) {
@@ -1249,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         meetingType: data.meetingType,
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
         sessionGoals: data.sessionGoals,
-        status: 'confirmed'
+        status: 'scheduled'
       };
       
       console.log('[DEBUG] Creating individual session with:', JSON.stringify(sessionData, null, 2));
