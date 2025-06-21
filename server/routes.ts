@@ -963,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Cancel request - participantId: ${participantId}, userId: ${userId}`);
 
       // Load participant + session in one JOIN
-      const record = await storage.db
+      const record = await db
         .select({
           participantId: councilParticipants.id,
           menteeId: councilParticipants.menteeId,
@@ -993,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Cancelling session ${record.sessionId} for participant ${participantId}`);
 
       // Soft-cancel in a single transaction
-      await storage.db.transaction(async (trx) => {
+      await db.transaction(async (trx) => {
         await trx
           .update(councilParticipants)
           .set({ status: 'cancelled' })
