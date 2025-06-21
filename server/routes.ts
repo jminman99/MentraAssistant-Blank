@@ -1223,19 +1223,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('[DEBUG] Session booking request:', JSON.stringify(data, null, 2));
       console.log('[DEBUG] User:', user.id, user.email);
+      console.log('[DEBUG] Request headers:', JSON.stringify(req.headers, null, 2));
       
       // Validate required fields
-      if (!data.humanMentorId || !data.scheduledAt) {
-        console.log('[DEBUG] Validation failed - missing required fields:', { 
-          humanMentorId: data.humanMentorId, 
-          scheduledAt: data.scheduledAt 
-        });
+      if (!data.humanMentorId) {
+        console.log('[DEBUG] Validation failed - missing humanMentorId');
         return res.status(400).json({ 
           message: 'Validation error', 
-          errors: [
-            { code: 'invalid_type', path: ['humanMentorId'], message: 'humanMentorId is required' },
-            { code: 'invalid_type', path: ['scheduledAt'], message: 'scheduledAt is required' }
-          ]
+          errors: [{ code: 'invalid_type', path: ['humanMentorId'], message: 'Mentor selection is required' }]
+        });
+      }
+      
+      if (!data.scheduledAt) {
+        console.log('[DEBUG] Validation failed - missing scheduledAt');
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Please select a date and time' }]
+        });
+      }
+
+      // Parse and validate the scheduled date
+      const scheduledDate = new Date(data.scheduledAt);
+      if (isNaN(scheduledDate.getTime())) {
+        console.log('[DEBUG] Validation failed - invalid date format:', data.scheduledAt);
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Invalid date format' }]
+        });
+      }
+
+      if (scheduledDate <= new Date()) {
+        console.log('[DEBUG] Validation failed - date in the past:', scheduledDate);
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Please select a future date and time' }]
         });
       }
       
@@ -1245,13 +1266,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionData = {
         menteeId: user.id,
         humanMentorId: data.humanMentorId,
-        sessionType: 'individual',
+        sessionType: data.sessionType || 'individual',
         duration: data.duration || 60,
-        scheduledDate: new Date(data.scheduledAt),
+        scheduledDate: scheduledDate,
         timezone: data.timezone || 'America/New_York',
-        meetingType: 'video',
+        meetingType: data.meetingType || 'video',
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
-        sessionGoals: data.sessionGoals || data.goals || '',
+        sessionGoals: data.sessionGoals || data.goals || null,
         status: 'confirmed'
       };
       

@@ -64,25 +64,21 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
     const [hours, minutes] = selectedTime.split(':');
     scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    if (!topic.trim()) {
-      toast({
-        title: "Goals Required",
-        description: "Please describe what you want to accomplish in this session.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Topic is now optional - remove the validation check
 
     try {
-      await bookSessionMutation.mutateAsync({
+      const bookingData = {
         humanMentorId: mentor.id,
         sessionType: sessionType,
         scheduledAt: scheduledDate.toISOString(),
         duration: sessionType === "individual" ? 60 : 60,
-        sessionGoals: topic,
+        sessionGoals: topic.trim() || null,
         meetingType: 'video',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      });
+      };
+      
+      console.log('[DEBUG] Final booking data being sent:', bookingData);
+      await bookSessionMutation.mutateAsync(bookingData);
     } catch (error) {
       console.error("Booking failed:", error);
     }
@@ -200,12 +196,15 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
             <Label htmlFor="topic" className="text-base font-medium">Session Focus</Label>
             <Textarea
               id="topic"
-              placeholder="What would you like to discuss? (Optional but recommended)"
+              placeholder="What would you like to discuss? (Optional)"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="mt-3"
               rows={3}
             />
+            <p className="text-xs text-slate-500 mt-1">
+              This helps your mentor prepare for the session, but is not required.
+            </p>
           </div>
           
           {/* Booking Actions */}
