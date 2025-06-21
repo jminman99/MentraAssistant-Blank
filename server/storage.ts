@@ -761,7 +761,7 @@ export class DatabaseStorage implements IStorage {
 
   // Council Participant methods
   async getCouncilParticipants(menteeId: number): Promise<any[]> {
-    const participants = await this.db
+    const participants = await db
       .select()
       .from(councilParticipants)
       .where(eq(councilParticipants.menteeId, menteeId))
@@ -779,7 +779,7 @@ export class DatabaseStorage implements IStorage {
         if (!session) return null;
         
         // Get mentor count for this session
-        const mentorCount = await this.db
+        const mentorCount = await db
           .select()
           .from(councilMentors)
           .where(eq(councilMentors.councilSessionId, participant.councilSessionId));

@@ -205,25 +205,33 @@ export default function CouncilScheduling() {
       
       return result;
     },
-    onSuccess: () => {
-      toast({
-        title: "Council session booked!",
-        description: "Your council session has been scheduled successfully.",
-      });
-      // Reset form
-      setSelectedMentors([]);
-      setSessionGoals("");
-      setQuestions("");
-      setSelectedDateTime(null);
-      
-      // Force refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast({
+          title: "Council session booked!",
+          description: "Your council session has been scheduled successfully.",
+        });
+        // Reset form
+        setSelectedMentors([]);
+        setSessionGoals("");
+        setQuestions("");
+        setSelectedDateTime(null);
+        
+        // Force refresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+        queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: data?.message || "Failed to book council session",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Council booking error:', error);
       toast({
-        title: "Booking failed",
+        title: "Booking Failed",
         description: error.message || "Failed to book council session",
         variant: "destructive",
       });
