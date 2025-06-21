@@ -140,68 +140,56 @@ export default function Scheduling() {
         </CardHeader>
       </Card>
 
-      {/* Calendar and Time Selection - Using same layout as council booking */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5" />
-              Select Date & Time
-            </CardTitle>
-            <CardDescription>
-              Choose when you'd like to meet with {mentor.user.firstName}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CalendarAvailability
-              onDateTimeSelect={handleDateTimeSelect}
-              selectedDate={selectedDate}
-              selectedTime={selectedTime}
-              availabilityData={availability}
-              mentorId={mentorId}
-              sessionType="individual"
+      {/* Calendar and Time Selection - Full width unified interface */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="h-5 w-5" />
+            Select Date & Time
+          </CardTitle>
+          <CardDescription>
+            Choose when you'd like to meet with {mentor.user.firstName}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CalendarAvailability
+            selectedMentors={mentorId ? [mentorId] : []}
+            mentors={mentor ? [mentor] : []}
+            onTimeSelect={handleDateTimeSelect}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Session Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Session Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Session Goals (Optional)</label>
+            <Textarea
+              placeholder="What would you like to discuss or achieve in this session?"
+              value={sessionGoals}
+              onChange={(e) => setSessionGoals(e.target.value)}
+              className="min-h-20"
             />
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Session Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Session Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {selectedDate && selectedTime && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">Selected Time</h3>
-                <p className="text-blue-700">
-                  {format(selectedDate, 'EEEE, MMMM do, yyyy')} at {selectedTime}
-                </p>
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Session Goals (Optional)</label>
-              <Textarea
-                placeholder="What would you like to discuss or achieve in this session?"
-                value={sessionGoals}
-                onChange={(e) => setSessionGoals(e.target.value)}
-                className="min-h-20"
-              />
-            </div>
-
-            <Button
-              onClick={handleBooking}
-              disabled={!selectedDate || !selectedTime || isLoading}
-              className="w-full"
-            >
-              {isLoading ? "Booking..." : "Book Session"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          <Button
+            onClick={handleBooking}
+            disabled={!selectedDate || !selectedTime || isLoading}
+            className="w-full"
+          >
+            {isLoading ? "Booking..." : "Book Session"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
