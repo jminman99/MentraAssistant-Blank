@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, User } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ interface HumanMentor {
   hourlyRate: string;
 }
 
-export default function IndividualScheduling() {
+export default function IndividualSession() {
   const [, params] = useRoute("/schedule/:mentorId");
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -34,7 +33,9 @@ export default function IndividualScheduling() {
   const [sessionGoals, setSessionGoals] = useState("");
   const [selectedDateTime, setSelectedDateTime] = useState<{date: Date; time: string} | null>(null);
 
-  // Fetch mentors (same pattern as council booking)
+  console.log("IndividualSession: mentorId =", mentorId);
+
+  // Fetch mentors
   useEffect(() => {
     const fetchMentors = async () => {
       try {
@@ -44,6 +45,7 @@ export default function IndividualScheduling() {
         if (response.ok) {
           const data = await response.json();
           setMentors(data || []);
+          console.log("Fetched mentors:", data);
         }
       } catch (error) {
         console.error('Failed to fetch mentors:', error);
@@ -57,11 +59,12 @@ export default function IndividualScheduling() {
   const mentor = mentors.find(m => m.id === mentorId);
 
   const handleDateTimeSelect = (date: Date, time: string) => {
+    console.log("Selected date/time:", date, time);
     setSelectedDateTime({ date, time });
   };
 
-  // Individual session booking mutation (same pattern as council booking)
-  const { mutate: bookIndividualSession, isPending: isBooking } = useMutation({
+  // Individual session booking
+  const { mutate: bookSession, isPending: isBooking } = useMutation({
     mutationFn: async () => {
       if (!selectedDateTime || !mentorId) throw new Error("Missing booking data");
       
@@ -78,6 +81,8 @@ export default function IndividualScheduling() {
         meetingType: 'video',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       };
+
+      console.log("Booking request:", requestBody);
 
       const response = await fetch('/api/sessions', {
         method: 'POST',
@@ -120,7 +125,7 @@ export default function IndividualScheduling() {
       });
       return;
     }
-    bookIndividualSession();
+    bookSession();
   };
 
   if (!mentorId) {
@@ -163,7 +168,7 @@ export default function IndividualScheduling() {
     <div className="container mx-auto px-4 py-8 pb-40 lg:pb-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-          Individual Session
+          Individual Session Booking
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mb-8">
           Book a one-hour session with {mentor.user.firstName} {mentor.user.lastName}.
@@ -181,7 +186,7 @@ export default function IndividualScheduling() {
           </Card>
         </div>
 
-        {/* Calendar Section - Using exact same pattern as council booking */}
+        {/* Calendar Section - Using CalendarAvailability with selectedMentorIds */}
         <div>
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Choose Your Session Date & Time
@@ -195,7 +200,7 @@ export default function IndividualScheduling() {
           />
         </div>
 
-        {/* Session Details Form - Same pattern as council booking */}
+        {/* Session Details Form */}
         {selectedDateTime && (
           <div className="mt-8">
             <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
