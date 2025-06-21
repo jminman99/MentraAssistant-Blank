@@ -67,22 +67,13 @@ export default function CouncilScheduling() {
     queryKey: ['/api/human-mentors'],
   });
 
-  // Fetch user's existing council bookings
-  const fetchCouncilBookings = async () => {
-    const res = await fetch('/api/council-bookings', {
-      credentials: 'include' // Include cookies for authentication
-    });
-    if (!res.ok) throw new Error('Failed to fetch council bookings');
-    return res.json();
-  };
-
+  // Fetch user's existing council bookings using the existing apiRequest system
   const { 
     data: userBookings = [], 
     isLoading: isLoadingBookings, 
     error: bookingsError 
   } = useQuery({
-    queryKey: ['council-bookings'],
-    queryFn: fetchCouncilBookings, // REQUIRED - this was missing!
+    queryKey: ['/api/council-bookings'], // Use the full API path with leading slash
     retry: 3,
     refetchOnWindowFocus: true,
     staleTime: 0,
@@ -299,7 +290,8 @@ export default function CouncilScheduling() {
         <p>Debug - isLoadingBookings: {isLoadingBookings.toString()}</p>
         <p>Debug - bookingsError: {bookingsError?.message || 'none'}</p>
         <p>Debug - userBookings length: {userBookings?.length || 0}</p>
-        <p>Debug - userBookings data: {JSON.stringify(userBookings, null, 2).substring(0, 200)}...</p>
+        <p>Debug - userBookings type: {typeof userBookings}</p>
+        <p>Debug - userBookings data: {JSON.stringify(userBookings, null, 2).substring(0, 400)}...</p>
       </div>
 
       {/* Display loading, error, or sessions */}
