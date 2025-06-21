@@ -51,7 +51,7 @@ function Router() {
       <Route path="/welcome" component={Welcome} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={user ? Dashboard : Login} />
-      <Route path="/schedule/:mentorId" component={user ? Scheduling : Login} />
+      <Route path="/schedule/:mentorId" component={user ? IndividualScheduling : Login} />
       <Route path="/council" component={CouncilRoute} />
       <Route path="/council-scheduling" component={CouncilRoute} />
       <Route path="/mentor-application" component={MentorApplication} />
