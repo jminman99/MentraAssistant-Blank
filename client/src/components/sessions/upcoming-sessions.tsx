@@ -51,10 +51,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     },
   });
 
-  // Also fetch council sessions
+  // FIXED: Fetch council sessions with debug logging
   const { data: councilSessions = [], isLoading: councilLoading } = useQuery({
     queryKey: ['/api/council-bookings'],
+    staleTime: 0, // Always refetch to ensure fresh data
   });
+  
+  console.log('[DEBUG] Council sessions from query:', councilSessions);
 
   const isLoading = sessionsLoading || councilLoading;
 
@@ -86,10 +89,22 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
 
   const upcomingSessions = allSessions
     .filter(session => {
-      console.log('Filtering session:', session);
-      return (session.status === 'scheduled' || session.status === 'confirmed') && 
-        session.scheduledAt && 
-        isFuture(parseISO(session.scheduledAt));
+      console.log('[DEBUG] Filtering session:', session);
+      const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
+      const hasScheduledAt = !!session.scheduledAt;
+      const isFutureSession = hasScheduledAt ? isFuture(parseISO(session.scheduledAt)) : false;
+      
+      console.log('[DEBUG] Session filter check:', {
+        id: session.id,
+        status: session.status,
+        isValidStatus,
+        hasScheduledAt,
+        scheduledAt: session.scheduledAt,
+        isFutureSession,
+        passed: isValidStatus && hasScheduledAt && isFutureSession
+      });
+      
+      return isValidStatus && hasScheduledAt && isFutureSession;
     })
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);

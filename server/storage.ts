@@ -760,16 +760,18 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  // Council Participant methods
-  async getCouncilParticipants(menteeId: number): Promise<any[]> {
-    // Use a single query with joins to get all data at once
+  // Council Participant methods - FIXED: Single join query to avoid N+1 problem
+  async getCouncilParticipantsWithSession(menteeId: number): Promise<any[]> {
+    console.log(`[DEBUG] Fetching council sessions for user ${menteeId}`);
+    
+    // Single query with joins to get all data at once - NO MORE N+1 QUERIES
     const results = await db
       .select({
         participantId: councilParticipants.id,
         sessionId: councilSessions.id,
         title: councilSessions.title,
         description: councilSessions.description,
-        scheduledDate: councilSessions.scheduledDate,
+        scheduledDate: councilSessions.scheduledDate, // Always camelCase
         duration: councilSessions.duration,
         status: councilSessions.status,
         sessionGoals: councilParticipants.sessionGoals,
@@ -779,28 +781,58 @@ export class DatabaseStorage implements IStorage {
       .from(councilParticipants)
       .innerJoin(councilSessions, eq(councilParticipants.councilSessionId, councilSessions.id))
       .where(eq(councilParticipants.menteeId, menteeId))
-      .orderBy(councilParticipants.registrationDate);
+      .orderBy(councilSessions.scheduledDate);
     
-    console.log(`Found ${results.length} council sessions for user ${menteeId}:`, results);
+    console.log(`[DEBUG] Raw query results for user ${menteeId}:`, results);
     
-    // Transform to expected format
-    const sessionsWithData = results.map((result) => ({
-      id: result.participantId,
-      sessionId: result.sessionId,
-      title: result.title,
-      description: result.description,
-      scheduledDate: result.scheduledDate,
-      duration: result.duration,
-      status: result.status,
-      sessionGoals: result.sessionGoals,
-      questions: result.questions,
-      registrationDate: result.registrationDate,
-      mentorCount: 3 // Default mentor count
-    }));
+    // Transform to expected format with null guards
+    const sessionsWithData = results
+      .filter(result => result.sessionId !== null) // Guard against null sessions
+      .map((result) => ({
+        id: result.participantId,
+        sessionId: result.sessionId,
+        title: result.title || 'Council Session',
+        description: result.description,
+        scheduledDate: result.scheduledDate, // Normalized to camelCase
+        duration: result.duration || 60,
+        status: result.status,
+        sessionGoals: result.sessionGoals,
+        questions: result.questions,
+        registrationDate: result.registrationDate,
+        mentorCount: 3
+      }));
     
-    console.log(`Returning ${sessionsWithData.length} formatted sessions:`, sessionsWithData);
+    console.log(`[DEBUG] Returning ${sessionsWithData.length} formatted sessions for user ${menteeId}:`, sessionsWithData);
     
     return sessionsWithData;
+  }
+
+  // Legacy method for backward compatibility
+  async getCouncilParticipants(menteeId: number): Promise<any[]> {
+    return this.getCouncilParticipantsWithSession(menteeId);
+  }
+
+  // CHECK: One booking per user per calendar month
+  async hasExistingCouncilBookingThisMonth(menteeId: number, scheduledDate: Date): Promise<boolean> {
+    const startOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), 1);
+    const endOfMonth = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth() + 1, 0, 23, 59, 59);
+    
+    const existingBookings = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(councilParticipants)
+      .innerJoin(councilSessions, eq(councilParticipants.councilSessionId, councilSessions.id))
+      .where(
+        and(
+          eq(councilParticipants.menteeId, menteeId),
+          gte(councilSessions.scheduledDate, startOfMonth),
+          lte(councilSessions.scheduledDate, endOfMonth)
+        )
+      );
+    
+    const count = existingBookings[0]?.count || 0;
+    console.log(`[DEBUG] User ${menteeId} has ${count} bookings for ${scheduledDate.getFullYear()}-${scheduledDate.getMonth() + 1}`);
+    
+    return count > 0;
   }
 
   async createCouncilParticipant(participant: any): Promise<any> {

@@ -1,0 +1,56 @@
+Copy-and-Paste “Super-Debug” Prompt
+
+(Drop this into Replit AI / Copilot / ChatGPT to walk you through fixing the one-per-month council booking bug—from API to React Query.)
+
+⸻
+
+I’m stuck on a Replit Node + React app.
+Users can book one “council” session per calendar month, but either the POST /book route fails or booked sessions never appear in the “Upcoming Sessions” tab.
+Help me debug and patch everything in one pass.
+
+Context
+	•	Backend route (GET /api/council-bookings)
+
+app.get('/api/council-bookings', requireAuth, async (req, res) => { … })
+
+– fetches council participants, then Promise.all session lookups.
+
+	•	Frontend mutation (useMutation) invalidates ['/api/council-bookings'] after success.
+	•	React Query list view uses ['council-bookings'].
+	•	DB: Postgres; one-row-per-month rule.
+
+Goals
+	1.	Make sure a booking actually inserts (one per month).
+	2.	Ensure GET /api/council-bookings reliably returns that booking.
+	3.	Ensure React Query cache refreshes and Upcoming tab shows it.
+
+Please do ALL of the following:
+	1.	Backend fixes
+	•	Replace N+1 Promise.all with a single join helper (getCouncilParticipantsWithSession).
+	•	Guard against session === null; skip or log.
+	•	Normalize field names → always return scheduledDate (camelCase).
+	•	Return { success: true, bookingId } from POST route.
+	•	Add unique constraint or query to enforce one booking per user per calendar month.
+	•	Log every insert + its userId, scheduledDate, and rowCount.
+	2.	Frontend fixes
+	•	In mutation onSuccess, await queryClient.invalidateQueries({ queryKey: ['council-bookings'] }) (key matches list view).
+	•	Show console log of response to verify { success: true }.
+	•	Reset form, then navigate or refetch list.
+	3.	Debug checklist (keep in code comments or README)
+	•	Hit POST in Postman → expect { success: true }.
+	•	Immediately GET /api/council-bookings → ensure JSON contains new session.
+	•	If not, check server logs for DB insert failure or duplicate constraint violation.
+	•	If GET shows session but UI empty → key mismatch or filtering by status.
+	•	Check time-zone: All dates stored UTC; convert to local only in UI.
+	4.	Optional: provide a tiny SQL snippet to create a UNIQUE constraint:
+
+ALTER TABLE council_sessions
+ADD CONSTRAINT uniq_user_month
+UNIQUE (user_id, date_trunc('month', scheduled_date));
+
+
+	5.	Return the patched backend route, the corrected mutation snippet, and any additional logging helpers.
+
+⸻
+
+Run through these steps; highlight any exceptions, console logs, or test results you see, then suggest the next code change until the booking reliably appears in “Upcoming Sessions.”

@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's council bookings with session details
+  // FIXED: Get user's council bookings - NO MORE N+1 QUERIES
   app.get('/api/council-bookings', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
@@ -939,36 +939,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
       }
 
-      // Get council participants for the user
-      const participants = await storage.getCouncilParticipants(user.id);
-      console.log(`Found ${participants.length} participants for user ${user.id}:`, participants);
+      console.log(`[DEBUG] Fetching council bookings for user ${user.id}`);
       
-      // Get full session details for each participation
-      const sessionsWithDetails = await Promise.all(
-        participants.map(async (participant: any) => {
-          const session = await storage.getCouncilSession(participant.council_session_id);
-          const sessionData = {
-            id: participant.id,
-            sessionId: session?.id,
-            title: session?.title || 'Council Session',
-            description: session?.description,
-            scheduledDate: session?.scheduled_date || session?.scheduledDate,
-            duration: session?.duration,
-            status: session?.status || participant.status,
-            sessionGoals: participant.session_goals,
-            questions: participant.questions,
-            registrationDate: participant.registration_date,
-            mentorCount: 3 // Default for council sessions
-          };
-          console.log('Session data for participant:', participant.id, sessionData);
-          return sessionData;
-        })
-      );
-
-      console.log(`Returning ${sessionsWithDetails.length} sessions:`, sessionsWithDetails);
-      res.json(sessionsWithDetails);
+      // FIXED: Use single join query instead of N+1 Promise.all
+      const sessions = await storage.getCouncilParticipantsWithSession(user.id);
+      
+      console.log(`[DEBUG] Final API response for user ${user.id}:`, sessions);
+      res.json(sessions);
     } catch (error) {
-      console.error("Error fetching council bookings:", error);
+      console.error("[ERROR] Failed to fetch council bookings:", error);
       res.status(500).json({ message: "Failed to fetch council bookings" });
     }
   });

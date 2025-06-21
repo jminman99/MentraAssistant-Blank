@@ -205,22 +205,31 @@ export default function CouncilScheduling() {
       
       return result;
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
+      console.log('[DEBUG] Booking response received:', data);
+      
       if (data?.success) {
+        console.log('[DEBUG] Booking successful, bookingId:', data.bookingId);
+        
         toast({
           title: "Council session booked!",
           description: "Your council session has been scheduled successfully.",
         });
+        
         // Reset form
         setSelectedMentors([]);
         setSessionGoals("");
         setQuestions("");
         setSelectedDateTime(null);
         
-        // Force refresh data
-        queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-        queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
+        // FIXED: Await invalidation and use correct key
+        console.log('[DEBUG] Invalidating council-bookings cache...');
+        await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+        
+        // Optional: Navigate or show success state
+        console.log('[DEBUG] Cache invalidated, booking should appear in upcoming sessions');
       } else {
+        console.log('[DEBUG] Booking failed:', data?.message);
         toast({
           title: "Booking Failed",
           description: data?.message || "Failed to book council session",
