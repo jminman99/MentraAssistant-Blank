@@ -734,6 +734,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Council session cancellation endpoint
+  app.delete('/api/council-sessions/:sessionId/cancel', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user || !user.id) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const sessionId = parseInt(req.params.sessionId);
+      if (!sessionId) {
+        return res.status(400).json({ message: 'Invalid session ID' });
+      }
+
+      // Get the council session to verify ownership
+      const session = await storage.getCouncilSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: 'Council session not found' });
+      }
+
+      // Verify user owns this session by checking participants
+      const participants = await storage.getCouncilParticipants(user.id);
+      const userParticipant = participants.find((p: any) => p.council_session_id === sessionId);
+      
+      if (!userParticipant) {
+        return res.status(403).json({ message: 'You can only cancel your own sessions' });
+      }
+
+      // Delete the session and related data
+      await db.delete(councilSessions).where(eq(councilSessions.id, sessionId));
+      await db.delete(councilParticipants).where(eq(councilParticipants.councilSessionId, sessionId));
+      await db.delete(councilMentors).where(eq(councilMentors.councilSessionId, sessionId));
+
+      res.json({ 
+        message: 'Council session cancelled successfully',
+        sessionId: sessionId
+      });
+      
+    } catch (error) {
+      console.error('Error cancelling council session:', error);
+      res.status(500).json({ message: 'Failed to cancel council session' });
+    }
+  });
+
   // Council session booking endpoint - allows users to select 3-5 mentors for a single session
   app.post('/api/council-sessions/book', requireAuth, async (req, res) => {
     try {

@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Video, Users } from "lucide-react";
+import { Calendar, Clock, Video, Users, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 import { MentoringSession } from "@/types";
 import { format, parseISO, isFuture } from "date-fns";
 
@@ -9,8 +11,43 @@ interface UpcomingSessionsProps {
 }
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
+  const queryClient = useQueryClient();
+  
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<MentoringSession[]>({
     queryKey: ['/api/sessions'],
+  });
+
+  // Cancel council session mutation
+  const { mutate: cancelSession } = useMutation({
+    mutationFn: async (sessionId: number) => {
+      const response = await fetch(`/api/council-sessions/${sessionId}/cancel`, {
+        method: 'DELETE',
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to cancel session');
+      }
+      
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Session Cancelled",
+        description: "Your council session has been cancelled successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      window.location.reload();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cancellation Failed", 
+        description: error.message || "Failed to cancel session",
+        variant: "destructive",
+      });
+    },
   });
 
   // Also fetch council sessions
@@ -115,6 +152,37 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                 </div>
               </div>
             </div>
+            
+            {/* Cancel button for council sessions */}
+            {session.type === 'council' && (
+              <div className="mt-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Cancel Session
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Council Session</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to cancel this council session? This action cannot be undone and you'll be able to book a new session for this month.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep Session</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => cancelSession(session.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Cancel Session
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
           </div>
         </div>
       ))}

@@ -137,7 +137,7 @@ export default function CalendarAvailability({
             onSelect={setDate}
             disabled={(date) => 
               date < new Date() || 
-              date > addDays(new Date(), 60) // Only allow next 60 days
+              date > addDays(new Date(), 180) // Allow next 6 months
             }
             className="rounded-md border"
           />
