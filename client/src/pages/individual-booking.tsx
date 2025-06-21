@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, User, Star, ArrowLeft, CheckCircle2, Video } from "lucide-react";
 import { format, addDays, startOfMonth, endOfMonth, isSameMonth, parseISO } from "date-fns";
-import CalendarAvailability from "@/components/calendar-availability";
+import CalendarAvailability from "@/components/calendar-availability-fixed";
 import MentorCard from "@/components/mentor-card";
 import SessionUsageBadge from "@/components/session-usage-badge";
 import SessionConfirmation from "@/components/session-confirmation";

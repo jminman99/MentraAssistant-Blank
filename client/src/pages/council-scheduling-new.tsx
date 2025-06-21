@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarDays, Clock, Users, CheckCircle, Star, Video, ArrowLeft, X } from "lucide-react";
 import { format } from "date-fns";
-import CalendarAvailability from "@/components/calendar-availability";
+import CalendarAvailability from "@/components/calendar-availability-fixed";
 import MentorCard from "@/components/mentor-card";
 
 interface HumanMentor {

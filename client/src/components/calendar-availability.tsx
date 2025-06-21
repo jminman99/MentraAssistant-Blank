@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,33 +80,51 @@ export default function CalendarAvailability({
     return slots;
   };
   
-  const timeSlots = generateTimeSlots(detectedCouncilMode ? 60 : sessionDuration);
+  const timeSlots = useMemo(() => 
+    generateTimeSlots(detectedCouncilMode ? 60 : sessionDuration),
+    [detectedCouncilMode, sessionDuration]
+  );
+
+  // Memoize individual booking slots
+  const individualSlots = useMemo(() => 
+    timeSlots.map(time => ({ time, available: true })),
+    [timeSlots]
+  );
 
   useEffect(() => {
-    if (date) {
-      if (displayMentorIds.length > 0) {
-        checkAvailability(date);
-      } else {
-        // For individual booking, show all slots as available
-        const slots = timeSlots.map(time => ({
-          time,
-          available: true
-        }));
-        setAvailableSlots(slots);
-      }
-    }
-  }, [date, displayMentorIds, timeSlots]);
+    if (!date) return;
 
-  const checkAvailability = async (selectedDate: Date) => {
+    if (!detectedCouncilMode) {
+      // For individual booking - show all slots as available immediately
+      setAvailableSlots(timeSlots.map(time => ({ time, available: true })));
+    } else if (displayMentorIds.length > 0) {
+      // Only call API for council mode with selected mentors
+      checkAvailability(date);
+    }
+  }, [date, displayMentorIds, detectedCouncilMode]);
+
+  const checkAvailability = useCallback(async (selectedDate: Date) => {
+    if (!detectedCouncilMode || displayMentorIds.length === 0) {
+      return; // Skip API calls for individual booking
+    }
+    
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    const cacheKey = `${dateKey}-${displayMentorIds.join(',')}`;
+    
+    // Simple cache to prevent duplicate requests
+    if (window.availabilityCache && window.availabilityCache[cacheKey]) {
+      setAvailableSlots(window.availabilityCache[cacheKey]);
+      return;
+    }
+    
     setLoading(true);
     try {
-      // Check availability for all selected mentors on the selected date
       const response = await fetch('/api/mentor-availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mentorIds: displayMentorIds,
-          date: format(selectedDate, 'yyyy-MM-dd')
+          date: dateKey
         })
       });
 
@@ -123,27 +141,23 @@ export default function CalendarAvailability({
           };
         });
         
+        // Cache the result
+        if (!window.availabilityCache) window.availabilityCache = {};
+        window.availabilityCache[cacheKey] = slots;
+        
         setAvailableSlots(slots);
       } else {
-        // Fallback: show all slots as available for individual booking
-        const slots = timeSlots.map(time => ({
-          time,
-          available: true
-        }));
-        setAvailableSlots(slots);
+        // Fallback: show all slots as available
+        setAvailableSlots(individualSlots);
       }
     } catch (error) {
       console.error('Error checking availability:', error);
       // Fallback: show all slots as available
-      const slots = timeSlots.map(time => ({
-        time,
-        available: true
-      }));
-      setAvailableSlots(slots);
+      setAvailableSlots(individualSlots);
     } finally {
       setLoading(false);
     }
-  };
+  }, [detectedCouncilMode, displayMentorIds, timeSlots, individualSlots]);
 
   const checkMentorAvailability = (availabilityData: any, time: string) => {
     // For individual sessions, just check if we have availability data
