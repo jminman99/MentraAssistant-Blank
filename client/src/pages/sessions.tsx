@@ -105,7 +105,7 @@ export default function Sessions() {
   // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
     ? councilSessions.map((cs: any) => ({
-        id: `council-${cs.id}`,
+        id: `council-${cs.sessionId}`, // Use sessionId instead of participant id
         scheduledDate: cs.scheduledDate,
         duration: cs.duration || 60,
         status: cs.status,
