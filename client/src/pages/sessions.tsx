@@ -72,24 +72,24 @@ export default function Sessions() {
 
   const now = new Date();
   const upcomingSessions = sessions.filter(session => 
-    session.status === 'scheduled' && isAfter(parseISO(session.scheduledDate), now)
+    (session.status === 'scheduled' || session.status === 'confirmed') && isAfter(parseISO(session.scheduledDate), now)
   );
   const pastSessions = sessions.filter(session => 
     session.status === 'completed' || 
     session.status === 'cancelled' ||
-    (session.status === 'scheduled' && isBefore(parseISO(session.scheduledDate), now))
+    ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(parseISO(session.scheduledDate), now))
   );
 
   const canCancelSession = (session: SessionBooking) => {
     const sessionDate = parseISO(session.scheduledDate);
     const cancelDeadline = subHours(sessionDate, 24); // 24 hours before as per PRD
-    return isAfter(now, cancelDeadline) === false && session.status === 'scheduled';
+    return isAfter(now, cancelDeadline) === false && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
   const canJoinSession = (session: SessionBooking) => {
     const sessionDate = parseISO(session.scheduledDate);
     const joinWindow = subHours(sessionDate, 0.25); // 15 minutes before
-    return isAfter(now, joinWindow) && isBefore(now, sessionDate) && session.status === 'scheduled';
+    return isAfter(now, joinWindow) && isBefore(now, sessionDate) && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
   const handleCancelSession = (sessionId: number) => {
@@ -105,7 +105,7 @@ export default function Sessions() {
     if (session.status === 'completed') {
       return <Badge variant="secondary">Completed</Badge>;
     }
-    if (session.status === 'scheduled' && isBefore(sessionDate, now)) {
+    if ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(sessionDate, now)) {
       return <Badge variant="outline">Missed</Badge>;
     }
     if (canJoinSession(session)) {

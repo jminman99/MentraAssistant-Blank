@@ -276,7 +276,7 @@ export default function IndividualBooking() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <span className="font-semibold text-slate-900">${Math.round(parseFloat(mentor.hourlyRate) / 2)}/session</span>
+                      <span className="font-semibold text-slate-900">Included in Plan</span>
                       <Badge variant="outline">Available</Badge>
                     </div>
                   </div>
@@ -321,7 +321,7 @@ export default function IndividualBooking() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Rate:</span>
-                      <span className="font-medium">${Math.round(parseFloat(selectedMentor.hourlyRate) / 2)}</span>
+                      <span className="font-medium">Included in Plan</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Format:</span>
