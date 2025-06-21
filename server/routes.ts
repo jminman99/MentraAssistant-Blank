@@ -1215,6 +1215,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Session Routes (for compatibility with existing frontend)
+  app.post('/api/sessions', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const data = req.body;
+      
+      console.log('[DEBUG] Session booking request:', JSON.stringify(data, null, 2));
+      console.log('[DEBUG] User:', user.id, user.email);
+      
+      // Validate required fields
+      if (!data.humanMentorId || !data.scheduledAt) {
+        console.log('[DEBUG] Validation failed - missing required fields:', { 
+          humanMentorId: data.humanMentorId, 
+          scheduledAt: data.scheduledAt 
+        });
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: [
+            { code: 'invalid_type', path: ['humanMentorId'], message: 'humanMentorId is required' },
+            { code: 'invalid_type', path: ['scheduledAt'], message: 'scheduledAt is required' }
+          ]
+        });
+      }
+      
+      // Generate unique Jitsi room ID
+      const jitsiRoomId = `mentra-session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      
+      const sessionData = {
+        menteeId: user.id,
+        humanMentorId: data.humanMentorId,
+        sessionType: 'individual',
+        duration: data.duration || 60,
+        scheduledDate: new Date(data.scheduledAt),
+        timezone: data.timezone || 'America/New_York',
+        meetingType: 'video',
+        videoLink: `https://meet.jit.si/${jitsiRoomId}`,
+        sessionGoals: data.sessionGoals || data.goals || '',
+        status: 'confirmed'
+      };
+      
+      console.log('[DEBUG] Creating session with data:', sessionData);
+      
+      const session = await storage.createSessionBooking(sessionData);
+      console.log('[DEBUG] Session created successfully:', session.id);
+      
+      res.status(201).json(session);
+    } catch (error) {
+      console.error('Error creating session:', error);
+      res.status(500).json({ message: 'Failed to create session' });
+    }
+  });
+
   // Session Booking Routes
   app.get("/api/session-bookings", requireAuth, async (req: any, res) => {
     try {
@@ -1231,16 +1283,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/session-bookings", requireAuth, async (req: any, res) => {
     try {
-      const userId = parseInt(req.user?.id);
-      const bookingData = {
-        ...req.body,
-        menteeId: userId,
-      };
+      const user = req.user;
+      const data = insertSessionBookingSchema.parse(req.body);
       
-      const booking = await storage.createSessionBooking(bookingData);
+      // Generate unique Jitsi room ID
+      const jitsiRoomId = `mentra-session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      
+      const booking = await storage.createSessionBooking({
+        ...data,
+        menteeId: user.id,
+        videoLink: `https://meet.jit.si/${jitsiRoomId}`
+      });
+      
       res.status(201).json(booking);
     } catch (error) {
       console.error("Error creating session booking:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to create session booking" });
     }
   });

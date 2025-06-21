@@ -52,7 +52,7 @@ import {
   type InsertMentorLifeStory
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, and, desc, asc, isNull, getTableColumns } from "drizzle-orm";
+import { eq, and, desc, asc, isNull, getTableColumns, sql, gte, lte, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {

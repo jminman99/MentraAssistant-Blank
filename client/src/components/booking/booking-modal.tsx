@@ -26,7 +26,13 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
 
   const bookSessionMutation = useMutation({
     mutationFn: async (sessionData: any) => {
+      console.log('[DEBUG] Booking mutation data:', sessionData);
       const response = await apiRequest('POST', '/api/sessions', sessionData);
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('[DEBUG] Booking error response:', errorData);
+        throw new Error(`Booking failed: ${errorData}`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -58,13 +64,24 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
     const [hours, minutes] = selectedTime.split(':');
     scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+    if (!topic.trim()) {
+      toast({
+        title: "Goals Required",
+        description: "Please describe what you want to accomplish in this session.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await bookSessionMutation.mutateAsync({
         humanMentorId: mentor.id,
-        type: sessionType,
+        sessionType: sessionType,
         scheduledAt: scheduledDate.toISOString(),
-        duration: sessionType === "individual" ? 30 : 60,
-        topic: topic || undefined,
+        duration: sessionType === "individual" ? 60 : 60,
+        sessionGoals: topic,
+        meetingType: 'video',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
     } catch (error) {
       console.error("Booking failed:", error);
