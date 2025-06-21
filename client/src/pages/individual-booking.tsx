@@ -238,48 +238,14 @@ export default function IndividualBooking() {
         {currentStep === 'mentors' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mentors.map((mentor) => (
-              <Card 
-                key={mentor.id} 
-                className="cursor-pointer hover:shadow-lg transition-all hover:border-slate-300"
+              <MentorCard
+                key={mentor.id}
+                mentor={mentor}
                 onClick={() => handleMentorSelect(mentor)}
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start gap-3">
-                    <img 
-                      src={mentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`} 
-                      alt={`${mentor.user.firstName} ${mentor.user.lastName}`} 
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-slate-900">
-                        {mentor.user.firstName} {mentor.user.lastName}
-                      </h3>
-                      <p className="text-sm text-slate-600">{mentor.expertise}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-700 line-clamp-3">{mentor.bio}</p>
-                    
-                    <div className="flex items-center gap-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span>{parseFloat(mentor.rating || '0').toFixed(1)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>30 min</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="font-semibold text-slate-900">Included in Plan</span>
-                      <Badge variant="outline">Available</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                showImage={true}
+                showBio={true}
+                className="hover:shadow-lg"
+              />
             ))}
           </div>
         )}

@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, User } from "lucide-react";
+import { Star, User, Clock } from "lucide-react";
 import { HumanMentor } from "@/types";
 
 interface MentorCardProps {
@@ -52,9 +52,28 @@ export default function MentorCard({
                 </p>
                 
                 {showBio && mentor.bio && (
-                  <p className="text-sm text-slate-500 mt-2 line-clamp-2">
+                  <p className="text-sm text-slate-500 mt-2 line-clamp-3">
                     {mentor.bio}
                   </p>
+                )}
+                
+                {showBio && (
+                  <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>30 min</span>
+                    </div>
+                  </div>
+                )}
+                
+                {showBio && (
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-sm font-medium text-slate-900">
+                      {/* Show pricing based on user plan */}
+                      Included in Plan
+                    </span>
+                    <Badge variant="outline" className="text-xs">Available</Badge>
+                  </div>
                 )}
               </div>
               
