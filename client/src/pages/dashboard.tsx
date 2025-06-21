@@ -506,12 +506,12 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-slate-900">Quick Access</h3>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Button 
                   variant={selectedTab === "ai-mentors" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedTab("ai-mentors")}
-                  className="w-full justify-start"
+                  className="w-full justify-start h-10"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Wise Guides
@@ -521,7 +521,7 @@ export default function Dashboard() {
                     variant={selectedTab === "council" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedTab("council")}
-                    className="w-full justify-start"
+                    className="w-full justify-start h-10"
                   >
                     <Crown className="h-4 w-4 mr-2" />
                     Council Sessions
@@ -532,17 +532,17 @@ export default function Dashboard() {
                     variant={selectedTab === "human-mentors" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedTab("human-mentors")}
-                    className="w-full justify-start"
+                    className="w-full justify-start h-10"
                   >
                     <Compass className="h-4 w-4 mr-2" />
                     Experienced Guides
                   </Button>
                 )}
-                <Link href="/sessions">
+                <Link href="/sessions" className="block">
                   <Button 
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start"
+                    className="w-full justify-start h-10"
                   >
                     <Star className="h-4 w-4 mr-2" />
                     My Sessions
@@ -552,7 +552,7 @@ export default function Dashboard() {
                   variant={selectedTab === "plan" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedTab("plan")}
-                  className="w-full justify-start"
+                  className="w-full justify-start h-10"
                 >
                   <Crown className="h-4 w-4 mr-2" />
                   Plan & Usage
