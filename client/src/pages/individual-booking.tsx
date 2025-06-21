@@ -76,12 +76,22 @@ export default function IndividualBooking() {
         sessionGoals: null // Optional for individual sessions
       };
 
-      const response = await apiRequest('POST', '/api/sessions', requestBody);
+      console.log('[DEBUG] Sending booking request:', requestBody);
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      const responseData = await response.json();
+      console.log('[DEBUG] Booking response:', responseData);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Booking failed');
+        throw new Error(responseData.message || 'Booking failed');
       }
-      return response.json();
+      return responseData;
     },
     onSuccess: (data) => {
       toast({

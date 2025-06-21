@@ -524,6 +524,7 @@ export const insertMentorApplicationSchema = createInsertSchema(mentorApplicatio
 export const insertSessionBookingSchema = z.object({
   scheduledAt: z.string().transform(val => new Date(val)),
   humanMentorId: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]),
+  sessionType: z.string().optional().default('individual'),
   duration: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]).optional().default(60),
   sessionGoals: z.string().nullable().optional(),
   meetingType: z.string().optional().default('video'),

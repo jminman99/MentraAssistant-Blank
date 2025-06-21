@@ -335,34 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/sessions', requireAuth, async (req, res) => {
-    try {
-      const user = req.user as any;
-      const data = insertMentoringSessionSchema.parse(req.body);
 
-      // Check session limit
-      if (user.sessionsUsed >= user.sessionsLimit) {
-        return res.status(403).json({ message: 'Session limit reached' });
-      }
-
-      const session = await storage.createSession({
-        ...data,
-        userId: user.id,
-      });
-
-      // Increment user's session count
-      await storage.updateUser(user.id, {
-        sessionsUsed: user.sessionsUsed + 1
-      });
-
-      res.json(session);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: error.errors });
-      }
-      res.status(500).json({ message: 'Failed to create session' });
-    }
-  });
 
   // Subscription routes
   app.post('/api/subscription/upgrade', requireAuth, async (req, res) => {

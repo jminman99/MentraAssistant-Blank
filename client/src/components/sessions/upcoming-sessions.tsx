@@ -14,7 +14,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<MentoringSession[]>({
-    queryKey: ['/api/sessions'],
+    queryKey: ['/api/session-bookings'],
   });
 
   // FIXED: Cancel council session mutation with proper endpoint
@@ -77,7 +77,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     ...sessions.map(session => ({
       ...session,
       type: 'individual' as const,
-      scheduledAt: session.scheduledAt,
+      scheduledAt: session.scheduledDate, // Fix field mapping
       title: session.humanMentor ? 
         `${session.humanMentor.user.firstName} ${session.humanMentor.user.lastName}` : 
         'Individual Session'
