@@ -38,16 +38,13 @@ export default function CalendarAvailability({
   const isCouncilMode = Boolean(selectedMentorIds);
   
   console.log('[DEBUG] CalendarAvailability props:', { 
-    selectedMentorIds, 
-    selectedMentors, 
-    mentorIds, 
-    mentorsLength: mentors?.length,
+    mentorIds,
     isCouncilMode 
   });
   
   // Override to force council mode interface for both individual and council booking
   const displayMentorIds = selectedMentorIds || selectedMentors || [];
-  const isDisplayingCalendar = displayMentorIds.length > 0;
+  const isDisplayingCalendar = true; // Always show calendar for individual booking
   const [date, setDate] = useState<Date | undefined>(selectedDate || new Date());
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,8 +56,17 @@ export default function CalendarAvailability({
   ];
 
   useEffect(() => {
-    if (date && displayMentorIds.length > 0) {
-      checkAvailability(date);
+    if (date) {
+      if (displayMentorIds.length > 0) {
+        checkAvailability(date);
+      } else {
+        // For individual booking, show available slots even without mentor selection
+        const slots = timeSlots.map(time => ({
+          time,
+          available: true // Show all slots as available for individual booking
+        }));
+        setAvailableSlots(slots);
+      }
     }
   }, [date, displayMentorIds]);
 
@@ -170,7 +176,11 @@ export default function CalendarAvailability({
             Available Times for {date ? format(date, 'MMMM d, yyyy') : 'Selected Date'}
           </h4>
           
-          {(loading || isLoadingAvailability) ? (
+          {!date ? (
+            <div className="flex items-center justify-center py-8 text-slate-500">
+              <div>Select a date to see available times</div>
+            </div>
+          ) : (loading || isLoadingAvailability) ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
             </div>

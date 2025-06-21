@@ -1239,12 +1239,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endOfCurrentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       
-      const currentMonthBookings = await storage.getSessionBookings(user.id);
-      const activeBookingsThisMonth = currentMonthBookings.filter(booking => {
+      const allUserBookings = await storage.getSessionBookings(user.id);
+      const activeBookingsThisMonth = allUserBookings.filter(booking => {
         const bookingDate = new Date(booking.scheduledDate);
         return bookingDate >= startOfMonth && 
                bookingDate <= endOfCurrentMonth && 
                booking.status !== 'cancelled';
+      });
+
+      console.log('[DEBUG] Monthly booking check:', {
+        totalBookings: allUserBookings.length,
+        activeThisMonth: activeBookingsThisMonth.length,
+        startOfMonth: startOfMonth.toISOString(),
+        endOfMonth: endOfCurrentMonth.toISOString()
       });
 
       if (activeBookingsThisMonth.length >= 2) {

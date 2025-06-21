@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, Video, User, X, ExternalLink, Star } from "lucide-react";
-import { format, parseISO, isAfter, isBefore, subHours } from "date-fns";
+import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
 
@@ -253,7 +253,12 @@ export default function Sessions() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-slate-900">{user.sessionsUsed || 0}/2</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    {sessions.filter(s => {
+                      const sessionDate = parseISO(s.scheduledDate);
+                      return isSameMonth(sessionDate, new Date()) && s.status !== 'cancelled';
+                    }).length}/2
+                  </div>
                   <div className="text-sm text-slate-600">Monthly Usage</div>
                 </div>
               </CardContent>

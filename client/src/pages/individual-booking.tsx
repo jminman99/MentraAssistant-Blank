@@ -46,10 +46,11 @@ export default function IndividualBooking() {
 
   // Calculate monthly session usage
   const currentMonth = new Date();
-  const currentMonthBookings = userBookings.filter(booking => 
-    isSameMonth(parseISO(booking.scheduledDate), currentMonth) && 
-    booking.status !== 'cancelled'
-  );
+  const currentMonthBookings = userBookings.filter(booking => {
+    const bookingDate = parseISO(booking.scheduledDate);
+    return isSameMonth(bookingDate, currentMonth) && 
+           booking.status !== 'cancelled';
+  });
   const monthlyLimit = 2; // As per PRD
   const sessionsUsed = currentMonthBookings.length;
   const canBookMore = sessionsUsed < monthlyLimit;
@@ -220,7 +221,7 @@ export default function IndividualBooking() {
               {sessionsUsed}/{monthlyLimit} sessions used this month
             </Badge>
             {!canBookMore && (
-              <span className="text-sm text-red-600">Monthly limit reached</span>
+              <span className="text-sm text-red-600">Monthly limit reached - resets next month</span>
             )}
           </div>
         </div>
@@ -265,7 +266,7 @@ export default function IndividualBooking() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <span className="font-semibold text-slate-900">${mentor.hourlyRate}/session</span>
+                      <span className="font-semibold text-slate-900">${Math.round(parseFloat(mentor.hourlyRate) / 2)}/session</span>
                       <Badge variant="outline">Available</Badge>
                     </div>
                   </div>
@@ -310,7 +311,7 @@ export default function IndividualBooking() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Rate:</span>
-                      <span className="font-medium">${selectedMentor.hourlyRate}</span>
+                      <span className="font-medium">${Math.round(parseFloat(selectedMentor.hourlyRate) / 2)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Format:</span>
@@ -345,7 +346,8 @@ export default function IndividualBooking() {
                     selectedDate={selectedDateTime?.date}
                     selectedTime={selectedDateTime?.time}
                     onDateTimeSelect={handleDateTimeSelect}
-                    mentorIds={[selectedMentor.id]}
+                    selectedMentorIds={[selectedMentor.id]}
+                    mentors={mentors}
                     sessionDuration={30}
                   />
                   
