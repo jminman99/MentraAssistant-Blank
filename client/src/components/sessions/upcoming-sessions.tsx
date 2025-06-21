@@ -68,25 +68,29 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         `${session.humanMentor.user.firstName} ${session.humanMentor.user.lastName}` : 
         'Individual Session'
     })),
-    ...councilSessions.map((session: any) => ({
-      id: session.sessionId || session.id,
-      sessionId: session.sessionId || session.id,
-      type: 'council' as const,
-      scheduledAt: session.scheduledDate,
-      status: session.status,
-      title: 'Council Session',
-      duration: 60,
-      mentorCount: session.mentorCount || 3,
-      sessionGoals: session.sessionGoals
-    }))
+    ...councilSessions.map((session: any) => {
+      console.log('Processing council session:', session);
+      return {
+        id: session.sessionId || session.id,
+        sessionId: session.sessionId || session.id,
+        type: 'council' as const,
+        scheduledAt: session.scheduledDate,
+        status: session.status,
+        title: 'Council Session',
+        duration: session.duration || 60,
+        mentorCount: session.mentorCount || 3,
+        sessionGoals: session.sessionGoals
+      };
+    })
   ];
 
   const upcomingSessions = allSessions
-    .filter(session => 
-      session.status === 'scheduled' || session.status === 'confirmed' && 
-      session.scheduledAt && 
-      isFuture(parseISO(session.scheduledAt))
-    )
+    .filter(session => {
+      console.log('Filtering session:', session);
+      return (session.status === 'scheduled' || session.status === 'confirmed') && 
+        session.scheduledAt && 
+        isFuture(parseISO(session.scheduledAt));
+    })
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
 

@@ -749,7 +749,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCouncilSession(id: number): Promise<any> {
-    const [session] = await db.select().from(councilSessions).where(eq(councilSessions.id, id));
+    const sessions = await db.select().from(councilSessions).where(eq(councilSessions.id, id));
+    const session = sessions[0];
     console.log(`Retrieved session ${id}:`, session);
     return session;
   }
@@ -761,53 +762,45 @@ export class DatabaseStorage implements IStorage {
 
   // Council Participant methods
   async getCouncilParticipants(menteeId: number): Promise<any[]> {
-    const participants = await db
-      .select()
+    // Use a single query with joins to get all data at once
+    const results = await db
+      .select({
+        participantId: councilParticipants.id,
+        sessionId: councilSessions.id,
+        title: councilSessions.title,
+        description: councilSessions.description,
+        scheduledDate: councilSessions.scheduledDate,
+        duration: councilSessions.duration,
+        status: councilSessions.status,
+        sessionGoals: councilParticipants.sessionGoals,
+        questions: councilParticipants.questions,
+        registrationDate: councilParticipants.registrationDate,
+      })
       .from(councilParticipants)
+      .innerJoin(councilSessions, eq(councilParticipants.councilSessionId, councilSessions.id))
       .where(eq(councilParticipants.menteeId, menteeId))
       .orderBy(councilParticipants.registrationDate);
     
-    console.log(`Found ${participants.length} participants for user ${menteeId}:`, participants);
+    console.log(`Found ${results.length} council sessions for user ${menteeId}:`, results);
     
-    // For each participant, get the full session data with mentor count
-    const sessionsWithData = await Promise.all(
-      participants.map(async (participant) => {
-        const session = await this.getCouncilSession(participant.councilSessionId);
-        
-        console.log(`Retrieved session ${participant.councilSessionId}:`, session);
-        
-        if (!session) return null;
-        
-        // Get mentor count for this session
-        const mentorCount = await db
-          .select()
-          .from(councilMentors)
-          .where(eq(councilMentors.councilSessionId, participant.councilSessionId));
-        
-        const sessionData = {
-          id: participant.id,
-          sessionId: session.id,
-          title: session.title,
-          description: session.description,
-          scheduledDate: session.scheduledDate,
-          duration: session.duration,
-          status: session.status,
-          sessionGoals: participant.sessionGoals,
-          questions: participant.questions,
-          registrationDate: participant.registrationDate,
-          mentorCount: mentorCount.length || 3
-        };
-        
-        console.log(`Session data for participant:`, participant.id, sessionData);
-        
-        return sessionData;
-      })
-    );
+    // Transform to expected format
+    const sessionsWithData = results.map((result) => ({
+      id: result.participantId,
+      sessionId: result.sessionId,
+      title: result.title,
+      description: result.description,
+      scheduledDate: result.scheduledDate,
+      duration: result.duration,
+      status: result.status,
+      sessionGoals: result.sessionGoals,
+      questions: result.questions,
+      registrationDate: result.registrationDate,
+      mentorCount: 3 // Default mentor count
+    }));
     
-    const validSessions = sessionsWithData.filter(session => session !== null);
-    console.log(`Returning ${validSessions.length} sessions:`, validSessions);
+    console.log(`Returning ${sessionsWithData.length} formatted sessions:`, sessionsWithData);
     
-    return validSessions;
+    return sessionsWithData;
   }
 
   async createCouncilParticipant(participant: any): Promise<any> {
