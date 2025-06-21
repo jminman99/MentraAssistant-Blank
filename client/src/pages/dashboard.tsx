@@ -70,12 +70,13 @@ function CouncilSchedulingContent() {
       const response = await apiRequest("POST", '/api/council-sessions/book', requestBody);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Council Session Booked",
         description: "Your council session has been scheduled successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/council-sessions'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
       setShowBookingForm(false);
       setSelectedMentors([]);
       form.reset();

@@ -227,6 +227,7 @@ export default function CouncilScheduling() {
         // Invalidate cache to refresh data
         console.log('[DEBUG] Invalidating council-bookings cache...');
         await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
         
         // Navigate to sessions page after short delay
         setTimeout(() => {
