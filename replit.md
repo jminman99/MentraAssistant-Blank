@@ -313,6 +313,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: UPDATED sessions page to show only relevant session type - Individual users see only individual sessions (X/2), Council users see only council sessions (X/1), no cross-plan session access
 - June 21, 2025: FIXED council session cancellation - corrected ID mapping to use sessionId instead of participant id, added proper ownership validation, council sessions can now be cancelled successfully
 - June 21, 2025: CLEANED UP excess June sessions - removed session 26 to enforce 1 council session per month limit, council@example.com now has proper monthly usage (1/1)
+- June 21, 2025: REMOVED booking menu from sessions page - eliminated duplicate booking paths by removing quick navigation buttons, users now directed to main council scheduling page for booking with cleaner single-path experience
 
 ## Changelog
 

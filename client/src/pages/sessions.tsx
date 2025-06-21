@@ -39,14 +39,13 @@ export default function Sessions() {
   const [selectedTab, setSelectedTab] = useState("upcoming");
   const [, setLocation] = useLocation();
 
-  // Helper function to get booking route
-  const getBookingRoute = () => {
-    return user?.subscriptionPlan === 'council' ? '/council-scheduling' : '/individual-booking';
-  };
-
   // Helper function to navigate to booking page
   const handleBookNewSession = () => {
-    setLocation(getBookingRoute());
+    if (user?.subscriptionPlan === 'council') {
+      setLocation('/council-scheduling');
+    } else {
+      setLocation('/individual-booking');
+    }
   };
 
   // Fetch user's session bookings
@@ -281,35 +280,7 @@ export default function Sessions() {
             </div>
           </div>
           
-          {/* Quick Navigation */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <Home className="h-4 w-4" />
-                <span>Dashboard</span>
-              </Button>
-            </Link>
-            <Link href="/individual-booking">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <User className="h-4 w-4" />
-                <span>Experienced Guides</span>
-              </Button>
-            </Link>
-            {user?.subscriptionPlan === 'council' && (
-              <Link href="/council-scheduling">
-                <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <span>Book Council</span>
-                </Button>
-              </Link>
-            )}
-            <Link href="/mentors">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <MessageSquare className="h-4 w-4" />
-                <span>AI Mentors</span>
-              </Button>
-            </Link>
-          </div>
+
         </div>
 
         {/* Header */}
@@ -319,14 +290,23 @@ export default function Sessions() {
               <h1 className="text-3xl font-bold text-slate-900">My Sessions</h1>
               <p className="text-slate-600 mt-2">
                 {user?.subscriptionPlan === 'council' 
-                  ? 'Manage your individual and council mentor sessions' 
+                  ? 'Manage your council sessions with multiple mentors' 
                   : 'Manage your individual mentor sessions'
                 }
               </p>
             </div>
             <Button onClick={handleBookNewSession}>
-              <User className="h-4 w-4 mr-2" />
-              Book New Session
+              {user?.subscriptionPlan === 'council' ? (
+                <>
+                  <Users className="h-4 w-4 mr-2" />
+                  Book Council Session
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4 mr-2" />
+                  Book Individual Session
+                </>
+              )}
             </Button>
           </div>
 
