@@ -46,8 +46,8 @@ The application uses PostgreSQL with the following core entities:
 ### Subscription Management
 Three subscription tiers:
 - **AI-Only ($19/month)**: 150 AI messages, no human sessions
-- **Individual ($49/month)**: 300 AI messages + 2 individual sessions per month
-- **Council ($49/month)**: 300 AI messages + 1 council session per month
+- **Individual ($49/month)**: 300 AI messages + 2 one-on-one sessions per calendar month
+- **Council ($49/month)**: 300 AI messages + 1 session with 3-5 mentors per calendar month
 
 ### Chat System
 - Real-time messaging with AI mentors
@@ -309,7 +309,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: UPDATED council session monthly usage display to correctly show 1 session per month limit for council plan users in UI components
 - June 21, 2025: FIXED council session upcoming events display - corrected cache invalidation after booking to refresh both /api/council-bookings and /api/session-bookings queries so new sessions appear immediately
 - June 21, 2025: RESOLVED sessions page routing for council users - "Book a Session" button now correctly routes council users to council scheduling page instead of individual booking, fixed routing path from /council-scheduling-new to /council-scheduling to match App.tsx configuration
-- June 21, 2025: INTEGRATED council sessions into main sessions page - council users now see both individual and council sessions in their unified sessions view with proper monthly usage breakdown showing individual (2/month) and council (1/month) limits separately
+- June 21, 2025: CORRECTED subscription model - both Individual and Council plans are $49/month with separate session types: Individual gets 2 one-on-one sessions per calendar month, Council gets 1 session with 3-5 mentors per calendar month
+- June 21, 2025: UPDATED sessions page to show only relevant session type - Individual users see only individual sessions (X/2), Council users see only council sessions (X/1), no cross-plan session access
 
 ## Changelog
 
