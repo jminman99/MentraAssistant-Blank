@@ -79,7 +79,6 @@ export default function FreshIndividualBooking() {
       
       const requestBody = {
         humanMentorId: mentorId,
-        sessionType: 'individual',
         scheduledAt: scheduledDateTime.toISOString(),
         duration: 60,
         sessionGoals: sessionGoals || null,
