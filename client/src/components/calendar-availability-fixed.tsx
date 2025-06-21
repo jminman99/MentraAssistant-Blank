@@ -43,14 +43,17 @@ export default function CalendarAvailability({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Determine actual mode based on props
-  const detectedCouncilMode = isCouncilMode || selectedMentors.length > 1 || selectedMentorIds.length > 1;
+  // Determine actual mode based on props - prioritize explicit isCouncilMode flag
+  const detectedCouncilMode = isCouncilMode || sessionDuration === 60 || selectedMentors.length > 1 || selectedMentorIds.length > 1;
   const mentorIds = selectedMentors.length > 0 ? selectedMentors : selectedMentorIds;
   
   console.log('[DEBUG] CalendarAvailability props:', {
     mentorIds,
     isCouncilMode: detectedCouncilMode,
-    sessionDuration
+    sessionDuration,
+    originalIsCouncilMode: isCouncilMode,
+    selectedMentorsLength: selectedMentors.length,
+    selectedMentorIdsLength: selectedMentorIds.length
   });
 
   // Generate time slots based on session duration
@@ -59,24 +62,42 @@ export default function CalendarAvailability({
     const startHour = 9; // 9 AM
     const endHour = 17; // 5 PM
     
-    for (let hour = startHour; hour < endHour; hour++) {
-      if (duration === 30) {
-        // 30-minute intervals for individual sessions
+    console.log('[DEBUG] generateTimeSlots called with duration:', duration);
+    
+    // Always check duration explicitly to ensure correct slot generation
+    if (duration === 30) {
+      // 30-minute intervals for individual sessions
+      for (let hour = startHour; hour < endHour; hour++) {
+        console.log('[DEBUG] Adding 30-min slots for hour:', hour);
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
         slots.push(`${hour.toString().padStart(2, '0')}:30`);
-      } else {
-        // 60-minute intervals for council sessions
+      }
+    } else {
+      // 60-minute intervals for council sessions (duration !== 30)
+      for (let hour = startHour; hour < endHour; hour++) {
+        console.log('[DEBUG] Adding 60-min slot for hour:', hour);
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
       }
     }
     
+    console.log('[DEBUG] Final slots array:', slots);
     return slots;
   };
   
-  const timeSlots = useMemo(() => 
-    generateTimeSlots(detectedCouncilMode ? 60 : sessionDuration),
-    [detectedCouncilMode, sessionDuration]
-  );
+  const timeSlots = useMemo(() => {
+    // Force 60-minute slots for council mode, otherwise use sessionDuration
+    const duration = detectedCouncilMode || isCouncilMode || sessionDuration === 60 ? 60 : sessionDuration;
+    console.log('[DEBUG] Final duration decision:', duration, {
+      detectedCouncilMode,
+      isCouncilMode,
+      sessionDuration,
+      selectedMentorsCount: selectedMentors.length,
+      selectedMentorIdsCount: selectedMentorIds.length
+    });
+    const slots = generateTimeSlots(duration);
+    console.log('[DEBUG] Generated slots:', slots);
+    return slots;
+  }, [detectedCouncilMode, sessionDuration, isCouncilMode, selectedMentors.length, selectedMentorIds.length]);
 
   // For individual sessions, always show all slots as available
   useEffect(() => {
