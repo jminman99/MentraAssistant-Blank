@@ -1225,38 +1225,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[DEBUG] User:', user.id, user.email);
       console.log('[DEBUG] Request headers:', JSON.stringify(req.headers, null, 2));
       
-      // Validate required fields
-      if (!data.humanMentorId) {
-        console.log('[DEBUG] Validation failed - missing humanMentorId');
+      // Use schema validation for proper type checking
+      const validationResult = insertSessionBookingSchema.safeParse(data);
+      if (!validationResult.success) {
+        console.log('[DEBUG] Schema validation failed:', validationResult.error.errors);
         return res.status(400).json({ 
           message: 'Validation error', 
-          errors: [{ code: 'invalid_type', path: ['humanMentorId'], message: 'Mentor selection is required' }]
-        });
-      }
-      
-      if (!data.scheduledAt) {
-        console.log('[DEBUG] Validation failed - missing scheduledAt');
-        return res.status(400).json({ 
-          message: 'Validation error', 
-          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Please select a date and time' }]
+          errors: validationResult.error.errors 
         });
       }
 
-      // Parse and validate the scheduled date
-      const scheduledDate = new Date(data.scheduledAt);
-      if (isNaN(scheduledDate.getTime())) {
-        console.log('[DEBUG] Validation failed - invalid date format:', data.scheduledAt);
-        return res.status(400).json({ 
-          message: 'Validation error', 
-          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Invalid date format' }]
-        });
-      }
+      const validatedData = validationResult.data;
+      console.log('[DEBUG] Schema validation passed:', validatedData);
 
-      if (scheduledDate <= new Date()) {
-        console.log('[DEBUG] Validation failed - date in the past:', scheduledDate);
+      // Check if date is in the future
+      if (validatedData.scheduledAt <= new Date()) {
+        console.log('[DEBUG] Validation failed - date in the past:', validatedData.scheduledAt);
         return res.status(400).json({ 
           message: 'Validation error', 
-          errors: [{ code: 'invalid_type', path: ['scheduledAt'], message: 'Please select a future date and time' }]
+          errors: [{ code: 'custom', path: ['scheduledAt'], message: 'Please select a future date and time' }]
         });
       }
       
@@ -1265,23 +1252,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessionData = {
         menteeId: user.id,
-        humanMentorId: data.humanMentorId,
-        sessionType: data.sessionType || 'individual',
-        duration: data.duration || 60,
-        scheduledDate: scheduledDate,
-        timezone: data.timezone || 'America/New_York',
-        meetingType: data.meetingType || 'video',
+        humanMentorId: validatedData.humanMentorId,
+        sessionType: validatedData.sessionType || 'individual',
+        duration: validatedData.duration || 60,
+        scheduledDate: validatedData.scheduledAt,
+        timezone: validatedData.timezone || 'America/New_York',
+        meetingType: validatedData.meetingType || 'video',
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
-        sessionGoals: data.sessionGoals || data.goals || null,
+        sessionGoals: validatedData.sessionGoals || null,
         status: 'confirmed'
       };
       
       console.log('[DEBUG] Creating session with data:', sessionData);
       
-      const session = await storage.createSessionBooking(sessionData);
-      console.log('[DEBUG] Session created successfully:', session.id);
-      
-      res.status(201).json(session);
+      try {
+        const session = await storage.createSessionBooking(sessionData);
+        console.log('[DEBUG] Session created successfully:', session.id);
+        res.status(201).json(session);
+      } catch (dbError) {
+        console.error('[DEBUG] Database error:', dbError);
+        return res.status(500).json({ message: 'Database error: ' + (dbError as Error).message });
+      }
     } catch (error) {
       console.error('Error creating session:', error);
       res.status(500).json({ message: 'Failed to create session' });
@@ -1305,7 +1296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/session-bookings", requireAuth, async (req: any, res) => {
     try {
       const user = req.user;
+      
+      console.log('[DEBUG] Session booking schema validation input:', JSON.stringify(req.body, null, 2));
       const data = insertSessionBookingSchema.parse(req.body);
+      console.log('[DEBUG] Session booking schema validation passed:', JSON.stringify(data, null, 2));
       
       // Generate unique Jitsi room ID
       const jitsiRoomId = `mentra-session-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -1320,6 +1314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating session booking:", error);
       if (error instanceof z.ZodError) {
+        console.log('[DEBUG] Zod validation errors:', JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: 'Validation error', errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create session booking" });
