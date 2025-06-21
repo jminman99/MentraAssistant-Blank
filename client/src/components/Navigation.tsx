@@ -24,7 +24,7 @@ export default function Navigation() {
     { path: '/dashboard', icon: Home, label: 'Home' },
     { path: '/individual-booking', icon: Users, label: 'Book Session' },
     { path: '/sessions', icon: Calendar, label: 'My Sessions' },
-    { path: '/council', icon: CalendarIcon, label: 'Council' },
+    ...(user?.subscriptionPlan === 'council' ? [{ path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council' }] : []),
   ];
 
   // Add mentor-specific navigation for human mentors

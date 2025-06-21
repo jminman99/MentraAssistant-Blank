@@ -302,6 +302,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: RESOLVED calendar component infinite API loop - created optimized calendar-availability-fixed component with proper memoization and eliminated excessive mentor availability API calls, individual sessions no longer trigger availability checks
 - June 21, 2025: FIXED session status filtering - canceled sessions no longer appear in past sessions list, past sessions now only show completed sessions and scheduled sessions with past dates
 - June 21, 2025: ADDED navigation to sessions page - included back button, breadcrumb navigation, and quick access buttons to dashboard, booking pages, and AI mentors for better user experience
+- June 21, 2025: FIXED council navigation access control - council buttons now only show for users with council subscriptions, improved council route to show upgrade message instead of 404 for individual subscribers
 
 ## Changelog
 

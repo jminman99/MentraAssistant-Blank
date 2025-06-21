@@ -246,12 +246,14 @@ export default function Sessions() {
                 <span>Book Individual</span>
               </Button>
             </Link>
-            <Link href="/council-scheduling-new">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                <Users className="h-4 w-4" />
-                <span>Book Council</span>
-              </Button>
-            </Link>
+            {user?.subscriptionPlan === 'council' && (
+              <Link href="/council-scheduling-new">
+                <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                  <Users className="h-4 w-4" />
+                  <span>Book Council</span>
+                </Button>
+              </Link>
+            )}
             <Link href="/mentors">
               <Button variant="outline" size="sm" className="flex items-center space-x-2">
                 <MessageSquare className="h-4 w-4" />
