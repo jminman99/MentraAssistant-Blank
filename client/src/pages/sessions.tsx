@@ -243,7 +243,7 @@ export default function Sessions() {
             <Link href="/individual-booking">
               <Button variant="outline" size="sm" className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
-                <span>Book Individual</span>
+                <span>Experienced Guides</span>
               </Button>
             </Link>
             {user?.subscriptionPlan === 'council' && (

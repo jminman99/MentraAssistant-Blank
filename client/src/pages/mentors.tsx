@@ -19,7 +19,7 @@ export default function Mentors() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Human Mentors</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Experienced Guides</h1>
         <p className="text-slate-600 dark:text-slate-400 mt-2">
           Connect with experienced mentors for personalized guidance
         </p>

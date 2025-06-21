@@ -23,7 +23,7 @@ export default function Navigation() {
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
     { path: '/mentors', icon: MessageCircle, label: 'Wise Guides' },
-    { path: '/individual-booking', icon: Users, label: 'Mentors' },
+    { path: '/individual-booking', icon: Users, label: 'Experienced Guides' },
     { path: '/sessions', icon: Calendar, label: 'Sessions' },
     ...(user?.subscriptionPlan === 'council' ? [{ path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council' }] : []),
   ];
@@ -60,7 +60,7 @@ export default function Navigation() {
                     <Button
                       variant={isActive(item.path) ? "default" : "ghost"}
                       size="sm"
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 px-3 py-2"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
@@ -72,7 +72,7 @@ export default function Navigation() {
                     <Button
                       variant={isActive(item.path) ? "default" : "ghost"}
                       size="sm"
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 px-3 py-2"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
@@ -82,11 +82,11 @@ export default function Navigation() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 {user.firstName} {user.lastName}
               </span>
-              <Button variant="outline" size="sm" onClick={logout}>
+              <Button variant="outline" size="sm" onClick={logout} className="px-3 py-1.5">
                 Logout
               </Button>
             </div>

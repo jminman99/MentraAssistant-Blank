@@ -443,7 +443,7 @@ export default function Dashboard() {
             {selectedTab === "human-mentors" && user.subscriptionPlan !== 'council' && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-slate-900">Human Mentors</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Experienced Guides</h2>
                   <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <MessageCircle className="h-4 w-4" />
                     <span>{user.sessionsUsed}/{user.sessionsLimit} sessions used</span>
@@ -453,7 +453,7 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   {humanMentors.length === 0 ? (
                     <div className="text-center py-8">
-                      <div className="text-slate-500">No human mentors available</div>
+                      <div className="text-slate-500">No experienced guides available</div>
                       <div className="text-sm text-slate-400 mt-1">Check back later for new mentors</div>
                     </div>
                   ) : (
@@ -535,7 +535,7 @@ export default function Dashboard() {
                     className="w-full justify-start"
                   >
                     <Compass className="h-4 w-4 mr-2" />
-                    Human Mentors
+                    Experienced Guides
                   </Button>
                 )}
                 <Link href="/sessions">
@@ -583,7 +583,7 @@ export default function Dashboard() {
             <Link href="/individual-booking">
               <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
                 <Compass className="h-5 w-5" />
-                <span className="text-xs font-medium">Mentors</span>
+                <span className="text-xs font-medium">Experienced Guides</span>
               </button>
             </Link>
           )}
