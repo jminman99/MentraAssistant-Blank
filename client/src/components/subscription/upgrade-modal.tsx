@@ -57,7 +57,7 @@ export function UpgradeModal({ currentPlan, onClose }: UpgradeModalProps) {
       features: [
         '200 AI messages/month',
         '5 AI mentor personalities',
-        '2 human mentor sessions',
+        '2 experienced guide sessions',
         'Video & in-person options'
       ],
       recommended: true,

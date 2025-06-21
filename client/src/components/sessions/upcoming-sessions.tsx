@@ -129,7 +129,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
         <div className="text-slate-500 font-medium">No upcoming sessions</div>
         <div className="text-sm text-slate-400 mt-1">
-          Book a session with a human mentor to get started
+          Book a session with an experienced guide to get started
         </div>
       </div>
     );

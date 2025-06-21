@@ -28,7 +28,7 @@ export default function Navigation() {
     ...(user?.subscriptionPlan === 'council' ? [{ path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council' }] : []),
   ];
 
-  // Add mentor-specific navigation for human mentors
+  // Add mentor-specific navigation for experienced guides
   if (user?.role && ['admin', 'super_admin'].includes(user.role)) {
     navigationItems.push({ path: '/mentor-availability', icon: Clock, label: 'Availability' });
   }
@@ -60,7 +60,7 @@ export default function Navigation() {
                     <Button
                       variant={isActive(item.path) ? "default" : "ghost"}
                       size="sm"
-                      className="flex items-center space-x-2 px-3 py-2"
+                      className="flex items-center space-x-2 px-4 py-2 h-9"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
@@ -72,7 +72,7 @@ export default function Navigation() {
                     <Button
                       variant={isActive(item.path) ? "default" : "ghost"}
                       size="sm"
-                      className="flex items-center space-x-2 px-3 py-2"
+                      className="flex items-center space-x-2 px-4 py-2 h-9"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.label}</span>
@@ -86,7 +86,7 @@ export default function Navigation() {
               <span className="text-sm text-slate-600 dark:text-slate-400">
                 {user.firstName} {user.lastName}
               </span>
-              <Button variant="outline" size="sm" onClick={logout} className="px-3 py-1.5">
+              <Button variant="outline" size="sm" onClick={logout} className="px-4 py-2 h-9">
                 Logout
               </Button>
             </div>

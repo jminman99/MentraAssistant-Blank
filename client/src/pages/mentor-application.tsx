@@ -141,7 +141,7 @@ export default function MentorApplication() {
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Share your wisdom and life experience to guide the next generation. 
-            Your stories, challenges, and insights will help train our AI mentors and inform human mentorship sessions.
+            Your stories, challenges, and insights will help train our AI mentors and inform experienced guide sessions.
           </p>
         </div>
 
