@@ -106,7 +106,7 @@ export default function Sessions() {
       return <Badge variant="secondary">Completed</Badge>;
     }
     if ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(sessionDate, now)) {
-      return <Badge variant="outline">Missed</Badge>;
+      return <Badge variant="outline">Past</Badge>;
     }
     if (canJoinSession(session)) {
       return <Badge className="bg-green-600 hover:bg-green-700">Join Now</Badge>;
@@ -245,8 +245,8 @@ export default function Sessions() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-slate-900">{pastSessions.filter(s => s.status === 'completed').length}</div>
-                  <div className="text-sm text-slate-600">Completed</div>
+                  <div className="text-2xl font-bold text-slate-900">{pastSessions.length}</div>
+                  <div className="text-sm text-slate-600">Past Sessions</div>
                 </div>
               </CardContent>
             </Card>
