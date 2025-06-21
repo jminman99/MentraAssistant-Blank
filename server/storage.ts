@@ -750,6 +750,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCouncilSession(id: number): Promise<any> {
     const [session] = await db.select().from(councilSessions).where(eq(councilSessions.id, id));
+    console.log(`Retrieved session ${id}:`, session);
     return session;
   }
 

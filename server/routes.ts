@@ -878,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sessionId: session?.id,
             title: session?.title || 'Council Session',
             description: session?.description,
-            scheduledDate: session?.scheduled_date,
+            scheduledDate: session?.scheduled_date || session?.scheduledDate,
             duration: session?.duration,
             status: session?.status || participant.status,
             sessionGoals: participant.session_goals,

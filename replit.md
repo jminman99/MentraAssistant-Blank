@@ -285,6 +285,9 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 20, 2025: Fixed council booking button visibility by increasing bottom padding to prevent overlap with mobile navigation bar (pb-40)
 - June 20, 2025: Completed council session display functionality - API now returns complete session data with proper joins showing scheduled dates, times, session goals, and mentor details
 - June 20, 2025: Council booking system fully operational - backend creates sessions, participants, and mentors automatically with instant confirmation and proper status tracking
+- June 21, 2025: Fixed critical council session display issue - corrected database field mapping between `scheduled_date` and `scheduledDate` causing sessions to not render in UI
+- June 21, 2025: Removed all yellow theming elements and replaced with black/slate color scheme throughout the application
+- June 21, 2025: Implemented proper monthly council session limits - system now prevents multiple bookings per month as required by business rules
 
 ## Changelog
 
