@@ -25,7 +25,7 @@ const useBookIndividualSession = () => {
           timezone: bookingData.timezone,              // e.g., 'America/New_York'
           duration: bookingData.duration,              // in minutes, e.g., 30
           meetingType: bookingData.meetingType,        // 'video' | 'in-person'
-          sessionGoals: bookingData.sessionGoals,      // optional
+          sessionGoals: bookingData.sessionGoals || null,      // optional
           sessionType: 'individual'
         })
       });

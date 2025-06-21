@@ -525,7 +525,7 @@ export const insertSessionBookingSchema = z.object({
   scheduledAt: z.string().transform(val => new Date(val)),
   humanMentorId: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]),
   duration: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]).optional().default(60),
-  sessionGoals: z.string().nullish(),
+  sessionGoals: z.string().optional().nullable(),
   sessionType: z.string().optional().default('individual'),
   meetingType: z.string().optional().default('video'),
   timezone: z.string().optional().default('America/New_York'),

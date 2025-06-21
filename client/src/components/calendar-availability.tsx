@@ -36,6 +36,14 @@ export default function CalendarAvailability({
   const mentorIds = selectedMentorIds || selectedMentors || [];
   const handleTimeSelect = onDateTimeSelect || onTimeSelect || (() => {});
   const isCouncilMode = Boolean(selectedMentorIds);
+  
+  console.log('[DEBUG] CalendarAvailability props:', { 
+    selectedMentorIds, 
+    selectedMentors, 
+    mentorIds, 
+    mentorsLength: mentors?.length,
+    isCouncilMode 
+  });
   const [date, setDate] = useState<Date | undefined>(selectedDate || new Date());
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);

@@ -25,10 +25,11 @@ export default function Scheduling() {
   const { mutate: bookSession, isPending: isLoading, error } = useBookIndividualSession();
 
   // Fetch mentor information
-  const { data: mentor, isLoading: mentorLoading } = useQuery({
-    queryKey: ['/api/human-mentors', mentorId],
-    enabled: !!mentorId,
+  const { data: mentors = [], isLoading: mentorLoading } = useQuery({
+    queryKey: ['/api/human-mentors'],
   });
+  
+  const mentor = mentors.find((m: any) => m.id === mentorId);
 
   // Fetch availability data
   const { data: availability, isLoading: availabilityLoading } = useQuery({
@@ -54,7 +55,7 @@ export default function Scheduling() {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       duration: 60,
       meetingType: 'video',
-      sessionGoals: sessionGoals || undefined,
+      sessionGoals: sessionGoals || null,
       sessionType: 'individual'
     }, {
       onSuccess: (result) => {
@@ -144,7 +145,7 @@ export default function Scheduling() {
         <CardContent>
           <CalendarAvailability
             selectedMentors={mentorId ? [mentorId] : []}
-            mentors={mentor ? [mentor] : []}
+            mentors={mentors}
             onTimeSelect={handleDateTimeSelect}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
