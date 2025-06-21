@@ -261,7 +261,7 @@ export default function CouncilScheduling() {
           <p>Error: {bookingsError ? 'true' : 'false'}</p>
           <p>Bookings type: {typeof userBookings}</p>
           <p>Bookings length: {Array.isArray(userBookings) ? userBookings.length : 'not array'}</p>
-          <p>Bookings data: {userBookings ? JSON.stringify(userBookings).substring(0, 200) : 'null'}</p>
+          <p>Raw data: {userBookings ? `Array with ${userBookings.length} items` : 'null/undefined'}</p>
         </div>
       )}
 
@@ -281,11 +281,11 @@ export default function CouncilScheduling() {
         </div>
       )}
 
-      {/* Existing Bookings */}
-      {!isLoadingBookings && !bookingsError && userBookings && Array.isArray(userBookings) && userBookings.length > 0 && (
+      {/* Council Sessions Display */}
+      {userBookings && Array.isArray(userBookings) && userBookings.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Your Council Sessions
+            Your Council Sessions ({userBookings.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {userBookings.map((booking: any) => (
@@ -330,6 +330,13 @@ export default function CouncilScheduling() {
             ))}
           </div>
         </div>
+      ) : (
+        !isLoadingBookings && (
+          <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-lg text-center">
+            <h3 className="text-slate-700 font-medium mb-2">No Council Sessions</h3>
+            <p className="text-slate-600 text-sm">Book your first council session above.</p>
+          </div>
+        )
       )}
 
       {/* Booking Dialog */}

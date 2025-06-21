@@ -856,18 +856,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/council-bookings', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
-      const targetUser = user || await storage.getUser(9); // Fallback for testing
-      if (!targetUser) {
-        return res.status(404).json({ message: 'User not found' });
+      if (!user || !user.id) {
+        return res.status(401).json({ message: 'Authentication required' });
       }
       
       // Check if user has council plan access
-      if (targetUser.subscriptionPlan !== 'council') {
+      if (user.subscriptionPlan !== 'council') {
         return res.status(403).json({ message: 'Council access requires Council plan subscription' });
       }
 
       // Get council participants for the user
-      const participants = await storage.getCouncilParticipants(targetUser.id);
+      const participants = await storage.getCouncilParticipants(user.id);
       
       // Get full session details for each participation
       const sessionsWithDetails = await Promise.all(
