@@ -43,9 +43,11 @@ export default function CalendarAvailability({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Determine actual mode based on props - prioritize explicit isCouncilMode flag
-  const detectedCouncilMode = isCouncilMode || sessionDuration === 60 || selectedMentors.length > 1 || selectedMentorIds.length > 1;
   const mentorIds = selectedMentors.length > 0 ? selectedMentors : selectedMentorIds;
+  
+  const detectedCouncilMode = useMemo(() => {
+    return isCouncilMode || sessionDuration === 60 || mentorIds.length > 1;
+  }, [isCouncilMode, sessionDuration, mentorIds]);
   
   console.log('[DEBUG] CalendarAvailability props:', {
     mentorIds,
@@ -85,8 +87,8 @@ export default function CalendarAvailability({
   };
   
   const timeSlots = useMemo(() => {
-    // Force 60-minute slots for council mode, otherwise use sessionDuration
-    const duration = detectedCouncilMode || isCouncilMode || sessionDuration === 60 ? 60 : sessionDuration;
+    const duration = detectedCouncilMode ? 60 : 30;
+    console.log('[DEBUG] Using session duration for slots:', duration);
     console.log('[DEBUG] Final duration decision:', duration, {
       detectedCouncilMode,
       isCouncilMode,
@@ -97,7 +99,7 @@ export default function CalendarAvailability({
     const slots = generateTimeSlots(duration);
     console.log('[DEBUG] Generated slots:', slots);
     return slots;
-  }, [detectedCouncilMode, sessionDuration, isCouncilMode, selectedMentors.length, selectedMentorIds.length]);
+  }, [detectedCouncilMode]);
 
   // For individual sessions, always show all slots as available
   useEffect(() => {
