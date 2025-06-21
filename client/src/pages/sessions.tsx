@@ -89,9 +89,9 @@ export default function Sessions() {
 
   const now = new Date();
   
-  // Combine individual and council sessions for council users
+  // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
-    ? [...sessions, ...councilSessions.map((cs: any) => ({
+    ? councilSessions.map((cs: any) => ({
         id: `council-${cs.id}`,
         scheduledDate: cs.scheduledDate,
         duration: cs.duration || 60,
@@ -104,7 +104,7 @@ export default function Sessions() {
           expertise: `${cs.mentorCount} mentors`,
           rating: '5.0'
         }
-      }))]
+      }))
     : sessions;
   
   const upcomingSessions = allSessions.filter(session => 
@@ -340,13 +340,10 @@ export default function Sessions() {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-slate-900">
                     {user?.subscriptionPlan === 'council' 
-                      ? `${sessions.filter(s => {
+                      ? `${councilSessions.filter((s: any) => {
                           const sessionDate = parseISO(s.scheduledDate);
                           return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
-                        }).length}/2 Individual + ${councilSessions.filter((s: any) => {
-                          const sessionDate = parseISO(s.scheduledDate);
-                          return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
-                        }).length}/1 Council`
+                        }).length}/1`
                       : `${sessions.filter(s => {
                           const sessionDate = parseISO(s.scheduledDate);
                           return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');

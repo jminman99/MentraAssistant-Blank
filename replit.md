@@ -46,8 +46,8 @@ The application uses PostgreSQL with the following core entities:
 ### Subscription Management
 Three subscription tiers:
 - **AI-Only ($19/month)**: 150 AI messages, no human sessions
-- **Individual ($49/month)**: 300 AI messages + 2 human sessions
-- **Council ($99/month)**: 500 AI messages + 5 human sessions + council access
+- **Individual ($49/month)**: 300 AI messages + 2 individual sessions per month
+- **Council ($49/month)**: 300 AI messages + 1 council session per month
 
 ### Chat System
 - Real-time messaging with AI mentors
