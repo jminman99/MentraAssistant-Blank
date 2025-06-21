@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, Video, User, X, ExternalLink, Star } from "lucide-react";
+import { Calendar, Clock, Video, User, X, ExternalLink, Star, ArrowLeft, Home, Users, MessageSquare } from "lucide-react";
 import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
@@ -214,8 +214,53 @@ export default function Sessions() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 pb-32 lg:pb-8">
       <div className="max-w-4xl mx-auto">
+        {/* Navigation Header */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-4 mb-4">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-2 text-sm text-slate-500">
+              <Link href="/dashboard" className="hover:text-slate-700">Dashboard</Link>
+              <span>/</span>
+              <span className="text-slate-900">Sessions</span>
+            </div>
+          </div>
+          
+          {/* Quick Navigation */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Button>
+            </Link>
+            <Link href="/individual-booking">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span>Book Individual</span>
+              </Button>
+            </Link>
+            <Link href="/council-scheduling-new">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Book Council</span>
+              </Button>
+            </Link>
+            <Link href="/mentors">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                <MessageSquare className="h-4 w-4" />
+                <span>AI Mentors</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
