@@ -268,9 +268,14 @@ export default function Sessions() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">My Sessions</h1>
-              <p className="text-slate-600 mt-2">Manage your individual mentor sessions</p>
+              <p className="text-slate-600 mt-2">
+                {user?.subscriptionPlan === 'council' 
+                  ? 'Manage your individual and council mentor sessions' 
+                  : 'Manage your individual mentor sessions'
+                }
+              </p>
             </div>
-            <Link href="/individual-booking">
+            <Link href={user?.subscriptionPlan === 'council' ? '/council-scheduling-new' : '/individual-booking'}>
               <Button>
                 <User className="h-4 w-4 mr-2" />
                 Book New Session
@@ -325,9 +330,16 @@ export default function Sessions() {
                 <CardContent className="p-8 text-center">
                   <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Upcoming Sessions</h3>
-                  <p className="text-slate-600 mb-4">Book your next individual session with a mentor</p>
-                  <Link href="/individual-booking">
-                    <Button>Book Your First Session</Button>
+                  <p className="text-slate-600 mb-4">
+                    {user?.subscriptionPlan === 'council' 
+                      ? 'Book your next council session with multiple mentors' 
+                      : 'Book your next individual session with a mentor'
+                    }
+                  </p>
+                  <Link href={user?.subscriptionPlan === 'council' ? '/council-scheduling-new' : '/individual-booking'}>
+                    <Button>
+                      {user?.subscriptionPlan === 'council' ? 'Book Your First Council Session' : 'Book Your First Session'}
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>
