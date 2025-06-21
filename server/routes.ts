@@ -1207,38 +1207,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Individual or Council subscription required for session booking' });
       }
 
+      // Use Zod validation like the working endpoints
+      const data = insertSessionBookingSchema.parse(req.body);
+
       // Check monthly session limit (2 sessions per month as per PRD)
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth(); // 0-based month
+      const requestedDate = new Date(data.scheduledAt);
+      const requestedYear = requestedDate.getFullYear();
+      const requestedMonth = requestedDate.getMonth(); // 0-based month
       
       const allUserBookings = await storage.getSessionBookings(user.id);
-      const activeBookingsThisMonth = allUserBookings.filter(booking => {
+      const activeBookingsInRequestedMonth = allUserBookings.filter(booking => {
         const bookingDate = new Date(booking.scheduledDate);
-        return bookingDate.getFullYear() === currentYear && 
-               bookingDate.getMonth() === currentMonth && 
+        return bookingDate.getFullYear() === requestedYear && 
+               bookingDate.getMonth() === requestedMonth && 
                booking.status !== 'cancelled';
       });
 
       console.log('[DEBUG] Monthly booking check:', {
         totalBookings: allUserBookings.length,
-        activeThisMonth: activeBookingsThisMonth.length,
-        currentYear,
-        currentMonth: currentMonth + 1, // Display as 1-based for clarity
-        bookingDetails: activeBookingsThisMonth.map(b => ({
+        activeInRequestedMonth: activeBookingsInRequestedMonth.length,
+        requestedYear,
+        requestedMonth: requestedMonth + 1, // Display as 1-based for clarity
+        requestedDate: data.scheduledAt,
+        bookingDetails: activeBookingsInRequestedMonth.map(b => ({
           id: b.id,
           date: b.scheduledDate,
           status: b.status
         }))
       });
 
-      if (activeBookingsThisMonth.length >= 2) {
-        console.log('[DEBUG] Monthly session limit reached:', activeBookingsThisMonth.length);
-        return res.status(403).json({ message: "You've used all your monthly sessions. Your limit resets next month." });
+      if (activeBookingsInRequestedMonth.length >= 2) {
+        const monthName = new Date(requestedYear, requestedMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        console.log('[DEBUG] Monthly session limit reached for', monthName, ':', activeBookingsInRequestedMonth.length);
+        return res.status(403).json({ message: `You've used all your monthly sessions for ${monthName}. Try selecting a different month.` });
       }
-
-      // Use Zod validation like the working endpoints
-      const data = insertSessionBookingSchema.parse(req.body);
       console.log('[DEBUG] Individual session validation passed:', JSON.stringify(data, null, 2));
       
       // Generate unique Jitsi room ID
@@ -1273,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: session.id,
         message: `Individual session booked successfully for ${new Date(data.scheduledAt).toLocaleDateString()}`,
         session: session,
-        sessionsUsedThisMonth: activeBookingsThisMonth.length + 1
+        sessionsUsedThisMonth: activeBookingsInRequestedMonth.length + 1
       });
       
     } catch (error) {
