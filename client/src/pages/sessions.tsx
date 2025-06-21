@@ -39,27 +39,25 @@ export default function Sessions() {
   const [selectedTab, setSelectedTab] = useState("upcoming");
   const [, setLocation] = useLocation();
 
-  // Debug user subscription plan
-  console.log('[DEBUG] Sessions page user:', user);
-  console.log('[DEBUG] User subscription plan:', user?.subscriptionPlan);
-  
   // Helper function to get booking route
   const getBookingRoute = () => {
-    const isCouncilUser = user?.subscriptionPlan === 'council';
-    console.log('[DEBUG] Is council user?', isCouncilUser);
-    return isCouncilUser ? '/council-scheduling' : '/individual-booking';
+    return user?.subscriptionPlan === 'council' ? '/council-scheduling' : '/individual-booking';
   };
 
   // Helper function to navigate to booking page
   const handleBookNewSession = () => {
-    const route = getBookingRoute();
-    console.log('[DEBUG] Navigating to:', route);
-    setLocation(route);
+    setLocation(getBookingRoute());
   };
 
   // Fetch user's session bookings
   const { data: sessions = [], isLoading } = useQuery<SessionBooking[]>({
     queryKey: ['/api/session-bookings'],
+  });
+
+  // Fetch council sessions for council users
+  const { data: councilSessions = [], isLoading: councilLoading } = useQuery({
+    queryKey: ['/api/council-bookings'],
+    enabled: user?.subscriptionPlan === 'council',
   });
 
   // Cancel session mutation
@@ -90,10 +88,29 @@ export default function Sessions() {
   });
 
   const now = new Date();
-  const upcomingSessions = sessions.filter(session => 
+  
+  // Combine individual and council sessions for council users
+  const allSessions = user?.subscriptionPlan === 'council' 
+    ? [...sessions, ...councilSessions.map((cs: any) => ({
+        id: `council-${cs.id}`,
+        scheduledDate: cs.scheduledDate,
+        duration: cs.duration || 60,
+        status: cs.status,
+        meetingType: 'video',
+        sessionGoals: cs.sessionGoals,
+        humanMentor: {
+          id: 0,
+          user: { firstName: 'Council', lastName: 'Session' },
+          expertise: `${cs.mentorCount} mentors`,
+          rating: '5.0'
+        }
+      }))]
+    : sessions;
+  
+  const upcomingSessions = allSessions.filter(session => 
     (session.status === 'scheduled' || session.status === 'confirmed') && isAfter(parseISO(session.scheduledDate), now)
   );
-  const pastSessions = sessions.filter(session => 
+  const pastSessions = allSessions.filter(session => 
     session.status === 'completed' || 
     ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(parseISO(session.scheduledDate), now))
   );
@@ -224,7 +241,7 @@ export default function Sessions() {
     return null;
   }
 
-  if (isLoading) {
+  if (isLoading || (user?.subscriptionPlan === 'council' && councilLoading)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-lg text-slate-600">Loading sessions...</div>
@@ -282,15 +299,6 @@ export default function Sessions() {
           </div>
         </div>
 
-        {/* Temporary Debug Display */}
-        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
-          <h3 className="font-bold">DEBUG INFO:</h3>
-          <p>User: {user ? 'Loaded' : 'Not loaded'}</p>
-          <p>Subscription Plan: {user?.subscriptionPlan || 'undefined'}</p>
-          <p>Is Council User: {user?.subscriptionPlan === 'council' ? 'YES' : 'NO'}</p>
-          <p>Target Route: {getBookingRoute()}</p>
-        </div>
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -331,10 +339,19 @@ export default function Sessions() {
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-slate-900">
-                    {sessions.filter(s => {
-                      const sessionDate = parseISO(s.scheduledDate);
-                      return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
-                    }).length}/{user?.subscriptionPlan === 'council' ? 1 : 2}
+                    {user?.subscriptionPlan === 'council' 
+                      ? `${sessions.filter(s => {
+                          const sessionDate = parseISO(s.scheduledDate);
+                          return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
+                        }).length}/2 Individual + ${councilSessions.filter((s: any) => {
+                          const sessionDate = parseISO(s.scheduledDate);
+                          return isSameMonth(sessionDate, new Date()) && s.status !== 'cancelled';
+                        }).length}/1 Council`
+                      : `${sessions.filter(s => {
+                          const sessionDate = parseISO(s.scheduledDate);
+                          return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
+                        }).length}/2`
+                    }
                   </div>
                   <div className="text-sm text-slate-600">Monthly Usage</div>
                 </div>

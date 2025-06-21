@@ -308,6 +308,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: FIXED council session duration to consistently show 60-minute time slots - made detectedCouncilMode reactive with useMemo, simplified timeSlots logic to force 60-minute duration for council mode, added debug logging for duration calculation
 - June 21, 2025: UPDATED council session monthly usage display to correctly show 1 session per month limit for council plan users in UI components
 - June 21, 2025: FIXED council session upcoming events display - corrected cache invalidation after booking to refresh both /api/council-bookings and /api/session-bookings queries so new sessions appear immediately
+- June 21, 2025: RESOLVED sessions page routing for council users - "Book a Session" button now correctly routes council users to council scheduling page instead of individual booking, fixed routing path from /council-scheduling-new to /council-scheduling to match App.tsx configuration
+- June 21, 2025: INTEGRATED council sessions into main sessions page - council users now see both individual and council sessions in their unified sessions view with proper monthly usage breakdown showing individual (2/month) and council (1/month) limits separately
 
 ## Changelog
 
