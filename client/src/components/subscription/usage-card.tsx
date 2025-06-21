@@ -48,6 +48,27 @@ export function UsageCard({ user, onUpgrade }: UsageCardProps) {
         </div>
         
         {/* Human Sessions Progress */}
+        {user.subscriptionPlan !== 'ai-only' && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <Video className="h-4 w-4 text-slate-500" />
+                <span className="text-sm text-slate-600">
+                  {user.subscriptionPlan === 'council' ? 'Council Sessions' : 'Individual Sessions'}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-slate-900">
+                {user.sessionsUsed}/{user.subscriptionPlan === 'council' ? 1 : user.sessionsLimit}
+              </span>
+            </div>
+            <Progress value={sessionProgress} className="h-2" />
+            {user.subscriptionPlan === 'council' && (
+              <p className="text-xs text-slate-600 mt-1">
+                One council session per month included
+              </p>
+            )}
+          </div>
+        )}
         {user.sessionsLimit > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">

@@ -306,6 +306,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: STANDARDIZED navigation naming - unified top menu and bottom menu labels to use consistent naming conventions (Wise Guides, Experienced Guides, Sessions, Council)
 - June 21, 2025: UPDATED navigation terminology - changed "Mentors" to "Experienced Guides" throughout app navigation and fixed spacing inconsistencies in right-hand navigation menu
 - June 21, 2025: FIXED council session duration to consistently show 60-minute time slots - made detectedCouncilMode reactive with useMemo, simplified timeSlots logic to force 60-minute duration for council mode, added debug logging for duration calculation
+- June 21, 2025: UPDATED council session monthly usage display to correctly show 1 session per month limit for council plan users in UI components
 
 ## Changelog
 

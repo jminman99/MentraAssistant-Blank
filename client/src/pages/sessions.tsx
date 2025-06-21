@@ -303,7 +303,7 @@ export default function Sessions() {
                     {sessions.filter(s => {
                       const sessionDate = parseISO(s.scheduledDate);
                       return isSameMonth(sessionDate, new Date()) && (s.status === 'scheduled' || s.status === 'confirmed' || s.status === 'completed');
-                    }).length}/2
+                    }).length}/{user?.subscriptionPlan === 'council' ? 1 : 2}
                   </div>
                   <div className="text-sm text-slate-600">Monthly Usage</div>
                 </div>
