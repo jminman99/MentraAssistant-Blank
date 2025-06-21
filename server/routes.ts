@@ -1225,25 +1225,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[DEBUG] User:', user.id, user.email);
       console.log('[DEBUG] Request headers:', JSON.stringify(req.headers, null, 2));
       
-      // Use schema validation for proper type checking
-      const validationResult = insertSessionBookingSchema.safeParse(data);
-      if (!validationResult.success) {
-        console.log('[DEBUG] Schema validation failed:', validationResult.error.errors);
+      // Simple validation - just check required fields
+      if (!data.humanMentorId || !data.scheduledAt) {
+        console.log('[DEBUG] Missing required fields');
         return res.status(400).json({ 
-          message: 'Validation error', 
-          errors: validationResult.error.errors 
+          message: 'Missing required fields: humanMentorId and scheduledAt' 
         });
       }
 
-      const validatedData = validationResult.data;
-      console.log('[DEBUG] Schema validation passed:', validatedData);
+      // Parse date
+      const scheduledDate = new Date(data.scheduledAt);
+      if (isNaN(scheduledDate.getTime())) {
+        console.log('[DEBUG] Invalid date format');
+        return res.status(400).json({ 
+          message: 'Invalid date format' 
+        });
+      }
 
       // Check if date is in the future
-      if (validatedData.scheduledAt <= new Date()) {
-        console.log('[DEBUG] Validation failed - date in the past:', validatedData.scheduledAt);
+      if (scheduledDate <= new Date()) {
+        console.log('[DEBUG] Date must be in the future');
         return res.status(400).json({ 
-          message: 'Validation error', 
-          errors: [{ code: 'custom', path: ['scheduledAt'], message: 'Please select a future date and time' }]
+          message: 'Please select a future date and time' 
         });
       }
       
@@ -1252,14 +1255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const sessionData = {
         menteeId: user.id,
-        humanMentorId: validatedData.humanMentorId,
-        sessionType: validatedData.sessionType || 'individual',
-        duration: validatedData.duration || 60,
-        scheduledDate: validatedData.scheduledAt,
-        timezone: validatedData.timezone || 'America/New_York',
-        meetingType: validatedData.meetingType || 'video',
+        humanMentorId: parseInt(data.humanMentorId),
+        sessionType: data.sessionType || 'individual',
+        duration: parseInt(data.duration) || 60,
+        scheduledDate: scheduledDate,
+        timezone: data.timezone || 'America/New_York',
+        meetingType: data.meetingType || 'video',
         videoLink: `https://meet.jit.si/${jitsiRoomId}`,
-        sessionGoals: validatedData.sessionGoals || null,
+        sessionGoals: data.sessionGoals || null,
         status: 'confirmed'
       };
       
@@ -1268,6 +1271,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const session = await storage.createSessionBooking(sessionData);
         console.log('[DEBUG] Session created successfully:', session.id);
+        
+        // Update user's session count
+        await storage.updateUser(user.id, {
+          sessionsUsed: user.sessionsUsed + 1
+        });
+        
         res.status(201).json(session);
       } catch (dbError) {
         console.error('[DEBUG] Database error:', dbError);

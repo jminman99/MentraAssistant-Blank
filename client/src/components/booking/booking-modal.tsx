@@ -203,7 +203,7 @@ export function BookingModal({ mentor, user, onClose }: BookingModalProps) {
               rows={3}
             />
             <p className="text-xs text-slate-500 mt-1">
-              This helps your mentor prepare for the session, but is not required.
+              <strong>Optional:</strong> This helps your mentor prepare for the session, but you can leave it blank.
             </p>
           </div>
           

@@ -521,21 +521,15 @@ export const insertMentorApplicationSchema = createInsertSchema(mentorApplicatio
   updatedAt: true,
 });
 
-export const insertSessionBookingSchema = createInsertSchema(sessionBookings)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-  .extend({
-    scheduledAt: z.string().transform(val => new Date(val)),
-    humanMentorId: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]),
-    duration: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]).optional(),
-    sessionGoals: z.string().nullish(),
-    sessionType: z.string().optional(),
-    meetingType: z.string().optional(),
-    timezone: z.string().optional(),
-  });
+export const insertSessionBookingSchema = z.object({
+  scheduledAt: z.string().transform(val => new Date(val)),
+  humanMentorId: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]),
+  duration: z.union([z.number(), z.string().transform(val => parseInt(val, 10))]).optional().default(60),
+  sessionGoals: z.string().nullish(),
+  sessionType: z.string().optional().default('individual'),
+  meetingType: z.string().optional().default('video'),
+  timezone: z.string().optional().default('America/New_York'),
+});
 
 export const insertCouncilSessionSchema = createInsertSchema(councilSessions).omit({
   id: true,

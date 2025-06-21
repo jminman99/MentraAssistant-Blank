@@ -636,9 +636,48 @@ export class DatabaseStorage implements IStorage {
     return result as any;
   }
 
-  async createSessionBooking(booking: InsertSessionBooking): Promise<SessionBooking> {
-    const [result] = await db.insert(sessionBookings).values(booking).returning();
-    return result;
+  async createSessionBooking(data: any): Promise<any> {
+    console.log('[DEBUG] Storage createSessionBooking called with:', JSON.stringify(data, null, 2));
+    
+    // Map the data to match the database schema exactly
+    const mappedData = {
+      menteeId: data.menteeId,
+      humanMentorId: data.humanMentorId,
+      sessionType: data.sessionType || 'individual',
+      duration: data.duration || 60,
+      scheduledDate: data.scheduledDate,
+      timezone: data.timezone || 'America/New_York',
+      meetingType: data.meetingType || 'video',
+      location: data.location || null,
+      videoLink: data.videoLink || null,
+      calendlyEventId: data.calendlyEventId || null,
+      calendlyEventUrl: data.calendlyEventUrl || null,
+      sessionGoals: data.sessionGoals || null,
+      preparationNotes: data.preparationNotes || null,
+      menteeQuestions: data.menteeQuestions || null,
+      status: data.status || 'confirmed',
+      sessionNotes: data.sessionNotes || null,
+      followUpActions: data.followUpActions || null,
+      mentorRating: data.mentorRating || null,
+      menteeRating: data.menteeRating || null,
+      feedback: data.feedback || null,
+      reminderSent: data.reminderSent || false,
+      confirmationSent: data.confirmationSent || false
+    };
+    
+    console.log('[DEBUG] Mapped data for database insert:', JSON.stringify(mappedData, null, 2));
+    
+    try {
+      const [booking] = await db
+        .insert(sessionBookings)
+        .values(mappedData)
+        .returning();
+      console.log('[DEBUG] Database insert successful:', JSON.stringify(booking, null, 2));
+      return booking;
+    } catch (error) {
+      console.error('[DEBUG] Database insert failed:', error);
+      throw error;
+    }
   }
 
   async updateSessionBooking(id: number, updates: Partial<SessionBooking>): Promise<SessionBooking | undefined> {

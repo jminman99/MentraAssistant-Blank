@@ -290,6 +290,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: Implemented proper monthly council session limits - system now prevents multiple bookings per month as required by business rules
 - June 21, 2025: FIXED council sessions display - completely rewrote council scheduling page with direct fetch logic, council sessions now properly display with dates, times, and session goals for user ID 9 (council@example.com)
 - June 21, 2025: Completed council booking system debugging - fixed time display issues (sessions now show correct selected times instead of defaulting to 7 AM), implemented session cancellation with proper database cleanup, extended calendar availability to 6 months, fixed error handling to show accurate booking success/failure messages, and resolved data refresh issues so new bookings appear immediately in upcoming events
+- June 21, 2025: RESOLVED session booking validation and authentication issues - simplified validation schema to handle null session goals properly, fixed database field mapping in storage layer, updated UI to clearly indicate session goals are optional, enhanced error handling and debugging for booking failures, individual subscription users can now successfully book sessions with test@example.com account working
 
 ## Changelog
 
