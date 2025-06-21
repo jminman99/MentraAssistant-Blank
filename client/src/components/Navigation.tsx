@@ -22,7 +22,7 @@ export default function Navigation() {
 
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/mentors', icon: MessageCircle, label: 'Wisdom' },
+    { path: '/mentors', icon: MessageCircle, label: 'Wise Guides' },
     { path: '/individual-booking', icon: Users, label: 'Mentors' },
     { path: '/sessions', icon: Calendar, label: 'Sessions' },
     ...(user?.subscriptionPlan === 'council' ? [{ path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council' }] : []),

@@ -569,7 +569,7 @@ export default function Dashboard() {
           <Link href="/mentors">
             <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
               <Sparkles className="h-5 w-5" />
-              <span className="text-xs font-medium">Wisdom</span>
+              <span className="text-xs font-medium">Wise Guides</span>
             </button>
           </Link>
           {user.subscriptionPlan === 'council' ? (
