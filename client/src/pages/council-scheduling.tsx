@@ -471,7 +471,7 @@ export default function CouncilScheduling() {
           <DialogHeader>
             <DialogTitle>Book Your Council Session</DialogTitle>
             <DialogDescription>
-              Schedule a one-hour session with your selected {selectedMentors.length} mentors. We'll coordinate their calendars and confirm the best time.
+              Schedule an hour-long session with your selected {selectedMentors.length} mentors. We'll coordinate their calendars and confirm the best time.
             </DialogDescription>
           </DialogHeader>
 
@@ -514,7 +514,7 @@ export default function CouncilScheduling() {
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-900">Select Date & Time</h4>
                 <p className="text-sm text-slate-600">
-                  Choose a specific date and time when all selected mentors are available.
+                  Choose an hour-long time slot when all selected mentors are available.
                 </p>
                 <CalendarAvailability
                   selectedMentors={selectedMentors}
@@ -527,6 +527,8 @@ export default function CouncilScheduling() {
                   }}
                   selectedDate={selectedDate}
                   selectedTime={selectedTime}
+                  sessionDuration={60}
+                  isCouncilMode={true}
                 />
               </div>
 
