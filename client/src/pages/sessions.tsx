@@ -47,7 +47,7 @@ export default function Sessions() {
   const getBookingRoute = () => {
     const isCouncilUser = user?.subscriptionPlan === 'council';
     console.log('[DEBUG] Is council user?', isCouncilUser);
-    return isCouncilUser ? '/council-scheduling-new' : '/individual-booking';
+    return isCouncilUser ? '/council-scheduling' : '/individual-booking';
   };
 
   // Helper function to navigate to booking page
@@ -266,7 +266,7 @@ export default function Sessions() {
               </Button>
             </Link>
             {user?.subscriptionPlan === 'council' && (
-              <Link href="/council-scheduling-new">
+              <Link href="/council-scheduling">
                 <Button variant="outline" size="sm" className="flex items-center space-x-2">
                   <Users className="h-4 w-4" />
                   <span>Book Council</span>
