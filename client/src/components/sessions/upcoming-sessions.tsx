@@ -69,12 +69,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     })),
     ...councilSessions.map((session: any) => ({
       id: session.sessionId || session.id,
+      sessionId: session.sessionId || session.id,
       type: 'council' as const,
       scheduledAt: session.scheduledDate,
       status: session.status,
       title: 'Council Session',
       duration: 60,
-      mentorCount: session.mentors?.length || 0,
+      mentorCount: session.mentorCount || 3,
       sessionGoals: session.sessionGoals
     }))
   ];

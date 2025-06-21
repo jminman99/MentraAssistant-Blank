@@ -216,8 +216,9 @@ export default function CouncilScheduling() {
       setQuestions("");
       setSelectedDateTime(null);
       
-      // Refresh to show updated sessions
-      window.location.reload();
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
     },
     onError: (error: any) => {
       console.error('Council booking error:', error);
