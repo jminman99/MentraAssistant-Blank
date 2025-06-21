@@ -46,7 +46,14 @@ export default function CalendarAvailability({
   const mentorIds = selectedMentors.length > 0 ? selectedMentors : selectedMentorIds;
   
   const detectedCouncilMode = useMemo(() => {
-    return isCouncilMode || sessionDuration === 60 || mentorIds.length > 1;
+    const result = isCouncilMode || sessionDuration === 60 || mentorIds.length > 1;
+    console.log('[DEBUG] detectedCouncilMode calculation:', {
+      isCouncilMode,
+      sessionDuration,
+      mentorIdsLength: mentorIds.length,
+      result
+    });
+    return result;
   }, [isCouncilMode, sessionDuration, mentorIds]);
   
   console.log('[DEBUG] CalendarAvailability props:', {
@@ -55,7 +62,8 @@ export default function CalendarAvailability({
     sessionDuration,
     originalIsCouncilMode: isCouncilMode,
     selectedMentorsLength: selectedMentors.length,
-    selectedMentorIdsLength: selectedMentorIds.length
+    selectedMentorIdsLength: selectedMentorIds.length,
+    mentorIdsArray: mentorIds
   });
 
   // Generate time slots based on session duration

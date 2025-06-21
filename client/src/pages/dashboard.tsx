@@ -155,6 +155,8 @@ function CouncilSchedulingContent() {
                   }}
                   selectedDate={selectedDate}
                   selectedTime={selectedTime}
+                  sessionDuration={60}
+                  isCouncilMode={true}
                 />
               </div>
 

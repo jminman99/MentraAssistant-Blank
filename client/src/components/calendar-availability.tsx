@@ -43,7 +43,17 @@ export default function CalendarAvailability({
   // Use council props if available, otherwise use individual props
   const mentorIds = selectedMentorIds || selectedMentors || [];
   const handleTimeSelect = onDateTimeSelect || onTimeSelect || (() => {});
-  const detectedCouncilMode = isCouncilMode;
+  
+  const detectedCouncilMode = useMemo(() => {
+    const result = isCouncilMode || sessionDuration === 60 || mentorIds.length > 1;
+    console.log('[DEBUG] detectedCouncilMode calculation:', {
+      isCouncilMode,
+      sessionDuration,
+      mentorIdsLength: mentorIds.length,
+      result
+    });
+    return result;
+  }, [isCouncilMode, sessionDuration, mentorIds]);
   
   console.log('[DEBUG] CalendarAvailability props:', { 
     mentorIds,
@@ -80,10 +90,11 @@ export default function CalendarAvailability({
     return slots;
   };
   
-  const timeSlots = useMemo(() => 
-    generateTimeSlots(detectedCouncilMode ? 60 : sessionDuration),
-    [detectedCouncilMode, sessionDuration]
-  );
+  const timeSlots = useMemo(() => {
+    const duration = detectedCouncilMode ? 60 : 30;
+    console.log('[DEBUG] Using session duration for slots:', duration);
+    return generateTimeSlots(duration);
+  }, [detectedCouncilMode]);
 
   // Memoize individual booking slots
   const individualSlots = useMemo(() => 
