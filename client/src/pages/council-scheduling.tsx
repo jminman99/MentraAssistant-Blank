@@ -68,12 +68,25 @@ export default function CouncilScheduling() {
   });
 
   // Fetch user's existing council bookings
-  const { data: userBookings, isLoading: isLoadingBookings, error: bookingsError } = useQuery({
-    queryKey: ['/api/council-bookings'],
+  const fetchCouncilBookings = async () => {
+    const res = await fetch('/api/council-bookings', {
+      credentials: 'include' // Include cookies for authentication
+    });
+    if (!res.ok) throw new Error('Failed to fetch council bookings');
+    return res.json();
+  };
+
+  const { 
+    data: userBookings = [], 
+    isLoading: isLoadingBookings, 
+    error: bookingsError 
+  } = useQuery({
+    queryKey: ['council-bookings'],
+    queryFn: fetchCouncilBookings, // REQUIRED - this was missing!
     retry: 3,
     refetchOnWindowFocus: true,
-    staleTime: 0, // Always fetch fresh data
-    refetchInterval: 5000, // Refetch every 5 seconds
+    staleTime: 0,
+    refetchInterval: 5000,
   });
 
   // Submit council session booking
@@ -281,15 +294,23 @@ export default function CouncilScheduling() {
         </div>
       )}
 
-      {/* Force display sessions for testing */}
-      {userBookings && Array.isArray(userBookings) && userBookings.length > 0 ? (
+      {/* Display loading, error, or sessions */}
+      {isLoadingBookings ? (
+        <div className="mb-8 text-center">
+          <p>Loading your council sessions...</p>
+        </div>
+      ) : bookingsError ? (
+        <div className="mb-8 text-center text-red-600">
+          <p>Error loading sessions: {bookingsError.message}</p>
+        </div>
+      ) : userBookings.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Your Council Sessions ({userBookings.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {userBookings.map((booking: any) => (
-              <Card key={booking.id}>
+              <Card key={booking.sessionId || booking.id}>
                 <CardHeader>
                   <CardTitle className="text-lg">Council Session</CardTitle>
                   <CardDescription>
@@ -333,13 +354,130 @@ export default function CouncilScheduling() {
             ))}
           </div>
         </div>
-      ) : (
-        !isLoadingBookings && (
-          <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-lg text-center">
-            <h3 className="text-slate-700 font-medium mb-2">No Council Sessions</h3>
-            <p className="text-slate-600 text-sm">Book your first council session above.</p>
+      ) : !isLoadingBookings ? (
+        <div className="mb-8 text-center">
+          <p className="text-slate-600 dark:text-slate-400">No council sessions scheduled yet.</p>
+        </div>
+      ) : null}
+
+      {/* Booking Form */}
+      {!isLoadingBookings && (
+        <div className="space-y-6">
+          {/* Mentor Selection */}
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+              Select Your Council (3-5 Mentors)
+            </h2>
+            {isLoading ? (
+              <p>Loading mentors...</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mentors?.map((mentor) => (
+                  <Card
+                    key={mentor.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedMentors.includes(mentor.id)
+                        ? 'ring-2 ring-slate-500 border-slate-500'
+                        : 'hover:border-slate-300'
+                    }`}
+                    onClick={() => handleMentorToggle(mentor.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                            {mentor.user.firstName} {mentor.user.lastName}
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                            {mentor.expertise}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center">
+                              <Star className="h-4 w-4 fill-current text-yellow-400" />
+                              <span className="text-sm text-slate-600 dark:text-slate-400 ml-1">
+                                {mentor.rating}
+                              </span>
+                            </div>
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              ${mentor.hourlyRate}/hr
+                            </span>
+                          </div>
+                        </div>
+                        {selectedMentors.includes(mentor.id) && (
+                          <CheckCircle className="h-5 w-5 text-slate-500 mt-1" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )
+
+          {/* Calendar Section */}
+          {selectedMentors.length >= 3 && (
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Choose Your Session Date & Time
+              </h2>
+              
+              <CalendarAvailability
+                selectedMentorIds={selectedMentors}
+                onDateTimeSelect={handleDateTimeSelect}
+                availabilityData={availabilityData}
+                isLoadingAvailability={isLoadingAvailability}
+              />
+            </div>
+          )}
+
+          {/* Session Details Form */}
+          {selectedDateTime && (
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Session Details
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="session-goals" className="text-base font-medium">
+                    What do you hope to accomplish in this council session?
+                  </Label>
+                  <Textarea
+                    id="session-goals"
+                    value={sessionGoals}
+                    onChange={(e) => setSessionGoals(e.target.value)}
+                    placeholder="Describe your goals, challenges, or what you'd like guidance on..."
+                    className="mt-2"
+                    rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="questions" className="text-base font-medium">
+                    Specific Questions (Optional)
+                  </Label>
+                  <Textarea
+                    id="questions"
+                    value={questions}
+                    onChange={(e) => setQuestions(e.target.value)}
+                    placeholder="Any specific questions you'd like to ask the council?"
+                    className="mt-2"
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleBookSession}
+                  disabled={isBooking || !sessionGoals.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isBooking ? 'Booking Session...' : 'Book Council Session ($50)'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Booking Dialog */}

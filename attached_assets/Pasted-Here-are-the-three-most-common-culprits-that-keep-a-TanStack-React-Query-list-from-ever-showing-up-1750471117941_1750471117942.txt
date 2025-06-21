@@ -1,0 +1,80 @@
+Here are the three most common culprits that keep a TanStack / React-Query list from ever showing up, plus concrete fixes for the lines you posted. (I’ve hit every one of these in demo apps, so I’m listing them in “likeliest first” order.)
+
+⸻
+
+1. No queryFn → nothing is ever fetched
+
+With the object-style signature (useQuery({ … })) queryFn is mandatory.
+If you omit it the hook never fires a network request; data stays undefined, so the JSX guard clause (userBookings && Array.isArray(…) && …) short-circuits and renders nothing.
+
+// BookingList.tsx  (⬅ key addition is the queryFn)
+const fetchCouncilBookings = async () => {
+  const res = await fetch('/api/council-bookings');   // relative path is fine
+  if (!res.ok) throw new Error('Failed to fetch council bookings');
+  return res.json();                                  // your endpoint already returns an array
+};
+
+const {
+  data: userBookings = [],        // give it a default so .map() is never called on undefined
+  isLoading: isLoadingBookings,
+  error: bookingsError,
+} = useQuery({
+  queryKey: ['council-bookings'], // use a semantic key; the string inside the array is what matters
+  queryFn: fetchCouncilBookings,  // ⬅︎ **REQUIRED**
+  retry: 3,
+  refetchOnWindowFocus: true,
+  staleTime: 0,
+  refetchInterval: 5000,
+});
+
+Double-check: open DevTools → Network. You should see a call to /api/council-bookings every five seconds. If you don’t, the missing queryFn is still the problem.
+
+⸻
+
+2. API route returns an object instead of an array
+
+Your UI does:
+
+Array.isArray(userBookings) && userBookings.length > 0 …
+
+If the API handler ever wraps the list in { data: … } (easy to do when you first add pagination, for example), Array.isArray() fails and the component quietly renders nothing. Make sure the handler really ends with:
+
+res.status(200).json(sessionsWithDetails);  // <- plain array
+
+and that the console at build time doesn’t log “Returning [object Object]” by mistake.
+
+⸻
+
+3. Key mismatch or caching collision
+
+If you previously tried a different key (['/api/council-bookings'] with the leading slash, or a plain string) React-Query may have cached an empty result under the old key. Clearing dev-tools cache or bumping the queryKey fixes it:
+
+queryKey: ['council-bookings', 'v2'], // add a version token once while you’re testing
+
+
+⸻
+
+Minor but useful tweaks
+	•	Display states – In production you almost always want to surface loading and error states so QA (or you) can tell instantly why the list is blank:
+
+if (isLoadingBookings) return <Loader />;
+if (bookingsError)     return <ErrorMessage error={bookingsError} />;
+if (!userBookings.length) return <EmptyState />;
+
+
+	•	Use sessionId for the React key – Your server response currently sets id: participant.id, which is the participation record, not the council session. If one user is in two sessions you’re safe, but if the same participant row is included twice you’ll hit a React “duplicate key” warning. Using sessionId (unique per session) is safer:
+
+{userBookings.map(booking => (
+    <Card key={booking.sessionId || booking.id}>
+
+
+	•	Dates come back as ISO strings – You already handle that with new Date(booking.scheduledDate), just be sure the backend is serialising session.scheduled_date as ISO and not a Postgres timestamp object.
+
+⸻
+
+TL;DR / next action
+	1.	Add a queryFn exactly like above.
+	2.	Make sure the API route returns a bare array.
+	3.	Confirm you see /api/council-bookings in the Network tab every 5 s.
+
+Do those three and the “Your Council Sessions” grid should populate; if it’s still empty after that, ping me with the exact Network response payload and we’ll dig in one layer deeper.
