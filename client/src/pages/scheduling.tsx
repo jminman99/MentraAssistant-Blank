@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarDays, User } from "lucide-react";
 import { format } from "date-fns";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import CalendarAvailability from "@/components/calendar-availability";
+import useBookIndividualSession from "@/hooks/use-book-individual-session";
 
 export default function Scheduling() {
   const [, params] = useRoute("/schedule/:mentorId");
@@ -20,7 +21,8 @@ export default function Scheduling() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [sessionGoals, setSessionGoals] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { mutate: bookSession, isPending: isLoading, error } = useBookIndividualSession();
 
   // Fetch mentor information
   const { data: mentor, isLoading: mentorLoading } = useQuery({
@@ -39,54 +41,39 @@ export default function Scheduling() {
     setSelectedTime(time);
   };
 
-  const handleBooking = async () => {
+  const handleBooking = () => {
     if (!selectedDate || !selectedTime || !mentorId) return;
     
-    setIsLoading(true);
-    try {
-      const scheduledDateTime = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
-      scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const scheduledDateTime = new Date(selectedDate);
+    const [hours, minutes] = selectedTime.split(':');
+    scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      const bookingData = {
-        humanMentorId: mentorId,
-        sessionType: 'individual',
-        scheduledAt: scheduledDateTime.toISOString(),
-        duration: 60,
-        sessionGoals: sessionGoals || null,
-        meetingType: 'video',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      };
-
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
+    bookSession({
+      humanMentorId: mentorId,
+      scheduledAt: scheduledDateTime.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      duration: 60,
+      meetingType: 'video',
+      sessionGoals: sessionGoals || undefined,
+      sessionType: 'individual'
+    }, {
+      onSuccess: (result) => {
         toast({
           title: "Session Booked!",
           description: result.message || "Your session has been scheduled successfully.",
         });
         queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
         navigate('/dashboard');
-      } else {
-        const error = await response.json();
-        console.error('[DEBUG] Booking error:', error);
-        throw new Error(error.message || 'Booking failed');
+      },
+      onError: (error: any) => {
+        console.error('Booking failed:', error);
+        toast({
+          title: "Booking Failed",
+          description: error.message || "Please try again",
+          variant: "destructive",
+        });
       }
-    } catch (error: any) {
-      console.error('Booking failed:', error);
-      toast({
-        title: "Booking Failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   if (!mentorId) {
