@@ -328,9 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sessions', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
+      console.log('[DEBUG] Fetching sessions for user:', user.id);
       const sessions = await storage.getUserSessions(user.id);
+      console.log('[DEBUG] Found sessions:', sessions.length);
       res.json(sessions);
     } catch (error) {
+      console.error('[ERROR] Failed to fetch sessions:', error);
       res.status(500).json({ message: 'Failed to fetch sessions' });
     }
   });
@@ -646,8 +649,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
         
-        // Generate default availability for testing (9 AM to 5 PM)
-        const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+        // Generate time slots based on typical availability (30 and 60 min intervals)
+        const timeSlots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"];
         
         // Check for any booked sessions that conflict
         const existingBookings = await storage.getSessionBookings(undefined, mentorId);

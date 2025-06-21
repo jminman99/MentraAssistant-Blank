@@ -87,15 +87,15 @@ export default function CalendarAvailability({
       if (displayMentorIds.length > 0) {
         checkAvailability(date);
       } else {
-        // For individual booking, show available slots even without mentor selection
+        // For individual booking, show all slots as available
         const slots = timeSlots.map(time => ({
           time,
-          available: true // Show all slots as available for individual booking
+          available: true
         }));
         setAvailableSlots(slots);
       }
     }
-  }, [date, displayMentorIds]);
+  }, [date, displayMentorIds, timeSlots]);
 
   const checkAvailability = async (selectedDate: Date) => {
     setLoading(true);
@@ -125,19 +125,19 @@ export default function CalendarAvailability({
         
         setAvailableSlots(slots);
       } else {
-        // Fallback: assume some slots are available
+        // Fallback: show all slots as available for individual booking
         const slots = timeSlots.map(time => ({
           time,
-          available: Math.random() > 0.3, // Simulate 70% availability
+          available: true
         }));
         setAvailableSlots(slots);
       }
     } catch (error) {
       console.error('Error checking availability:', error);
-      // Fallback availability
+      // Fallback: show all slots as available
       const slots = timeSlots.map(time => ({
         time,
-        available: Math.random() > 0.3,
+        available: true
       }));
       setAvailableSlots(slots);
     } finally {
@@ -146,6 +146,15 @@ export default function CalendarAvailability({
   };
 
   const checkMentorAvailability = (availabilityData: any, time: string) => {
+    // For individual sessions, just check if we have availability data
+    if (!detectedCouncilMode) {
+      return {
+        allAvailable: true, // Show all slots as available for individual booking
+        unavailableMentors: []
+      };
+    }
+    
+    // For council sessions, check all mentors
     const unavailableMentors: string[] = [];
     
     mentorIds.forEach(mentorId => {

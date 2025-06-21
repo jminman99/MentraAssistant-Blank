@@ -298,6 +298,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: FIXED individual session cancellation - corrected API endpoint from `/cancel` suffix to match backend route, individual session cancellation now works properly
 - June 21, 2025: REMOVED hourly rate displays from all mentor profiles - replaced with "Included in Plan" and "Available" messaging to align with subscription-based model where sessions are included in user plans
 - June 21, 2025: UPDATED session durations throughout application - individual sessions are 30 minutes, council sessions are 60 minutes, updated calendar availability component and UI displays
+- June 21, 2025: FIXED calendar availability UX issues - removed red X marks from individual session time slots, all 30-minute intervals now show as available for individual booking, fixed sessions API 500 error by updating getUserSessions method
 
 ## Changelog
 

@@ -331,21 +331,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserSessions(userId: number): Promise<(MentoringSession & { humanMentor?: HumanMentor & { user: User } })[]> {
-    const sessions = await db
-      .select()
-      .from(mentoringSessions)
-      .leftJoin(humanMentors, eq(mentoringSessions.humanMentorId, humanMentors.id))
-      .leftJoin(users, eq(humanMentors.userId, users.id))
-      .where(eq(mentoringSessions.userId, userId))
-      .orderBy(desc(mentoringSessions.scheduledAt));
-
-    return sessions.map(session => ({
-      ...session.mentoring_sessions,
-      humanMentor: session.human_mentors ? {
-        ...session.human_mentors,
-        user: session.users!
-      } : undefined
-    }));
+    try {
+      // Get user's individual session bookings
+      const sessionBookings = await this.getSessionBookings(userId);
+      
+      // Map to match expected format
+      return sessionBookings.map(booking => ({
+        id: booking.id,
+        userId: booking.menteeId,
+        humanMentorId: booking.humanMentorId,
+        scheduledAt: booking.scheduledDate,
+        status: booking.status,
+        sessionType: booking.sessionType || 'individual',
+        duration: booking.duration,
+        meetingType: booking.meetingType,
+        location: booking.location,
+        sessionGoals: booking.sessionGoals,
+        sessionNotes: booking.sessionNotes,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt,
+        humanMentor: booking.humanMentor
+      }));
+    } catch (error) {
+      console.error('[ERROR] getUserSessions failed:', error);
+      return [];
+    }
   }
 
   async createSession(insertSession: InsertMentoringSession): Promise<MentoringSession> {
