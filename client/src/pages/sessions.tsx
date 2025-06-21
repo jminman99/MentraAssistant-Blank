@@ -46,7 +46,7 @@ export default function Sessions() {
   // Cancel session mutation
   const { mutate: cancelSession } = useMutation({
     mutationFn: async (sessionId: number) => {
-      const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}/cancel`);
+      const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to cancel session');

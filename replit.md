@@ -294,6 +294,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: COMPLETED individual session booking system - fixed monthly limit logic to check requested booking month instead of current month, users can now book future months even if current month is full, removed premature "Session Scheduled" message from calendar component and replaced with "Time Selected" for better UX clarity
 - June 21, 2025: FIXED session display issues - updated status handling to support both 'scheduled' and 'confirmed' statuses, sessions now appear correctly in upcoming/past tabs, monthly usage counters show accurate information
 - June 21, 2025: RESOLVED pricing display for subscription users - individual booking page now shows "Included in Plan" instead of dollar amounts for users with individual/council subscriptions
+- June 21, 2025: UNIFIED post-booking experience - both individual and council sessions now redirect to /sessions page after successful booking with consistent toast messaging and form reset
+- June 21, 2025: FIXED individual session cancellation - corrected API endpoint from `/cancel` suffix to match backend route, individual session cancellation now works properly
 
 ## Changelog
 
