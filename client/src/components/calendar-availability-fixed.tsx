@@ -131,6 +131,12 @@ export default function CalendarAvailability({
           <h3 className="text-lg font-medium text-slate-900 mb-4">
             Available Times - {format(date, 'MMMM d, yyyy')}
           </h3>
+          <p className="text-sm text-slate-600 mb-4">
+            {detectedCouncilMode 
+              ? "Select an hour-long time slot with your council" 
+              : "Select a 30-minute time slot with your mentor"
+            }
+          </p>
           
           {loading && (
             <div className="text-center py-4">

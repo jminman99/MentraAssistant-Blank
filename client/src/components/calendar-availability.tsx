@@ -206,8 +206,8 @@ export default function CalendarAvailability({
 
   const sessionTypeText = detectedCouncilMode ? "60-min" : "30-min";
   const sessionDescription = detectedCouncilMode 
-    ? "Select a 60-min slot that works for all selected mentors"
-    : "Select a 30-min slot with your mentor";
+    ? "Select an hour-long time slot with your council"
+    : "Select a 30-minute time slot with your mentor";
 
   return (
     <div className="space-y-4">

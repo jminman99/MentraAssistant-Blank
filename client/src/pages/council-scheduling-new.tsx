@@ -279,7 +279,7 @@ export default function CouncilScheduling() {
             Council Sessions
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8">
-            Book a one-hour session with 3-5 mentors for comprehensive guidance.
+            Book an hour-long session with 3-5 mentors for comprehensive guidance.
           </p>
         </div>
 
@@ -399,7 +399,7 @@ export default function CouncilScheduling() {
                   className="w-full mb-8"
                   size="lg"
                 >
-                  {isBooking ? 'Booking Session...' : 'Book Council Session ($50)'}
+                  {isBooking ? 'Booking Session...' : 'Book Council Session'}
                 </Button>
               </div>
             </div>
