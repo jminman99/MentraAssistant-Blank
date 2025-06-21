@@ -37,9 +37,10 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         title: "Session Cancelled",
         description: "Your council session has been cancelled successfully.",
       });
+      // Force refresh both queries
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-      window.location.reload();
+      queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
     },
     onError: (error: any) => {
       toast({

@@ -106,9 +106,9 @@ export default function CouncilScheduling() {
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
       
-      // Invalidate queries to refresh data  
+      // Force refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      queryClient.refetchQueries({ queryKey: ['/api/council-bookings'] });
     },
     onError: (error: Error) => {
       toast({

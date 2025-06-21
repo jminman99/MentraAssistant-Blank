@@ -761,10 +761,53 @@ export class DatabaseStorage implements IStorage {
 
   // Council Participant methods
   async getCouncilParticipants(menteeId: number): Promise<any[]> {
-    const result = await pool.query(`
-      SELECT * FROM council_participants WHERE mentee_id = $1
-    `, [menteeId]);
-    return result.rows;
+    const participants = await this.db
+      .select()
+      .from(councilParticipants)
+      .where(eq(councilParticipants.menteeId, menteeId))
+      .orderBy(councilParticipants.registrationDate);
+    
+    console.log(`Found ${participants.length} participants for user ${menteeId}:`, participants);
+    
+    // For each participant, get the full session data with mentor count
+    const sessionsWithData = await Promise.all(
+      participants.map(async (participant) => {
+        const session = await this.getCouncilSession(participant.councilSessionId);
+        
+        console.log(`Retrieved session ${participant.councilSessionId}:`, session);
+        
+        if (!session) return null;
+        
+        // Get mentor count for this session
+        const mentorCount = await this.db
+          .select()
+          .from(councilMentors)
+          .where(eq(councilMentors.councilSessionId, participant.councilSessionId));
+        
+        const sessionData = {
+          id: participant.id,
+          sessionId: session.id,
+          title: session.title,
+          description: session.description,
+          scheduledDate: session.scheduledDate,
+          duration: session.duration,
+          status: session.status,
+          sessionGoals: participant.sessionGoals,
+          questions: participant.questions,
+          registrationDate: participant.registrationDate,
+          mentorCount: mentorCount.length || 3
+        };
+        
+        console.log(`Session data for participant:`, participant.id, sessionData);
+        
+        return sessionData;
+      })
+    );
+    
+    const validSessions = sessionsWithData.filter(session => session !== null);
+    console.log(`Returning ${validSessions.length} sessions:`, validSessions);
+    
+    return validSessions;
   }
 
   async createCouncilParticipant(participant: any): Promise<any> {
