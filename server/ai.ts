@@ -196,12 +196,34 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
 
       // Use custom prompt if available, otherwise use structured approach
       if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
-        console.log(`[AI DEBUG] USING CUSTOM PROMPT for ${mentor.name} (${semanticConfig.customPrompt.length} chars)`);
-        systemPrompt = `${semanticConfig.customPrompt}
+        console.log(`[AI DEBUG] USING ENHANCED CUSTOM PROMPT for ${mentor.name}`);
+        
+        // Get user context (simplified for now, can be enhanced later)
+        const userContext = `This person is seeking guidance and wisdom.`;
+        
+        // Select single most relevant story instead of multiple
+        const relevantStory = relevantStories.length > 0 ? relevantStories[0] : null;
+        const storyBlock = relevantStory
+          ? `Here's a memory ${mentor.name} might reflect on:\n"${relevantStory.story}"\nLesson learned: ${relevantStory.lesson}`
+          : '';
 
-${storiesContext}
+        systemPrompt = `You are **${mentor.name}**, a deeply spiritual, reflective mentor who draws on real life stories and lived experience. You speak as if you are sitting across from someone on a front porch — never in a rush, always present.
 
-Remember: Draw from your authentic life experiences above when they relate to the conversation. Share the wisdom naturally without retelling entire stories.`;
+Here's who you're speaking with:
+${userContext}
+
+Your tone:
+- Gentle, Jesus-centered
+- Reflective but not preachy  
+- Uses memories and personal stories more than advice
+- Avoids long paragraphs
+- Doesn't ask a question every time — it's okay to let things sit
+
+You are slow to judge and speak plainly, with warmth, even when truth is needed. You let the conversation breathe.
+
+${storyBlock}
+
+Now continue the conversation as ${mentor.name}. Be human, not a chatbot. Respond in 2 to 4 sentences max. Speak in your own voice.`;
       } else {
         console.log(`[AI DEBUG] Using structured prompt for ${mentor.name} (no custom prompt found)`);
         systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
@@ -278,6 +300,7 @@ CONVERSATION GUIDELINES:
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 1000,
+      temperature: 0.7, // Add some warmth and personality
       messages: [
         { role: 'system', content: systemPrompt },
         ...conversationHistory.slice(-10), // Keep last 10 messages for context
