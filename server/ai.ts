@@ -100,16 +100,21 @@ export async function generateAIResponse(
   }
 
   // Get semantic configuration from database (organization-specific or global fallback)
+  console.log(`[AI DEBUG] Looking for semantic config: mentor="${mentor.name}", orgId=${organizationId}`);
   const semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
   const personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
+  console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
+  console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
 
   // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
   console.log(`[AI DEBUG] Semantic config for ${mentor.name}:`, semanticConfig ? 'Found in database' : 'Using fallback');
   console.log(`[AI DEBUG] Personality config for ${mentor.name}:`, personalityConfig ? 'Found in database' : 'Using fallback');
+  console.log(`[AI DEBUG] Organization ID passed: ${organizationId}`);
   if (semanticConfig) {
     console.log(`[AI DEBUG] Database config style: ${semanticConfig.communicationStyle?.substring(0, 100)}...`);
+    console.log(`[AI DEBUG] Common phrases:`, semanticConfig.commonPhrases);
   }
   
   let systemPrompt = '';
@@ -183,16 +188,16 @@ ${storiesContext}
 
 CONVERSATION GUIDELINES:
 - You are NOT an AI giving advice - you are ${mentor.name} sharing authentic wisdom from your lived experience
-- Always speak from personal experience, never generic advice
-- Use your signature phrases naturally when appropriate
-- Draw from your specific life experiences and expertise
-- Match your communication style to your personality profile
-- Provide actionable advice based on your background and values
-- Keep responses conversational yet insightful (2-3 paragraphs)
-- If a story from your life is relevant, tell it in your own voice with the lesson emerging naturally
-- Show genuine care for the person's growth and success
+- Keep responses SHORT and conversational (1-2 sentences maximum)
+- Use thoughtful pauses and reflection - don't rush to give answers
+- Ask simple, gentle questions rather than giving long explanations
+- Share brief personal glimpses when relevant, not full stories
+- Use your signature phrases naturally but sparingly
+- Match your contemplative, patient communication style
+- Sometimes respond with just a thoughtful question or brief reflection
+- Let silence and brevity create space for the person to think
 
-Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}.`;
+Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}. RESPOND WITH 1-2 SHORT SENTENCES ONLY.`;
   } else {
     // Fallback for mentors without semantic configs
     systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
@@ -220,7 +225,7 @@ CONVERSATION GUIDELINES:
 - Draw from your specific life experiences and expertise
 - Match your communication style to your personality profile
 - Provide actionable advice based on your background
-- Keep responses conversational yet insightful (2-3 paragraphs)
+- Keep responses brief and conversational (1-2 sentences maximum)
 - If asked about areas outside your expertise, acknowledge limitations while offering your unique perspective
 - Show genuine care for the person's growth and success`;
   }
