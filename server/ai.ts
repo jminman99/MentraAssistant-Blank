@@ -105,6 +105,9 @@ export async function generateAIResponse(
   const personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
+  if (semanticConfig?.customPrompt) {
+    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name}`);
+  }
 
   // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
@@ -172,7 +175,15 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
         ).join('\n\n')}`
       : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
 
-    systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
+    // Use custom prompt if available, otherwise use structured approach
+    if (semanticConfig.customPrompt) {
+      systemPrompt = `${semanticConfig.customPrompt}
+
+${storiesContext}
+
+Remember: Draw from your authentic life experiences above when they relate to the conversation. Share the wisdom naturally without retelling entire stories.`;
+    } else {
+      systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
 
 CORE IDENTITY:
 ${personalityConfig?.customBackstory || mentor.personality}
@@ -203,6 +214,7 @@ CONVERSATION GUIDELINES:
 - Be conversational, warm, and helpful while staying brief
 
 Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}. Mix personal insights with gentle questions.`;
+    }
   } else {
     // Fallback for mentors without semantic configs
     systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
