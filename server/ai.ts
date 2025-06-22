@@ -105,15 +105,7 @@ export async function generateAIResponse(
   console.log(`[AI DEBUG] Looking for semantic config: mentor="${mentor.name}", orgId=${organizationId}`);
   let semanticConfig, personalityConfig;
   try {
-    // Direct query to bypass Drizzle select issues
-    const [configResult] = await db.execute(sql`
-      SELECT * FROM semantic_configurations 
-      WHERE mentor_name = ${mentor.name} 
-      AND organization_id = ${organizationId} 
-      AND is_active = true 
-      LIMIT 1
-    `);
-    semanticConfig = configResult as any;
+    semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
     personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
   } catch (error) {
     console.error('[AI DEBUG] Error loading semantic config:', error);
@@ -122,10 +114,13 @@ export async function generateAIResponse(
   }
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
-  console.log(`[AI DEBUG] Custom prompt available:`, !!semanticConfig?.customPrompt);
+  console.log(`[AI DEBUG] Custom prompt available:`, !!(semanticConfig && semanticConfig.custom_prompt));
   console.log(`[AI DEBUG] Semantic config object:`, semanticConfig ? Object.keys(semanticConfig) : 'null');
-  if (semanticConfig?.customPrompt) {
-    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name} (length: ${semanticConfig.customPrompt.length})`);
+  if (semanticConfig && semanticConfig.custom_prompt) {
+    console.log(`[AI DEBUG] Custom prompt preview:`, semanticConfig.custom_prompt.substring(0, 100) + '...');
+  }
+  if (semanticConfig?.custom_prompt) {
+    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name} (length: ${semanticConfig.custom_prompt.length})`);
   }
 
   // Use hardcoded fallback if no database config exists
@@ -195,7 +190,7 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
       : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
 
     // Use custom prompt if available, otherwise use structured approach
-    if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
+    if (semanticConfig && semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
       console.log(`[AI DEBUG] USING CUSTOM PROMPT for ${mentor.name}`);
       systemPrompt = `${semanticConfig.customPrompt}
 

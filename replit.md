@@ -323,6 +323,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: IMPLEMENTED custom prompt system for AI mentors - added customPrompt field to semantic configurations, applied user's specific David prompt emphasizing porch-like conversations, 2-4 sentence responses, natural story sharing, and Jesus-centered mentoring without preaching
 - June 22, 2025: COMPLETED David's custom prompt integration - fixed database field selection to load customPrompt field, enhanced AI response generation to prioritize custom prompts over generic templates, David now uses porch-style Jesus-centered conversation approach instead of repetitive question patterns
 - June 22, 2025: FIXED Drizzle database query error in semantic configuration loading - added direct SQL query to bypass select field issues, resolved TypeError preventing custom prompt from loading, David's porch-style conversation system now operational
+- June 22, 2025: DEBUGGED custom prompt loading issues - corrected field name mapping from customPrompt to custom_prompt, fixed database result array destructuring error, David's Jesus-centered porch-style conversation prompt now loads correctly from database
 
 ## Changelog
 
