@@ -337,6 +337,7 @@ CONVERSATION GUIDELINES:
     };
     
     const auditResult = runAudit(newResponse, auditContext);
+    console.log(`[AI AUDIT] Audit complete - Issues found: ${auditResult.issues.length > 0 ? auditResult.issues.join(', ') : 'None'}`);
     
     if (auditResult.flagged) {
       console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
