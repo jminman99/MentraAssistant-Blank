@@ -115,6 +115,7 @@ export async function generateAIResponse(
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
   console.log(`[AI DEBUG] Custom prompt available:`, !!(semanticConfig && semanticConfig.customPrompt));
+  console.log(`[AI DEBUG] Raw semantic config for debugging:`, semanticConfig);
   console.log(`[AI DEBUG] Semantic config object:`, semanticConfig ? Object.keys(semanticConfig) : 'null');
   if (semanticConfig && semanticConfig.customPrompt) {
     console.log(`[AI DEBUG] Custom prompt preview:`, semanticConfig.customPrompt.substring(0, 100) + '...');

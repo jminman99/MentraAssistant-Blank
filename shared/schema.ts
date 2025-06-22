@@ -103,6 +103,7 @@ export const semanticConfigurations = pgTable("semantic_configurations", {
   id: serial("id").primaryKey(),
   organizationId: integer("organization_id").references(() => organizations.id),
   mentorName: text("mentor_name").notNull(), // Global config if organizationId is null
+  customPrompt: text("custom_prompt"), // Custom AI prompt for the mentor
   communicationStyle: text("communication_style").notNull(),
   commonPhrases: jsonb("common_phrases").$type<string[]>().default([]),
   decisionMaking: text("decision_making").notNull(),
