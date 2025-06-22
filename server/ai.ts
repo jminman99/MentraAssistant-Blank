@@ -12,6 +12,7 @@ import {
   getResponseStyle 
 } from './elder-thomas-semantic.js';
 import { runAudit } from './runAudit.js';
+import { generateMentorResponse } from './aiResponseMiddleware.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY 
@@ -334,105 +335,21 @@ CONVERSATION GUIDELINES:
   console.log(`[DEBUG] Contains custom prompt: ${systemPrompt.includes('porch with someone')}`);
   console.log(`[DEBUG] Contains grit instructions: ${systemPrompt.includes('admit confusion and numbness')}`);
   console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt.substring(0, 200) + '...');
-  console.log('SYSTEM PROMPT:', systemPrompt);
   console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
-  console.log('USER:', userMessage);
-  
-  try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 1000,
-      temperature: 0.8, // Increase for more variety
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory.slice(-10), // Keep last 10 messages for context
-        { role: 'user', content: userMessage }
-      ],
-    });
-
-    const newResponse = response.choices[0].message.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
-    
-    // Run audit to check response quality
-    const auditContext = {
-      userMessage,
-      previousMessages: conversationHistory,
-      mentorId: mentor.id
-    };
-    
-    const auditResult = runAudit(newResponse, auditContext);
-    console.log(`[AI AUDIT] Audit complete - Issues found: ${auditResult.issues.length > 0 ? auditResult.issues.join(', ') : 'None'}`);
-    
-    if (auditResult.flagged) {
-      console.warn('[AUDIT FAILED]', auditResult.issues);
-      console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
-      console.log(`[AI AUDIT] Original response: ${newResponse.substring(0, 100)}...`);
-      
-      if (auditResult.issues.includes("Needs grounding prompt injection")) {
-        console.log(`[AI AUDIT] Applying grounding prompt injection for emotional/question response...`);
-      } else {
-        console.log(`[AI AUDIT] Regenerating with improved prompt...`);
-      }
-      
-      // Create a more direct rephrasing prompt
-      const rephraseSystemPrompt = `You are David having a front porch conversation. The user just said: "${userMessage}"
-
-Your previous response was too generic/long/missing personal story. 
-
-REWRITE your response following these rules:
-- Start with "I remember..." or "When I..." (be specific, not vague)
-- Use simple, everyday words - no "assess," "reflect," "perspective," "journey"
-- Share a concrete moment, not a general lesson
-- Maximum 2 sentences, period
-- Don't explain what it taught you - just tell what happened
-- Sound like a regular guy, not a spiritual advisor
-
-Previous flagged response: "${newResponse}"
-
-Now rewrite as David:`;
-
-      const retryResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        max_tokens: 400, // Shorter limit to force brevity
-        temperature: 0.9,
-        messages: [
-          { role: 'system', content: rephraseSystemPrompt },
-          { role: 'user', content: 'Please rewrite that response following the rules above.' }
-        ],
-      });
-      
-      const improvedResponse = retryResponse.choices[0].message.content || newResponse;
-      console.log(`[AI AUDIT] Improved response: ${improvedResponse.substring(0, 100)}...`);
-      
-      // Re-audit the improved response
-      const reAudit = runAudit(improvedResponse, auditContext);
-      if (!reAudit.flagged || reAudit.issues.length < auditResult.issues.length) {
-        console.log(`[AI AUDIT] Using improved response (${reAudit.issues.length} issues vs ${auditResult.issues.length})`);
-        return improvedResponse;
-      } else {
-        console.log(`[AI AUDIT] Improved response still problematic, trying one more approach...`);
-        
-        // Final attempt with very direct prompt
-        const finalResponse = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          max_tokens: 200,
-          temperature: 0.7,
-          messages: [
-            { role: 'system', content: `You are David. Respond to: "${userMessage}" 
-
-Start with "I remember" or "When I" and share ONE specific moment. 1-2 sentences maximum. Talk like a regular person, not a counselor.` },
-            { role: 'user', content: userMessage }
-          ],
-        });
-        
-        return finalResponse.choices[0].message.content || improvedResponse;
-      }
-    } else {
-      console.log(`[AI AUDIT] Response passed quality check`);
-      return newResponse;
-    }
-    
-    return newResponse;
+  // Use the new middleware for cleaner audit handling
+  return await generateMentorResponse({
+    openai,
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory.slice(-10), // Keep last 10 messages for context
+      { role: 'user', content: userMessage }
+    ],
+    mentorId: mentor.id,
+    userMessage,
+    previousMessages: conversationHistory,
+  });
   } catch (error) {
     console.error('Error generating AI response:', error);
     throw new Error('Failed to generate AI response');
