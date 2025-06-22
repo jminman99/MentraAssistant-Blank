@@ -1,6 +1,25 @@
 node_modules
 dist
 .DS_Store
+.env
+*.log
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Temporary session files
+*_session.txt
+*_cookies.txt
+*_test.txt
+*_council.txt
+response.json
+response.txt
+
+# Cache directories
+.cache
+.upm
+
+# Development files
+attached_assets/
+DEBUG_CHECKLIST.md
+COUNCIL_COORDINATION_SYSTEM.md
