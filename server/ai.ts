@@ -105,8 +105,9 @@ export async function generateAIResponse(
   const personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
+  console.log(`[AI DEBUG] Custom prompt available:`, !!semanticConfig?.customPrompt);
   if (semanticConfig?.customPrompt) {
-    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name}`);
+    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name} (length: ${semanticConfig.customPrompt.length})`);
   }
 
   // Use hardcoded fallback if no database config exists
@@ -176,7 +177,8 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
       : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
 
     // Use custom prompt if available, otherwise use structured approach
-    if (semanticConfig.customPrompt) {
+    if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
+      console.log(`[AI DEBUG] USING CUSTOM PROMPT for ${mentor.name}`);
       systemPrompt = `${semanticConfig.customPrompt}
 
 ${storiesContext}

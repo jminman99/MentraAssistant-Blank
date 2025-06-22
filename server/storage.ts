@@ -395,7 +395,20 @@ export class DatabaseStorage implements IStorage {
   async getSemanticConfiguration(mentorName: string, organizationId?: number): Promise<SemanticConfiguration | undefined> {
     // Try organization-specific first, then fall back to global
     if (organizationId) {
-      const [orgConfig] = await db.select().from(semanticConfigurations)
+      const [orgConfig] = await db.select({
+        id: semanticConfigurations.id,
+        mentorName: semanticConfigurations.mentorName,
+        organizationId: semanticConfigurations.organizationId,
+        communicationStyle: semanticConfigurations.communicationStyle,
+        decisionMaking: semanticConfigurations.decisionMaking,
+        mentoring: semanticConfigurations.mentoring,
+        coreValues: semanticConfigurations.coreValues,
+        commonPhrases: semanticConfigurations.commonPhrases,
+        customPrompt: semanticConfigurations.customPrompt,
+        isActive: semanticConfigurations.isActive,
+        createdAt: semanticConfigurations.createdAt,
+        updatedAt: semanticConfigurations.updatedAt,
+      }).from(semanticConfigurations)
         .where(and(
           eq(semanticConfigurations.mentorName, mentorName),
           eq(semanticConfigurations.organizationId, organizationId),
@@ -405,7 +418,20 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Fall back to global configuration
-    const [globalConfig] = await db.select().from(semanticConfigurations)
+    const [globalConfig] = await db.select({
+      id: semanticConfigurations.id,
+      mentorName: semanticConfigurations.mentorName,
+      organizationId: semanticConfigurations.organizationId,
+      communicationStyle: semanticConfigurations.communicationStyle,
+      decisionMaking: semanticConfigurations.decisionMaking,
+      mentoring: semanticConfigurations.mentoring,
+      coreValues: semanticConfigurations.coreValues,
+      commonPhrases: semanticConfigurations.commonPhrases,
+      customPrompt: semanticConfigurations.customPrompt,
+      isActive: semanticConfigurations.isActive,
+      createdAt: semanticConfigurations.createdAt,
+      updatedAt: semanticConfigurations.updatedAt,
+    }).from(semanticConfigurations)
       .where(and(
         eq(semanticConfigurations.mentorName, mentorName),
         isNull(semanticConfigurations.organizationId),

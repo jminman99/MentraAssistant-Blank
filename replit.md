@@ -321,6 +321,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: FIXED admin semantic configuration system - corrected database integer overflow issue when saving stories, improved story ID handling, David's semantic layer now fully operational with rich personality data and life experiences
 - June 22, 2025: ENHANCED David's conversational AI responses - implemented story relevance matching algorithm that selects most contextually appropriate life experiences, balanced personal insights with gentle questions, fixed over-questioning issue by mixing wisdom sharing with thoughtful inquiries
 - June 22, 2025: IMPLEMENTED custom prompt system for AI mentors - added customPrompt field to semantic configurations, applied user's specific David prompt emphasizing porch-like conversations, 2-4 sentence responses, natural story sharing, and Jesus-centered mentoring without preaching
+- June 22, 2025: COMPLETED David's custom prompt integration - fixed database field selection to load customPrompt field, enhanced AI response generation to prioritize custom prompts over generic templates, David now uses porch-style Jesus-centered conversation approach instead of repetitive question patterns
 
 ## Changelog
 
