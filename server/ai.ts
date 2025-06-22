@@ -204,9 +204,9 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
       const mentorStories = await storage.getMentorLifeStories(mentor.id);
       console.log(`[AI DEBUG] Found ${mentorStories.length} life stories for ${mentor.name}`);
       
-      // Find most relevant stories based on user input
-      const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 3);
-      console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories`);
+      // Find most relevant stories based on user input - increased from 3 to 5 for richer context
+      const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 5);
+      console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories from ${mentorStories.length} total`);
       
       const storiesContext = relevantStories.length > 0 
         ? `\n\nMOST RELEVANT LIFE EXPERIENCES (use these for context and brief references):\n${relevantStories.map(story => 
@@ -234,33 +234,25 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
           console.log('[AI DEBUG] Could not load user profile for context');
         }
         
-        // Select single most relevant story instead of multiple
-        const relevantStory = relevantStories.length > 0 ? relevantStories[0] : null;
-        const storyBlock = relevantStory
-          ? `Here's a memory ${mentor.name} might reflect on:\n"${relevantStory.story}"\nLesson learned: ${relevantStory.lesson}`
-          : '';
-
-        // Build comprehensive prompt using semantic layer data
-        const storyContext = relevantStories.length > 0 
-          ? `SPECIFIC LIFE EXPERIENCES TO DRAW FROM:
-${relevantStories.map(story => `• "${story.title}": ${story.story}
+        // Select top 2-3 most relevant stories for richer context
+        const topStories = relevantStories.slice(0, 3);
+        
+        const contextualStories = topStories.length > 0 
+          ? `\n\nSPECIFIC LIFE EXPERIENCES TO DRAW FROM:
+${topStories.map(story => 
+  `• "${story.title}": ${story.story}
   Key lesson: ${story.lesson}
   Emotional tone: ${story.emotionalTone || 'reflective'}
-  Keywords: ${story.keywords?.join(', ') || 'none'}`).join('\n\n')}`
-          : 'No specific stories match this conversation topic.';
+  Keywords: ${story.keywords?.join(', ') || 'none'}`
+).join('\n\n')}`
+          : '\n\nNOTE: Draw from your general life experiences if no specific stories match.';
 
-        systemPrompt = `You are David, speaking authentically from your lived experience.
-
-SEMANTIC IDENTITY:
-- Communication Style: ${semanticConfig.communicationStyle}
-- Core Values: ${semanticConfig.coreValues?.join(', ') || 'Faith, authenticity, compassion'}
-- Decision Making: ${semanticConfig.decisionMaking}
-- Mentoring Approach: ${semanticConfig.mentoring}
+        // Use the enhanced custom prompt with story context
+        systemPrompt = `${semanticConfig.customPrompt}
 
 CONVERSATION CONTEXT:
 ${userContext}
-
-${storyContext}
+${contextualStories}
 
 RESPONSE INSTRUCTIONS:
 1. Start with a specific memory from your life stories above when relevant
@@ -371,8 +363,9 @@ CONVERSATION GUIDELINES:
 }
 
 // Helper function to find relevant stories based on user input
-function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 3): any[] {
+function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 5): any[] {
   const userWords = userMessage.toLowerCase().split(/\s+/);
+  const userMessageLower = userMessage.toLowerCase();
   
   return stories
     .map(story => {
@@ -380,19 +373,44 @@ function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit
       const storyText = `${story.title} ${story.story} ${story.lesson}`.toLowerCase();
       const storyKeywords = story.keywords || [];
       
-      // Score based on keyword matches
+      // Enhanced keyword matching
       userWords.forEach(word => {
-        if (storyText.includes(word)) relevanceScore += 1;
-        if (storyKeywords.some((keyword: string) => keyword.toLowerCase().includes(word))) {
-          relevanceScore += 2;
+        if (word.length > 2) { // Skip very short words
+          if (storyText.includes(word)) relevanceScore += 1;
+          if (storyKeywords.some((keyword: string) => keyword.toLowerCase().includes(word))) {
+            relevanceScore += 3; // Increased weight for keyword matches
+          }
         }
       });
       
-      // Boost certain categories for common topics
-      if (userMessage.toLowerCase().includes('family') && story.category === 'parenting') relevanceScore += 3;
-      if (userMessage.toLowerCase().includes('marriage') && story.category === 'marriage') relevanceScore += 3;
-      if (userMessage.toLowerCase().includes('prayer') && story.category === 'spiritual') relevanceScore += 3;
-      if (userMessage.toLowerCase().includes('work') && story.category === 'career') relevanceScore += 3;
+      // Enhanced category matching with more emotional context
+      const categoryBoosts = {
+        'parenting': ['family', 'children', 'kids', 'dad', 'father', 'daughter', 'son', 'parent'],
+        'marriage': ['marriage', 'wife', 'spouse', 'relationship', 'intimate', 'couple'],
+        'spiritual': ['prayer', 'god', 'jesus', 'faith', 'church', 'spirit', 'believe'],
+        'career': ['work', 'job', 'career', 'boss', 'meeting', 'business', 'professional'],
+        'childhood': ['childhood', 'young', 'growing up', 'remember when', 'as a kid'],
+        'father': ['dad', 'father', 'my dad', 'father relationship'],
+        'mother': ['mom', 'mother', 'my mom', 'mother relationship']
+      };
+      
+      Object.entries(categoryBoosts).forEach(([category, keywords]) => {
+        if (story.category.toLowerCase().includes(category)) {
+          keywords.forEach(keyword => {
+            if (userMessageLower.includes(keyword)) {
+              relevanceScore += 4; // Higher boost for category alignment
+            }
+          });
+        }
+      });
+      
+      // Emotional context matching
+      const emotionalWords = ['struggling', 'difficult', 'hard', 'confused', 'lost', 'worried', 'afraid', 'anxious', 'grateful', 'joy'];
+      emotionalWords.forEach(emotion => {
+        if (userMessageLower.includes(emotion) && story.emotionalTone && story.emotionalTone.includes('vulnerable')) {
+          relevanceScore += 2;
+        }
+      });
       
       return { ...story, relevanceScore };
     })
