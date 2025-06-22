@@ -350,10 +350,9 @@ CONVERSATION GUIDELINES:
     userMessage,
     previousMessages: conversationHistory,
   });
-  } catch (error) {
-    console.error('Error generating AI response:', error);
-    throw new Error('Failed to generate AI response');
-  }
+} catch (error) {
+  console.error('Error generating AI response:', error);
+  throw new Error('Failed to generate AI response');
 }
 
 // Helper function to find relevant stories based on user input
