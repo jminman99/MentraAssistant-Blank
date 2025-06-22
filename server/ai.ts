@@ -160,11 +160,17 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
   } else if (semanticConfig) {
     // Use rich database configuration for mentors with semantic configs
     const mentorStories = await storage.getMentorLifeStories(mentor.id);
-    const storiesContext = mentorStories.length > 0 
-      ? `\n\nYOUR LIFE EXPERIENCES:\n${mentorStories.map(story => 
-          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}`
+    console.log(`[AI DEBUG] Found ${mentorStories.length} life stories for ${mentor.name}`);
+    
+    // Find most relevant stories based on user input
+    const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 3);
+    console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories`);
+    
+    const storiesContext = relevantStories.length > 0 
+      ? `\n\nMOST RELEVANT LIFE EXPERIENCES (use these for context and brief references):\n${relevantStories.map(story => 
+          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}\n  Keywords: ${story.keywords?.join(', ') || 'none'}`
         ).join('\n\n')}`
-      : '';
+      : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
 
     systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
 
@@ -188,16 +194,15 @@ ${storiesContext}
 
 CONVERSATION GUIDELINES:
 - You are NOT an AI giving advice - you are ${mentor.name} sharing authentic wisdom from your lived experience
-- Keep responses SHORT and conversational (1-2 sentences maximum)
-- Use thoughtful pauses and reflection - don't rush to give answers
-- Ask simple, gentle questions rather than giving long explanations
-- Share brief personal glimpses when relevant, not full stories
+- Balance brief personal insights with gentle questions (1-2 sentences each)
+- When relevant, reference your life experiences naturally: "That reminds me of when I..." or "In my experience..."
+- Share wisdom from your stories but don't tell the full narrative - give the lesson learned
 - Use your signature phrases naturally but sparingly
-- Match your contemplative, patient communication style
-- Sometimes respond with just a thoughtful question or brief reflection
-- Let silence and brevity create space for the person to think
+- Sometimes ask a follow-up question, sometimes share a brief insight
+- Draw connections between their situation and your experiences
+- Be conversational, warm, and helpful while staying brief
 
-Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}. RESPOND WITH 1-2 SHORT SENTENCES ONLY.`;
+Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}. Mix personal insights with gentle questions.`;
   } else {
     // Fallback for mentors without semantic configs
     systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
@@ -246,4 +251,35 @@ CONVERSATION GUIDELINES:
     console.error('Error generating AI response:', error);
     throw new Error('Failed to generate AI response');
   }
+}
+
+// Helper function to find relevant stories based on user input
+function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 3): any[] {
+  const userWords = userMessage.toLowerCase().split(/\s+/);
+  
+  return stories
+    .map(story => {
+      let relevanceScore = 0;
+      const storyText = `${story.title} ${story.story} ${story.lesson}`.toLowerCase();
+      const storyKeywords = story.keywords || [];
+      
+      // Score based on keyword matches
+      userWords.forEach(word => {
+        if (storyText.includes(word)) relevanceScore += 1;
+        if (storyKeywords.some((keyword: string) => keyword.toLowerCase().includes(word))) {
+          relevanceScore += 2;
+        }
+      });
+      
+      // Boost certain categories for common topics
+      if (userMessage.toLowerCase().includes('family') && story.category === 'parenting') relevanceScore += 3;
+      if (userMessage.toLowerCase().includes('marriage') && story.category === 'marriage') relevanceScore += 3;
+      if (userMessage.toLowerCase().includes('prayer') && story.category === 'spiritual') relevanceScore += 3;
+      if (userMessage.toLowerCase().includes('work') && story.category === 'career') relevanceScore += 3;
+      
+      return { ...story, relevanceScore };
+    })
+    .filter(story => story.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit);
 }

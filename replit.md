@@ -319,6 +319,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: FIXED council session booking navigation - "Book Council Session" button on sessions page now correctly routes to dashboard council tab where users can actually book new sessions, instead of routing to sessions list page
 - June 22, 2025: ENHANCED David's semantic configuration with 14 authentic life stories across all categories (childhood, father/mother relationships, marriage, parenting, career, spiritual insights) - stories include personal narratives like "The Dark Basement", "Silent Saturday Drives", "Two Chairs One Prayer" with lessons and emotional tones for authentic AI responses
 - June 22, 2025: FIXED admin semantic configuration system - corrected database integer overflow issue when saving stories, improved story ID handling, David's semantic layer now fully operational with rich personality data and life experiences
+- June 22, 2025: ENHANCED David's conversational AI responses - implemented story relevance matching algorithm that selects most contextually appropriate life experiences, balanced personal insights with gentle questions, fixed over-questioning issue by mixing wisdom sharing with thoughtful inquiries
 
 ## Changelog
 
