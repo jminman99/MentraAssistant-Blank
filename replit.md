@@ -335,6 +335,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: ADDED grounding prompt injection - when user asks questions or shares emotions but David doesn't use a story, system automatically injects "Rewrite this as if you're responding to a friend, not writing a journal. Keep it direct, humble, and human" to force authentic personal responses
 - June 22, 2025: IMPLEMENTED reflective response feature - when user simply types "david", system returns a random reflective moment without AI generation (dad's porch, lost job, praying in garage, etc.); added enhanced audit logging with console.warn for failed audits
 - June 22, 2025: REFACTORED audit system into middleware - created aiResponseMiddleware.ts for cleaner separation of concerns, improved maintainability and reusability of audit logic across different AI mentors
+- June 22, 2025: FIXED David's semantic layer integration - resolved issue where custom prompts were overriding semantic data, enhanced audit system to catch vague responses ending with questions, improved story utilization to use concrete details from database instead of generic responses
 
 ## Changelog
 

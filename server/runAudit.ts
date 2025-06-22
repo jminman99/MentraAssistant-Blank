@@ -79,7 +79,7 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Too many complete sentences - sounds preachy");
   }
 
-  // 7. Counselor/therapist language
+  // 7. Counselor/therapist language (expanded)
   const counselorPatterns = [
     /\bassess\b/i,
     /\breflect on\b/i,
@@ -90,9 +90,22 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     /\bdiscovery\b/i,
     /\bgrowth\b/i,
     /\btransition\b/i,
+    /\bhow does that make you feel\b/i,
+    /\bwhat do you think about\b/i,
+    /\bhave you considered\b/i,
+    /\bmight be helpful to\b/i,
+    /\bit sounds like\b/i,
+    /\bI hear you saying\b/i,
   ];
   if (counselorPatterns.some(p => p.test(response))) {
     issues.push("Sounds like a counselor, not a regular person");
+  }
+
+  // 8. Check for always ending with questions (vague counselor habit)
+  const endsWithQuestion = /\?\s*$/.test(trimmedResponse);
+  const isVague = response.length < 80 && endsWithQuestion;
+  if (isVague) {
+    issues.push("Vague response ending with question");
   }
 
   // Enhanced rephrasing prompt for flagged responses
@@ -106,6 +119,17 @@ Your response should:
 - Share a specific moment, not a general truth
 - Use everyday words
 - Be 1-2 sentences maximum`;
+  } else if (issues.includes("Vague response ending with question")) {
+    rephrasePrompt = `Stop asking questions and share something real from your life instead.
+
+REWRITE to share a specific memory or moment:
+- Start with "I remember..." or "When I was..." 
+- Tell about a specific time in your life, not general advice
+- Don't ask any questions - just share and let it sit
+- Be concrete: names, places, what happened
+- 2-3 sentences maximum
+
+Example: "I remember sitting in my car after losing my first job, just staring at the parking lot for an hour."`;
   } else if (issues.length > 0) {
     rephrasePrompt = `Your last response was flagged for: ${issues.join(', ')}. 
 
@@ -113,7 +137,7 @@ REWRITE as David speaking on a front porch:
 - Use "I remember when..." or "There was a time..." to ground in personal experience
 - Acknowledge their struggle directly
 - Keep it to 2-3 sentences maximum
-- Ask ONE simple follow-up question if needed
+- Don't always ask questions - sometimes just share wisdom
 - Sound like a real person, not a greeting card
 
 Remember: You're David, not a spiritual advisor. Speak from your gut, not your head.`;
