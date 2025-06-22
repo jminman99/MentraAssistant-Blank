@@ -337,22 +337,24 @@ CONVERSATION GUIDELINES:
   console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt.substring(0, 200) + '...');
   console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
-  // Use the new middleware for cleaner audit handling
-  return await generateMentorResponse({
-    openai,
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...conversationHistory.slice(-10), // Keep last 10 messages for context
-      { role: 'user', content: userMessage }
-    ],
-    mentorId: mentor.id,
-    userMessage,
-    previousMessages: conversationHistory,
-  });
-} catch (error) {
-  console.error('Error generating AI response:', error);
-  throw new Error('Failed to generate AI response');
+  try {
+    // Use the new middleware for cleaner audit handling
+    return await generateMentorResponse({
+      openai,
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory.slice(-10), // Keep last 10 messages for context
+        { role: 'user', content: userMessage }
+      ],
+      mentorId: mentor.id,
+      userMessage,
+      previousMessages: conversationHistory,
+    });
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    throw new Error('Failed to generate AI response');
+  }
 }
 
 // Helper function to find relevant stories based on user input
