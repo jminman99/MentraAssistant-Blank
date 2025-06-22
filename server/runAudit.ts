@@ -53,18 +53,18 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Missed emotional resonance");
   }
 
+  // 4. Check for grounded story elements
+  const hasStory = /\b(I remember|There was a time|Once,|One time|My (wife|kid|son|daughter|father|mother|family)|When I lost|I used to)/i.test(response);
+  if (!hasStory) {
+    issues.push("No story or memory used");
+  }
+
   // 3.5. Check for grounding prompt injection needed
   const hasQuestion = /\?/.test(context.userMessage);
   const hasEmotionalFlag = /\bI feel\b|\bI'm\b|\bwhy\b|\bhow do\b|\bwhat\b|\bstruggl\b|\bconfus\b|\bafraid\b|\btired\b|\blost\b/i.test(context.userMessage);
   const needsGrounding = !hasStory && (hasQuestion || hasEmotionalFlag);
   if (needsGrounding) {
     issues.push("Needs grounding prompt injection");
-  }
-
-  // 4. Check for grounded story elements
-  const hasStory = /\b(I remember|There was a time|Once,|One time|My (wife|kid|son|daughter|father|mother|family)|When I lost|I used to)/i.test(response);
-  if (!hasStory) {
-    issues.push("No story or memory used");
   }
 
   // 5. Length too long (stricter)
