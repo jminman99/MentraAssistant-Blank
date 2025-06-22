@@ -115,7 +115,7 @@ export async function generateAIResponse(
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
   console.log(`[AI DEBUG] Custom prompt available:`, !!(semanticConfig && semanticConfig.customPrompt));
-  console.log(`[AI DEBUG] Raw semantic config for debugging:`, semanticConfig);
+
   console.log(`[AI DEBUG] Semantic config object:`, semanticConfig ? Object.keys(semanticConfig) : 'null');
   if (semanticConfig && semanticConfig.customPrompt) {
     console.log(`[AI DEBUG] Custom prompt preview:`, semanticConfig.customPrompt.substring(0, 100) + '...');
@@ -268,6 +268,11 @@ CONVERSATION GUIDELINES:
 - If asked about areas outside your expertise, acknowledge limitations while offering your unique perspective
 - Show genuine care for the person's growth and success`;
   }
+
+  // Debug: Log the actual system prompt being sent to AI
+  console.log(`[AI DEBUG] === FINAL SYSTEM PROMPT FOR ${mentor.name} ===`);
+  console.log(systemPrompt.substring(0, 500) + '...');
+  console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
   try {
     const response = await openai.chat.completions.create({
