@@ -25,13 +25,22 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Repeat response");
   }
 
-  // 2. Detect overly generic / greeting card language
+  // 2. Detect overly generic / greeting card language (expanded)
   const fluffPatterns = [
     /life['']?s (a journey|full of lessons)/i,
     /just be present/i,
     /everything happens for a reason/i,
     /God has a plan/i,
     /you are enough/i,
+    /it was a chance to reassess/i,
+    /it did teach me/i,
+    /reminded me that/i,
+    /holds profound meaning/i,
+    /strangely meaningful/i,
+    /funny enough/i,
+    /it's not about.* so much as/i,
+    /let things settle/i,
+    /space to breathe/i,
   ];
   if (fluffPatterns.some(p => p.test(response))) {
     issues.push("Generic or cliché language");
@@ -50,10 +59,32 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("No story or memory used");
   }
 
-  // 5. Length too long
+  // 5. Length too long (stricter)
   const wordCount = trimmedResponse.split(/\s+/).length;
-  if (wordCount > 80) {
+  if (wordCount > 50) {
     issues.push("Response is too long");
+  }
+
+  // 6. Too many complete sentences (sounds preachy)
+  const sentenceCount = (trimmedResponse.match(/[.!?]+/g) || []).length;
+  if (sentenceCount > 3) {
+    issues.push("Too many complete sentences - sounds preachy");
+  }
+
+  // 7. Counselor/therapist language
+  const counselorPatterns = [
+    /\bassess\b/i,
+    /\breflect on\b/i,
+    /\bperspective\b/i,
+    /\bprocess\b/i,
+    /\bjourney\b/i,
+    /\bexplore\b/i,
+    /\bdiscovery\b/i,
+    /\bgrowth\b/i,
+    /\btransition\b/i,
+  ];
+  if (counselorPatterns.some(p => p.test(response))) {
+    issues.push("Sounds like a counselor, not a regular person");
   }
 
   // Enhanced rephrasing prompt for flagged responses

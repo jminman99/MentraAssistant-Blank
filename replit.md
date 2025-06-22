@@ -331,6 +331,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: IMPLEMENTED AI response audit system - automatic quality checking for repetition, generic language, missed emotional resonance, lack of grounded stories, and excessive length; flagged responses are automatically regenerated with improved prompts for higher authenticity
 - June 22, 2025: ENHANCED audit system rephrasing - improved regeneration logic with more direct rewriting prompts, multiple fallback attempts, shorter token limits to force brevity, and better success detection for authentic David responses
 - June 22, 2025: CONFIRMED audit system working - David's responses now consistently pass authenticity checks, generating grounded personal stories like "downsized with a box and a Bible" instead of polished metaphors, system successfully catching and rewriting generic responses
+- June 22, 2025: TIGHTENED audit criteria based on user feedback - responses still sounded too counselor-like and polished; added stricter detection for therapy language, reduced max word count to 50, flagging phrases like "it taught me," "perspective," "journey," "assess"; forcing more concrete everyday language
 
 ## Changelog
 
