@@ -334,8 +334,11 @@ CONVERSATION GUIDELINES:
   console.log(`[DEBUG] Contains custom prompt: ${systemPrompt.includes('porch with someone')}`);
   console.log(`[DEBUG] Contains grit instructions: ${systemPrompt.includes('admit confusion and numbness')}`);
   console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt.substring(0, 200) + '...');
+  console.log('SYSTEM PROMPT:', systemPrompt);
   console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
+  console.log('USER:', userMessage);
+  
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
