@@ -215,7 +215,8 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
 
       // Use custom prompt if available, otherwise use structured approach
       if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
-        console.log(`[AI DEBUG] USING ENHANCED CUSTOM PROMPT for ${mentor.name}`);
+        console.log(`[AI DEBUG] ✓ USING CUSTOM PROMPT for ${mentor.name} (${semanticConfig.customPrompt.length} chars)`);
+        console.log(`[AI DEBUG] Custom prompt preview: "${semanticConfig.customPrompt.substring(0, 80)}..."`);
         
         // Get user context - enhanced with profile information
         let userContext = `This person is seeking guidance and wisdom.`;
@@ -329,7 +330,10 @@ CONVERSATION GUIDELINES:
 
   // Debug: Log the actual system prompt being sent to AI
   console.log(`[AI DEBUG] === FINAL SYSTEM PROMPT FOR ${mentor.name} ===`);
-  console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt);
+  console.log(`[DEBUG] Prompt length: ${systemPrompt.length} characters`);
+  console.log(`[DEBUG] Contains custom prompt: ${systemPrompt.includes('porch with someone')}`);
+  console.log(`[DEBUG] Contains grit instructions: ${systemPrompt.includes('admit confusion and numbness')}`);
+  console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt.substring(0, 200) + '...');
   console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
   try {
