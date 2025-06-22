@@ -92,6 +92,18 @@ const personalityProfiles = {
   }
 };
 
+function generateReflectiveResponse(): string {
+  const reflectiveResponses = [
+    "I remember sitting on my dad's porch when I was seven, just listening to the cicadas. Sometimes the quiet says more than words.",
+    "When I lost my first job, I sat in my car for an hour just staring at the parking lot. Funny how empty spaces can feel so full.",
+    "My wife caught me praying in the garage once. She didn't say anything, just brought me coffee and sat down next to the lawnmower.",
+    "I used to think silence meant God wasn't listening. Turns out, sometimes He's just letting me catch my breath.",
+    "There's a crack in our kitchen window from when my son threw a baseball. We never fixed it because it catches the morning light just right."
+  ];
+  
+  return reflectiveResponses[Math.floor(Math.random() * reflectiveResponses.length)];
+}
+
 export async function generateAIResponse(
   mentor: AiMentor,
   userMessage: string,
@@ -101,6 +113,11 @@ export async function generateAIResponse(
 ): Promise<string> {
   if (!openai) {
     throw new Error('OpenAI API key not configured');
+  }
+
+  // Special case: just typing "david" gets a reflective response
+  if (userMessage.trim().toLowerCase() === 'david') {
+    return generateReflectiveResponse();
   }
 
   // Get semantic configuration from database (organization-specific or global fallback)
@@ -340,6 +357,7 @@ CONVERSATION GUIDELINES:
     console.log(`[AI AUDIT] Audit complete - Issues found: ${auditResult.issues.length > 0 ? auditResult.issues.join(', ') : 'None'}`);
     
     if (auditResult.flagged) {
+      console.warn('[AUDIT FAILED]', auditResult.issues);
       console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
       console.log(`[AI AUDIT] Original response: ${newResponse.substring(0, 100)}...`);
       
