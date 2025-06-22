@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
 import { storage } from './storage.js';
+import { db } from './db.js';
+import { sql } from 'drizzle-orm';
 import { 
   elderThomasStories, 
   elderThomasPersonality, 
@@ -101,11 +103,27 @@ export async function generateAIResponse(
 
   // Get semantic configuration from database (organization-specific or global fallback)
   console.log(`[AI DEBUG] Looking for semantic config: mentor="${mentor.name}", orgId=${organizationId}`);
-  const semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
-  const personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
+  let semanticConfig, personalityConfig;
+  try {
+    // Direct query to bypass Drizzle select issues
+    const [configResult] = await db.execute(sql`
+      SELECT * FROM semantic_configurations 
+      WHERE mentor_name = ${mentor.name} 
+      AND organization_id = ${organizationId} 
+      AND is_active = true 
+      LIMIT 1
+    `);
+    semanticConfig = configResult as any;
+    personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
+  } catch (error) {
+    console.error('[AI DEBUG] Error loading semantic config:', error);
+    semanticConfig = null;
+    personalityConfig = null;
+  }
   console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
   console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
   console.log(`[AI DEBUG] Custom prompt available:`, !!semanticConfig?.customPrompt);
+  console.log(`[AI DEBUG] Semantic config object:`, semanticConfig ? Object.keys(semanticConfig) : 'null');
   if (semanticConfig?.customPrompt) {
     console.log(`[AI DEBUG] Using custom prompt for ${mentor.name} (length: ${semanticConfig.customPrompt.length})`);
   }
