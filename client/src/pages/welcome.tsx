@@ -202,9 +202,7 @@ export default function Welcome() {
                     <ChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                   
-                  <div className="text-sm text-slate-500 border-t pt-4">
-                    Admin Demo: Use email "admin@mentra.com" / password "password" to explore the AI mentor configuration system
-                  </div>
+
                 </div>
               </div>
             </div>
