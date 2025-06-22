@@ -95,7 +95,8 @@ export async function generateAIResponse(
   mentor: AiMentor,
   userMessage: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  organizationId?: number
+  organizationId?: number,
+  userId?: number
 ): Promise<string> {
   if (!openai) {
     throw new Error('OpenAI API key not configured');
@@ -198,8 +199,20 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
       if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
         console.log(`[AI DEBUG] USING ENHANCED CUSTOM PROMPT for ${mentor.name}`);
         
-        // Get user context (simplified for now, can be enhanced later)
-        const userContext = `This person is seeking guidance and wisdom.`;
+        // Get user context - enhanced with profile information
+        let userContext = `This person is seeking guidance and wisdom.`;
+        
+        // Add specific context for known users
+        try {
+          if (userId) {
+            const user = await storage.getUser(userId);
+            if (user?.email === 'demo@example.com') {
+              userContext = `This is a 45-year-old father of two from Louisville who works as a Director of Data Analytics and is building an app called Mentra to help people connect with wise mentors. He is motivated by internal standards and often wrestles with what it means to be "successful" outside of career achievement. He is spiritually curious and emotionally intelligent.`;
+            }
+          }
+        } catch (error) {
+          console.log('[AI DEBUG] Could not load user profile for context');
+        }
         
         // Select single most relevant story instead of multiple
         const relevantStory = relevantStories.length > 0 ? relevantStories[0] : null;
