@@ -538,11 +538,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save stories if provided
       if (stories && Array.isArray(stories)) {
         for (const story of stories) {
-          if (story.id) {
+          // Only update if story has a valid database ID (not timestamp)
+          if (story.id && typeof story.id === 'number' && story.id < 2147483647) {
             await storage.updateMentorLifeStory(story.id, story);
           } else {
+            // Create new story, excluding invalid ID
+            const storyData = { ...story };
+            delete storyData.id; // Remove timestamp ID
             await storage.createMentorLifeStory({
-              ...story,
+              ...storyData,
               mentorId: parseInt(id),
               organizationId: mentor.organizationId
             });
