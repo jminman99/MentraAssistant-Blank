@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Compass, MessageCircle, Sparkles, Heart, Star, Crown, Settings } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { ChatInterface } from "@/components/chat/chat-interface-fixed";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
@@ -293,13 +293,19 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { data: humanMentors = [] } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
   });
 
-  // Scroll to top when dashboard loads
+  // Handle URL parameters for tab selection
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && (tabParam === 'council' || tabParam === 'ai-mentors' || tabParam === 'human-mentors' || tabParam === 'sessions' || tabParam === 'plan')) {
+      setSelectedTab(tabParam);
+    }
     window.scrollTo(0, 0);
   }, []);
 

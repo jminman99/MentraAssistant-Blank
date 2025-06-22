@@ -42,7 +42,7 @@ export default function Sessions() {
   // Helper function to navigate to booking page
   const handleBookNewSession = () => {
     if (user?.subscriptionPlan === 'council') {
-      setLocation('/council-scheduling');
+      setLocation('/dashboard?tab=council');
     } else {
       setLocation('/individual-booking');
     }

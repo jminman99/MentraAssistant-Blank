@@ -315,6 +315,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 21, 2025: CLEANED UP excess June sessions - removed session 26 to enforce 1 council session per month limit, council@example.com now has proper monthly usage (1/1)
 - June 21, 2025: REMOVED booking menu from sessions page - eliminated duplicate booking paths by removing quick navigation buttons, users now directed to main council scheduling page for booking with cleaner single-path experience
 - June 21, 2025: ELIMINATED duplicate booking forms from council scheduling page - removed secondary booking interface at bottom of page, kept only main mentor selection and dialog-based booking flow for single clean booking path
+- June 22, 2025: REMOVED council booking interface from sessions page bottom - eliminated "Select Your Council (3-5 Mentors)" mentor selection form that was appearing at bottom of sessions page, now sessions page only shows existing sessions without booking forms
+- June 22, 2025: FIXED council session booking navigation - "Book Council Session" button on sessions page now correctly routes to dashboard council tab where users can actually book new sessions, instead of routing to sessions list page
 
 ## Changelog
 
