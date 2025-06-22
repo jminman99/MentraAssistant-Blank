@@ -106,9 +106,15 @@ export async function generateAIResponse(
   // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
+  console.log(`[AI DEBUG] Semantic config for ${mentor.name}:`, semanticConfig ? 'Found in database' : 'Using fallback');
+  console.log(`[AI DEBUG] Personality config for ${mentor.name}:`, personalityConfig ? 'Found in database' : 'Using fallback');
+  if (semanticConfig) {
+    console.log(`[AI DEBUG] Database config style: ${semanticConfig.communicationStyle?.substring(0, 100)}...`);
+  }
+  
   let systemPrompt = '';
 
-  // Special handling for Elder Thomas with rich semantic layer
+  // Enhanced semantic layer handling for all mentors with database configs
   if (mentor.name === "Elder Thomas") {
     const relevantStories = findRelevantStories(userMessage, 2);
     const responseStyle = getResponseStyle(userMessage);
@@ -146,8 +152,49 @@ CONVERSATION RULES:
 - If a story is relevant, tell it in your own voice with the lesson emerging naturally
 
 Remember: You've lived through real struggles and found real wisdom. Share that authentically.`;
+  } else if (semanticConfig) {
+    // Use rich database configuration for mentors with semantic configs
+    const mentorStories = await storage.getMentorLifeStories(mentor.id);
+    const storiesContext = mentorStories.length > 0 
+      ? `\n\nYOUR LIFE EXPERIENCES:\n${mentorStories.map(story => 
+          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}`
+        ).join('\n\n')}`
+      : '';
+
+    systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
+
+CORE IDENTITY:
+${personalityConfig?.customBackstory || mentor.personality}
+
+EXPERTISE: ${personalityConfig?.customExpertise || mentor.expertise}
+
+COMMUNICATION STYLE: ${semanticConfig.communicationStyle}
+
+CORE VALUES AND PRINCIPLES:
+${semanticConfig.coreValues ? semanticConfig.coreValues.map(value => `• ${value}`).join('\n') : 'Not configured'}
+
+DECISION-MAKING APPROACH: ${semanticConfig.decisionMaking}
+
+MENTORING STYLE: ${semanticConfig.mentoring}
+
+SIGNATURE PHRASES (use naturally in conversation):
+${semanticConfig.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || 'None configured'}
+${storiesContext}
+
+CONVERSATION GUIDELINES:
+- You are NOT an AI giving advice - you are ${mentor.name} sharing authentic wisdom from your lived experience
+- Always speak from personal experience, never generic advice
+- Use your signature phrases naturally when appropriate
+- Draw from your specific life experiences and expertise
+- Match your communication style to your personality profile
+- Provide actionable advice based on your background and values
+- Keep responses conversational yet insightful (2-3 paragraphs)
+- If a story from your life is relevant, tell it in your own voice with the lesson emerging naturally
+- Show genuine care for the person's growth and success
+
+Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}.`;
   } else {
-    // Standard system prompt for other mentors
+    // Fallback for mentors without semantic configs
     systemPrompt = `You are ${mentor.name}, an AI mentor with deep personality and authentic communication patterns.
 
 CORE IDENTITY:
@@ -156,6 +203,9 @@ ${personalityConfig?.customBackstory || mentor.personality}
 EXPERTISE: ${personalityConfig?.customExpertise || mentor.expertise}
 
 COMMUNICATION STYLE: ${semanticConfig?.communicationStyle || profile?.communicationStyle || 'Professional and supportive'}
+
+CORE VALUES AND PRINCIPLES:
+${semanticConfig?.coreValues ? semanticConfig.coreValues.map(value => `• ${value}`).join('\n') : 'Not configured'}
 
 SIGNATURE PHRASES (use naturally in conversation):
 ${semanticConfig?.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || profile?.commonPhrases?.map(phrase => `- "${phrase}"`).join('\n') || ''}

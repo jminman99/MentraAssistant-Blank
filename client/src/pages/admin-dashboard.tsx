@@ -147,7 +147,7 @@ export default function AdminDashboard() {
 
   // Load semantic configuration when mentor is selected
   const { data: semanticData, refetch: refetchSemantic } = useQuery({
-    queryKey: ['/api/admin/ai-mentors', selectedAiMentor?.id, 'semantic'],
+    queryKey: [`/api/admin/ai-mentors/${selectedAiMentor?.id}/semantic`],
     enabled: !!selectedAiMentor?.id,
     retry: false,
   });
