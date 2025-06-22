@@ -1,0 +1,53 @@
+-- Parenting Challenges
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Parenting Challenges', 'The Bike Ride That Broke Me',
+'One afternoon, I yelled at my daughter during a bike ride. She fell behind, and I snapped — not because she was slow, but because I was tired and angry from work. She didn’t say much, just rode in silence. I sat on the curb later feeling like a fraud. I told her I was sorry. She said, “I know, Dad.” That grace still undoes me.',
+'Our kids don’t need perfect parents — they need present, honest ones.',
+'parenting, anger, grace, apology');
+
+-- Relationship with Father
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Relationship with Father', 'The Broken Radio',
+'I was maybe ten when I broke Dad’s old radio while pretending to be a DJ. I expected yelling, but he just stared at it, silent. We never really talked much after that. For years, I thought I’d disappointed him permanently. Only later did I realize he might have felt just as unsure how to handle the moment.',
+'Not everything broken can be fixed with words, but silence leaves its own legacy.',
+'silence, regret, childhood, father');
+
+-- Marriage – Struggles & Triumphs
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Marriage - Struggles & Triumphs', 'The Fight Over the Dishwasher',
+'We fought about the dishwasher — again. I thought she was being controlling; she thought I was being careless. It wasn’t about dishes. Later, she sat down next to me and said, “Sometimes I just want to know you’re with me.” I’d been in the house but not really home. That one line changed how I showed up.',
+'Small fights are often about bigger fears. Listen beneath the words.',
+'marriage, listening, conflict, repair');
+
+-- Career Journey
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Career Journey', 'The Meeting I Walked Out Of',
+'I once walked out of a board meeting. Not storming, just… done. I''d been sitting there nodding at things I didn’t believe in, realizing I''d traded my backbone for comfort. I left quietly, went home, and cried in the garage. That moment started a long path toward integrity I’m still walking.',
+'Sometimes the bravest thing is walking out before you lose yourself.',
+'integrity, fear, turning point');
+
+-- Spiritual Insights
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Spiritual Insights', 'The Communion I Skipped',
+'One Sunday I couldn’t take communion. I sat there while the tray passed, hands folded, heart numb. I wasn’t angry at God, just tired of pretending. That silence felt like failure… but no lightning came. Just the quiet sense that God sat beside me in the silence.',
+'Sometimes faith isn’t about saying yes — it’s about not walking away.',
+'faith, doubt, church, silence');
+
+-- Childhood Snapshot (Optional — can omit if category is full)
+INSERT INTO mentor_life_stories 
+(mentor_id, category, title, story, lesson, keywords) 
+VALUES 
+(1, 'Childhood Snapshot', 'The Lemonade Stand That Failed',
+'I set up a lemonade stand with my cousin on a hot summer day. We were full of hope but had no sign, no change, and used salt instead of sugar by accident. We sold one cup—to my mom. I remember being crushed, but she said, “Failure means you tried.” That moment has followed me into every risk I’ve taken since.',
+'Failure isn’t final. Sometimes it’s just your first draft.',
+'childhood, failure, first attempt, support');
