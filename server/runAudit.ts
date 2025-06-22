@@ -56,9 +56,18 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Response is too long");
   }
 
-  // Optional rephrasing prompt for flagged responses
+  // Enhanced rephrasing prompt for flagged responses
   const rephrasePrompt = issues.length > 0
-    ? "Your last response may have sounded generic, missed emotional depth, or lacked a real-life story. Please rewrite it as David: keep it grounded, personal, emotionally aware, and under 4 sentences."
+    ? `Your last response was flagged for: ${issues.join(', ')}. 
+
+REWRITE as David speaking on a front porch:
+- Use "I remember when..." or "There was a time..." to ground in personal experience
+- Acknowledge their struggle directly: "That tension between what you studied and where you landed..."
+- Keep it to 2-3 sentences maximum
+- Ask ONE simple follow-up question if needed
+- Sound like a real person, not a greeting card
+
+Remember: You're David, not a spiritual advisor. Speak from your gut, not your head.`
     : undefined;
 
   return {

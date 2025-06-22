@@ -340,31 +340,61 @@ CONVERSATION GUIDELINES:
     
     if (auditResult.flagged) {
       console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
+      console.log(`[AI AUDIT] Original response: ${newResponse.substring(0, 100)}...`);
       console.log(`[AI AUDIT] Regenerating with improved prompt...`);
       
-      // Regenerate with audit feedback
-      const improvedPrompt = systemPrompt + '\n\n' + auditResult.rephrasePrompt;
+      // Create a more direct rephrasing prompt
+      const rephraseSystemPrompt = `You are David having a front porch conversation. The user just said: "${userMessage}"
+
+Your previous response was too generic/long/missing personal story. 
+
+REWRITE your response following these rules:
+- Start with "I remember..." or "There was a time..." or "When I..."
+- Acknowledge their specific struggle directly 
+- Share a brief personal memory that relates
+- Maximum 2-3 sentences
+- End naturally - don't always ask a question
+- Sound human and unpolished, not like a counselor
+
+Previous flagged response: "${newResponse}"
+
+Now rewrite as David:`;
+
       const retryResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
-        max_tokens: 1000,
-        temperature: 0.85,
+        max_tokens: 400, // Shorter limit to force brevity
+        temperature: 0.9,
         messages: [
-          { role: 'system', content: improvedPrompt },
-          ...conversationHistory.slice(-10),
-          { role: 'user', content: userMessage }
+          { role: 'system', content: rephraseSystemPrompt },
+          { role: 'user', content: 'Please rewrite that response following the rules above.' }
         ],
       });
       
       const improvedResponse = retryResponse.choices[0].message.content || newResponse;
+      console.log(`[AI AUDIT] Improved response: ${improvedResponse.substring(0, 100)}...`);
       
       // Re-audit the improved response
       const reAudit = runAudit(improvedResponse, auditContext);
-      if (!reAudit.flagged) {
-        console.log(`[AI AUDIT] Improved response passed audit`);
+      if (!reAudit.flagged || reAudit.issues.length < auditResult.issues.length) {
+        console.log(`[AI AUDIT] Using improved response (${reAudit.issues.length} issues vs ${auditResult.issues.length})`);
         return improvedResponse;
       } else {
-        console.log(`[AI AUDIT] Improved response still flagged, using original`);
-        return newResponse;
+        console.log(`[AI AUDIT] Improved response still problematic, trying one more approach...`);
+        
+        // Final attempt with very direct prompt
+        const finalResponse = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          max_tokens: 200,
+          temperature: 0.7,
+          messages: [
+            { role: 'system', content: `You are David. Respond to: "${userMessage}" 
+
+Start with "I remember" or "When I" and share ONE brief personal memory. 2 sentences maximum. Be real, not polished.` },
+            { role: 'user', content: userMessage }
+          ],
+        });
+        
+        return finalResponse.choices[0].message.content || improvedResponse;
       }
     } else {
       console.log(`[AI AUDIT] Response passed quality check`);
