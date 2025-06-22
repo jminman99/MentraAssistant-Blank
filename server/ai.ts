@@ -328,22 +328,46 @@ CONVERSATION GUIDELINES:
 
     const newResponse = response.choices[0].message.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
     
-    // Prevent exact duplicate responses
-    const lastMessage = conversationHistory.length > 0 ? conversationHistory[conversationHistory.length - 1] : null;
-    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === newResponse) {
-      console.log('[AI DEBUG] Duplicate response detected, regenerating...');
-      // Regenerate with higher temperature and modified prompt
+    // Run audit to check response quality
+    const auditContext = {
+      userMessage,
+      previousMessages: conversationHistory,
+      mentorId: mentor.id
+    };
+    
+    const auditResult = runAudit(newResponse, auditContext);
+    
+    if (auditResult.flagged) {
+      console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
+      console.log(`[AI AUDIT] Regenerating with improved prompt...`);
+      
+      // Regenerate with audit feedback
+      const improvedPrompt = systemPrompt + '\n\n' + auditResult.rephrasePrompt;
       const retryResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         max_tokens: 1000,
-        temperature: 0.9,
+        temperature: 0.85,
         messages: [
-          { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Do not repeat your previous response. Respond to what the person is actually saying right now.' },
+          { role: 'system', content: improvedPrompt },
           ...conversationHistory.slice(-10),
           { role: 'user', content: userMessage }
         ],
       });
-      return retryResponse.choices[0].message.content || newResponse;
+      
+      const improvedResponse = retryResponse.choices[0].message.content || newResponse;
+      
+      // Re-audit the improved response
+      const reAudit = runAudit(improvedResponse, auditContext);
+      if (!reAudit.flagged) {
+        console.log(`[AI AUDIT] Improved response passed audit`);
+        return improvedResponse;
+      } else {
+        console.log(`[AI AUDIT] Improved response still flagged, using original`);
+        return newResponse;
+      }
+    } else {
+      console.log(`[AI AUDIT] Response passed quality check`);
+      return newResponse;
     }
     
     return newResponse;
