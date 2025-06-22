@@ -362,6 +362,7 @@ CONVERSATION GUIDELINES:
       mentorId: mentor.id,
       userMessage,
       previousMessages: conversationHistory,
+      originalSystemPrompt: systemPrompt,
     });
   } catch (error) {
     console.error('Error generating AI response:', error);

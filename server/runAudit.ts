@@ -53,49 +53,38 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Missed emotional resonance");
   }
 
-  // 4. Check for grounded story elements
+  // 4. Check for grounded story elements - but only flag if user is sharing something deep
   const hasStory = /\b(I remember|There was a time|Once,|One time|My (wife|kid|son|daughter|father|mother|family)|When I lost|I used to)/i.test(response);
-  if (!hasStory) {
-    issues.push("No story or memory used");
+  const userSharingDeep = /\bI feel\b|\bI'm struggling\b|\bI'm afraid\b|\bI lost\b|\bI don't know\b|\bwhy\b|\bhow do I\b/i.test(context.userMessage);
+  const isVeryShortResponse = response.trim().split(/\s+/).length < 15;
+  
+  // Only require stories for deep emotional moments or very short responses that lack substance
+  if (!hasStory && userSharingDeep && isVeryShortResponse) {
+    issues.push("Missed opportunity for personal connection");
   }
 
-  // 3.5. Check for grounding prompt injection needed
-  const hasQuestion = /\?/.test(context.userMessage);
-  const hasEmotionalFlag = /\bI feel\b|\bI'm\b|\bwhy\b|\bhow do\b|\bwhat\b|\bstruggl\b|\bconfus\b|\bafraid\b|\btired\b|\blost\b/i.test(context.userMessage);
-  const needsGrounding = !hasStory && (hasQuestion || hasEmotionalFlag);
-  if (needsGrounding) {
-    issues.push("Needs grounding prompt injection");
-  }
+  // Remove the automatic "grounding prompt injection" - let responses be more natural
 
-  // 5. Length too long (stricter)
+  // 5. Length too long (relaxed)
   const wordCount = trimmedResponse.split(/\s+/).length;
-  if (wordCount > 50) {
+  if (wordCount > 80) {
     issues.push("Response is too long");
   }
 
-  // 6. Too many complete sentences (sounds preachy)
+  // 6. Too many complete sentences (relaxed)
   const sentenceCount = (trimmedResponse.match(/[.!?]+/g) || []).length;
-  if (sentenceCount > 3) {
+  if (sentenceCount > 5) {
     issues.push("Too many complete sentences - sounds preachy");
   }
 
-  // 7. Counselor/therapist language (expanded)
+  // 7. Counselor/therapist language (reduced to most obvious patterns)
   const counselorPatterns = [
-    /\bassess\b/i,
-    /\breflect on\b/i,
-    /\bperspective\b/i,
-    /\bprocess\b/i,
-    /\bjourney\b/i,
-    /\bexplore\b/i,
-    /\bdiscovery\b/i,
-    /\bgrowth\b/i,
-    /\btransition\b/i,
     /\bhow does that make you feel\b/i,
     /\bwhat do you think about\b/i,
-    /\bhave you considered\b/i,
-    /\bmight be helpful to\b/i,
-    /\bit sounds like\b/i,
     /\bI hear you saying\b/i,
+    /\bit sounds like you're\b/i,
+    /\bmight be helpful to explore\b/i,
+    /\blet's unpack that\b/i,
   ];
   if (counselorPatterns.some(p => p.test(response))) {
     issues.push("Sounds like a counselor, not a regular person");
@@ -108,39 +97,36 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Vague response ending with question");
   }
 
-  // Enhanced rephrasing prompt for flagged responses
+  // Enhanced rephrasing prompt for flagged responses - more balanced approach
   let rephrasePrompt = undefined;
   
-  if (issues.includes("Needs grounding prompt injection")) {
-    rephrasePrompt = `Rewrite this as if you're responding to a friend, not writing a journal. Keep it direct, humble, and human.
+  if (issues.includes("Vague response ending with question")) {
+    rephrasePrompt = `Stop asking vague questions. Either share wisdom or ask something specific.
 
-Your response should:
-- Start with "I remember..." or "When I..." 
-- Share a specific moment, not a general truth
-- Use everyday words
-- Be 1-2 sentences maximum`;
-  } else if (issues.includes("Vague response ending with question")) {
-    rephrasePrompt = `Stop asking questions and share something real from your life instead.
-
-REWRITE to share a specific memory or moment:
-- Start with "I remember..." or "When I was..." 
-- Tell about a specific time in your life, not general advice
-- Don't ask any questions - just share and let it sit
-- Be concrete: names, places, what happened
+REWRITE options:
+- Share a brief insight from your experience  
+- Ask a specific, helpful question
+- Mix both: brief wisdom + specific question
 - 2-3 sentences maximum
 
-Example: "I remember sitting in my car after losing my first job, just staring at the parking lot for an hour."`;
+Avoid: generic questions that don't add value`;
+  } else if (issues.includes("Missed opportunity for personal connection")) {
+    rephrasePrompt = `This person shared something meaningful. Respond with appropriate depth.
+
+REWRITE to:
+- Acknowledge what they shared specifically
+- Share a brief relevant experience if you have one (optional)
+- Be warm but not preachy
+- 2-4 sentences maximum`;
   } else if (issues.length > 0) {
-    rephrasePrompt = `Your last response was flagged for: ${issues.join(', ')}. 
+    rephrasePrompt = `Your response was flagged for: ${issues.join(', ')}. 
 
-REWRITE as David speaking on a front porch:
-- Use "I remember when..." or "There was a time..." to ground in personal experience
-- Acknowledge their struggle directly
-- Keep it to 2-3 sentences maximum
-- Don't always ask questions - sometimes just share wisdom
-- Sound like a real person, not a greeting card
-
-Remember: You're David, not a spiritual advisor. Speak from your gut, not your head.`;
+REWRITE as David:
+- Be authentic and conversational
+- Avoid obvious counselor language
+- Keep it concise but meaningful
+- Balance wisdom sharing with genuine questions
+- Sound like a real person having a conversation`;
   }
 
   return {

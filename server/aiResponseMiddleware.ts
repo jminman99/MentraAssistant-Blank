@@ -11,6 +11,7 @@ interface GenerateAIResponseParams {
   mentorId: number;
   userMessage: string;
   previousMessages: { role: string; content: string }[];
+  originalSystemPrompt?: string;
 }
 
 export async function generateMentorResponse({
@@ -20,6 +21,7 @@ export async function generateMentorResponse({
   mentorId,
   userMessage,
   previousMessages,
+  originalSystemPrompt,
 }: GenerateAIResponseParams): Promise<string> {
   try {
     console.log('USER:', userMessage);
@@ -47,59 +49,53 @@ export async function generateMentorResponse({
 
     if (audit.flagged) {
       console.warn('[AUDIT FAILED]', audit.issues);
-
-      if (audit.issues.includes("Needs grounding prompt injection")) {
-        console.log(`[AI AUDIT] Applying grounding prompt injection for emotional/question response...`);
-      } else {
-        console.log(`[AI AUDIT] Regenerating with improved prompt...`);
+      
+      // Only retry for serious issues, not minor ones
+      const seriousIssues = audit.issues.filter(issue => 
+        issue.includes("Repeat response") || 
+        issue.includes("Sounds like a counselor") ||
+        issue.includes("Vague response ending with question")
+      );
+      
+      if (seriousIssues.length === 0) {
+        console.log(`[AI AUDIT] Minor issues only, using original response: ${audit.issues.join(', ')}`);
+        return aiResponse;
       }
 
-      const retryPrompt = [
-        { 
-          role: 'system' as const, 
-          content: audit.rephrasePrompt || 'Rewrite as David in a grounded, emotionally honest tone with a personal story. Keep it under 4 sentences.' 
-        },
-        { role: 'user' as const, content: 'Please rewrite that response following the rules above.' }
+      console.log(`[AI AUDIT] Serious issues found, enhancing semantic prompt: ${seriousIssues.join(', ')}`);
+
+      // Enhance the original system prompt rather than replacing it
+      let enhancedSystemPrompt = originalSystemPrompt || messages[0]?.content || '';
+      
+      if (seriousIssues.some(issue => issue.includes("Sounds like a counselor"))) {
+        enhancedSystemPrompt += `\n\nIMPORTANT: Talk like a regular person, not a therapist. Be conversational and authentic.`;
+      }
+      
+      if (seriousIssues.some(issue => issue.includes("Vague response ending with question"))) {
+        enhancedSystemPrompt += `\n\nIMPORTANT: Either ask something specific and helpful, or don't ask at all. Avoid vague questions.`;
+      }
+      
+      if (seriousIssues.some(issue => issue.includes("Repeat response"))) {
+        enhancedSystemPrompt += `\n\nIMPORTANT: Provide a fresh response, don't repeat what you said before.`;
+      }
+
+      const retryMessages = [
+        { role: 'system' as const, content: enhancedSystemPrompt },
+        ...messages.slice(1, -1), // Keep conversation history
+        { role: 'user' as const, content: userMessage }
       ];
 
       const retry = await openai.chat.completions.create({
         model,
-        messages: retryPrompt,
+        messages: retryMessages,
         max_tokens: 400,
-        temperature: 0.85,
+        temperature: 0.9, // Increase variety
       });
 
       const improvedResponse = retry.choices[0].message.content || aiResponse;
       console.log(`[AI AUDIT] Improved response: ${improvedResponse.substring(0, 100)}...`);
 
-      // Re-audit the improved response
-      const reAudit = runAudit(improvedResponse, {
-        userMessage,
-        previousMessages,
-        mentorId,
-      });
-
-      if (!reAudit.flagged || reAudit.issues.length < audit.issues.length) {
-        console.log(`[AI AUDIT] Using improved response (${reAudit.issues.length} issues vs ${audit.issues.length})`);
-        return improvedResponse;
-      } else {
-        console.log(`[AI AUDIT] Improved response still problematic, trying final approach...`);
-        
-        // Final attempt with very direct prompt
-        const finalResponse = await openai.chat.completions.create({
-          model,
-          messages: [
-            { role: 'system', content: `You are David. Respond to: "${userMessage}" 
-
-Start with "I remember" or "When I" and share ONE specific moment. 1-2 sentences maximum. Talk like a regular person, not a counselor.` },
-            { role: 'user', content: userMessage }
-          ],
-          max_tokens: 200,
-          temperature: 0.7,
-        });
-        
-        return finalResponse.choices[0].message.content || improvedResponse;
-      }
+      return improvedResponse;
     } else {
       console.log(`[AI AUDIT] Response passed quality check`);
       return aiResponse;
