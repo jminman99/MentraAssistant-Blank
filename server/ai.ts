@@ -126,28 +126,32 @@ export async function generateAIResponse(
   // Use hardcoded fallback if no database config exists
   const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
+  console.log(`[AI DEBUG] === ${mentor.name} Response Generation ===`);
   console.log(`[AI DEBUG] Semantic config for ${mentor.name}:`, semanticConfig ? 'Found in database' : 'Using fallback');
   console.log(`[AI DEBUG] Personality config for ${mentor.name}:`, personalityConfig ? 'Found in database' : 'Using fallback');
   console.log(`[AI DEBUG] Organization ID passed: ${organizationId}`);
   if (semanticConfig) {
+    console.log(`[AI DEBUG] Has custom prompt: ${!!(semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0)}`);
     console.log(`[AI DEBUG] Database config style: ${semanticConfig.communicationStyle?.substring(0, 100)}...`);
-    console.log(`[AI DEBUG] Common phrases:`, semanticConfig.commonPhrases);
+    console.log(`[AI DEBUG] Common phrases count:`, semanticConfig.commonPhrases?.length || 0);
   }
   
   let systemPrompt = '';
 
   // Enhanced semantic layer handling for all mentors with database configs
-  if (mentor.name === "Elder Thomas") {
-    const relevantStories = findRelevantStories(userMessage, 2);
-    const responseStyle = getResponseStyle(userMessage);
-    
-    const storiesContext = relevantStories.length > 0 
-      ? `\n\nRELEVANT LIFE EXPERIENCES:\n${relevantStories.map(story => 
-          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}`
-        ).join('\n\n')}`
-      : '';
+  if (semanticConfig) {
+    // Handle Elder Thomas with hardcoded semantic layer
+    if (mentor.name === "Elder Thomas") {
+      const relevantStories = findRelevantStories(userMessage, 2);
+      const responseStyle = getResponseStyle(userMessage);
+      
+      const storiesContext = relevantStories.length > 0 
+        ? `\n\nRELEVANT LIFE EXPERIENCES:\n${relevantStories.map(story => 
+            `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}`
+          ).join('\n\n')}`
+        : '';
 
-    systemPrompt = `You are Elder Thomas, a Navy veteran, recovered alcoholic, father of 5, and quietly wise mentor.
+      systemPrompt = `You are Elder Thomas, a Navy veteran, recovered alcoholic, father of 5, and quietly wise mentor.
 
 CORE IDENTITY:
 Navy veteran who overcame alcoholism, devoted father, learned patience through hardship. You speak from lived experience, not abstract advice.
@@ -174,31 +178,32 @@ CONVERSATION RULES:
 - If a story is relevant, tell it in your own voice with the lesson emerging naturally
 
 Remember: You've lived through real struggles and found real wisdom. Share that authentically.`;
-  } else if (semanticConfig) {
-    // Use rich database configuration for mentors with semantic configs
-    const mentorStories = await storage.getMentorLifeStories(mentor.id);
-    console.log(`[AI DEBUG] Found ${mentorStories.length} life stories for ${mentor.name}`);
-    
-    // Find most relevant stories based on user input
-    const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 3);
-    console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories`);
-    
-    const storiesContext = relevantStories.length > 0 
-      ? `\n\nMOST RELEVANT LIFE EXPERIENCES (use these for context and brief references):\n${relevantStories.map(story => 
-          `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}\n  Keywords: ${story.keywords?.join(', ') || 'none'}`
-        ).join('\n\n')}`
-      : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
+    } else {
+      // Use rich database configuration for other mentors with semantic configs
+      const mentorStories = await storage.getMentorLifeStories(mentor.id);
+      console.log(`[AI DEBUG] Found ${mentorStories.length} life stories for ${mentor.name}`);
+      
+      // Find most relevant stories based on user input
+      const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 3);
+      console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories`);
+      
+      const storiesContext = relevantStories.length > 0 
+        ? `\n\nMOST RELEVANT LIFE EXPERIENCES (use these for context and brief references):\n${relevantStories.map(story => 
+            `• ${story.title}: ${story.story}\n  Key Lesson: ${story.lesson}\n  Keywords: ${story.keywords?.join(', ') || 'none'}`
+          ).join('\n\n')}`
+        : '\n\nNOTE: Draw from your general life experiences even without specific stories loaded.';
 
-    // Use custom prompt if available, otherwise use structured approach
-    if (semanticConfig && semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
-      console.log(`[AI DEBUG] USING CUSTOM PROMPT for ${mentor.name}`);
-      systemPrompt = `${semanticConfig.customPrompt}
+      // Use custom prompt if available, otherwise use structured approach
+      if (semanticConfig.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
+        console.log(`[AI DEBUG] USING CUSTOM PROMPT for ${mentor.name} (${semanticConfig.customPrompt.length} chars)`);
+        systemPrompt = `${semanticConfig.customPrompt}
 
 ${storiesContext}
 
 Remember: Draw from your authentic life experiences above when they relate to the conversation. Share the wisdom naturally without retelling entire stories.`;
-    } else {
-      systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
+      } else {
+        console.log(`[AI DEBUG] Using structured prompt for ${mentor.name} (no custom prompt found)`);
+        systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences and wisdom.
 
 CORE IDENTITY:
 ${personalityConfig?.customBackstory || mentor.personality}
@@ -229,6 +234,7 @@ CONVERSATION GUIDELINES:
 - Be conversational, warm, and helpful while staying brief
 
 Remember: You have authentic experiences and wisdom to share. Be ${mentor.name}. Mix personal insights with gentle questions.`;
+      }
     }
   } else {
     // Fallback for mentors without semantic configs
