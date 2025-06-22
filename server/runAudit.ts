@@ -53,6 +53,14 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
     issues.push("Missed emotional resonance");
   }
 
+  // 3.5. Check for grounding prompt injection needed
+  const hasQuestion = /\?/.test(context.userMessage);
+  const hasEmotionalFlag = /\bI feel\b|\bI'm\b|\bwhy\b|\bhow do\b|\bwhat\b|\bstruggl\b|\bconfus\b|\bafraid\b|\btired\b|\blost\b/i.test(context.userMessage);
+  const needsGrounding = !hasStory && (hasQuestion || hasEmotionalFlag);
+  if (needsGrounding) {
+    issues.push("Needs grounding prompt injection");
+  }
+
   // 4. Check for grounded story elements
   const hasStory = /\b(I remember|There was a time|Once,|One time|My (wife|kid|son|daughter|father|mother|family)|When I lost|I used to)/i.test(response);
   if (!hasStory) {
@@ -88,18 +96,28 @@ export function runAudit(response: string, context: AuditContext): AuditResult {
   }
 
   // Enhanced rephrasing prompt for flagged responses
-  const rephrasePrompt = issues.length > 0
-    ? `Your last response was flagged for: ${issues.join(', ')}. 
+  let rephrasePrompt = undefined;
+  
+  if (issues.includes("Needs grounding prompt injection")) {
+    rephrasePrompt = `Rewrite this as if you're responding to a friend, not writing a journal. Keep it direct, humble, and human.
+
+Your response should:
+- Start with "I remember..." or "When I..." 
+- Share a specific moment, not a general truth
+- Use everyday words
+- Be 1-2 sentences maximum`;
+  } else if (issues.length > 0) {
+    rephrasePrompt = `Your last response was flagged for: ${issues.join(', ')}. 
 
 REWRITE as David speaking on a front porch:
 - Use "I remember when..." or "There was a time..." to ground in personal experience
-- Acknowledge their struggle directly: "That tension between what you studied and where you landed..."
+- Acknowledge their struggle directly
 - Keep it to 2-3 sentences maximum
 - Ask ONE simple follow-up question if needed
 - Sound like a real person, not a greeting card
 
-Remember: You're David, not a spiritual advisor. Speak from your gut, not your head.`
-    : undefined;
+Remember: You're David, not a spiritual advisor. Speak from your gut, not your head.`;
+  }
 
   return {
     issues,

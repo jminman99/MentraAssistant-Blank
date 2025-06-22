@@ -342,7 +342,12 @@ CONVERSATION GUIDELINES:
     if (auditResult.flagged) {
       console.log(`[AI AUDIT] Response flagged for: ${auditResult.issues.join(', ')}`);
       console.log(`[AI AUDIT] Original response: ${newResponse.substring(0, 100)}...`);
-      console.log(`[AI AUDIT] Regenerating with improved prompt...`);
+      
+      if (auditResult.issues.includes("Needs grounding prompt injection")) {
+        console.log(`[AI AUDIT] Applying grounding prompt injection for emotional/question response...`);
+      } else {
+        console.log(`[AI AUDIT] Regenerating with improved prompt...`);
+      }
       
       // Create a more direct rephrasing prompt
       const rephraseSystemPrompt = `You are David having a front porch conversation. The user just said: "${userMessage}"

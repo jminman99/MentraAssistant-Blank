@@ -332,6 +332,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 22, 2025: ENHANCED audit system rephrasing - improved regeneration logic with more direct rewriting prompts, multiple fallback attempts, shorter token limits to force brevity, and better success detection for authentic David responses
 - June 22, 2025: CONFIRMED audit system working - David's responses now consistently pass authenticity checks, generating grounded personal stories like "downsized with a box and a Bible" instead of polished metaphors, system successfully catching and rewriting generic responses
 - June 22, 2025: TIGHTENED audit criteria based on user feedback - responses still sounded too counselor-like and polished; added stricter detection for therapy language, reduced max word count to 50, flagging phrases like "it taught me," "perspective," "journey," "assess"; forcing more concrete everyday language
+- June 22, 2025: ADDED grounding prompt injection - when user asks questions or shares emotions but David doesn't use a story, system automatically injects "Rewrite this as if you're responding to a friend, not writing a journal. Keep it direct, humble, and human" to force authentic personal responses
 
 ## Changelog
 
