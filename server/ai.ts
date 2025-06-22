@@ -236,6 +236,8 @@ You are slow to judge and speak plainly, with warmth, even when truth is needed.
 
 ${storyBlock}
 
+CRITICAL: If the user opens up with pain, uncertainty, or longing, slow down and respond to what they're actually saying. Speak from your own experience when possible. Do not repeat yourself or give generic responses.
+
 Now continue the conversation as ${mentor.name}. Be human, not a chatbot. Respond in 2 to 4 sentences max. Speak in your own voice.`;
       } else {
         console.log(`[AI DEBUG] Using structured prompt for ${mentor.name} (no custom prompt found)`);
@@ -313,7 +315,7 @@ CONVERSATION GUIDELINES:
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 1000,
-      temperature: 0.7, // Add some warmth and personality
+      temperature: 0.8, // Increase for more variety
       messages: [
         { role: 'system', content: systemPrompt },
         ...conversationHistory.slice(-10), // Keep last 10 messages for context
@@ -321,7 +323,27 @@ CONVERSATION GUIDELINES:
       ],
     });
 
-    return response.choices[0].message.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
+    const newResponse = response.choices[0].message.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
+    
+    // Prevent exact duplicate responses
+    const lastMessage = conversationHistory.length > 0 ? conversationHistory[conversationHistory.length - 1] : null;
+    if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === newResponse) {
+      console.log('[AI DEBUG] Duplicate response detected, regenerating...');
+      // Regenerate with higher temperature and modified prompt
+      const retryResponse = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 1000,
+        temperature: 0.9,
+        messages: [
+          { role: 'system', content: systemPrompt + '\n\nIMPORTANT: Do not repeat your previous response. Respond to what the person is actually saying right now.' },
+          ...conversationHistory.slice(-10),
+          { role: 'user', content: userMessage }
+        ],
+      });
+      return retryResponse.choices[0].message.content || newResponse;
+    }
+    
+    return newResponse;
   } catch (error) {
     console.error('Error generating AI response:', error);
     throw new Error('Failed to generate AI response');

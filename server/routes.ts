@@ -1584,13 +1584,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const aiResponse = await generateAIResponse(mentor, content, conversationHistory, user?.organizationId || undefined, userId);
             console.log('AI response generated:', aiResponse.substring(0, 100) + '...');
             
-            // Save the AI response to the database
-            await storage.createChatMessage({
-              userId,
-              aiMentorId: mentorId,
-              content: aiResponse,
-              role: 'assistant'
-            });
+            // Save the AI response to the database with unique check
+            const recentMessages = await storage.getChatMessages(userId, mentorId, 3);
+            const isDuplicate = recentMessages.some(msg => 
+              msg.role === 'assistant' && msg.content.trim() === aiResponse.trim()
+            );
+            
+            if (!isDuplicate) {
+              await storage.createChatMessage({
+                userId,
+                aiMentorId: mentorId,
+                content: aiResponse,
+                role: 'assistant'
+              });
+            } else {
+              console.log('[DEBUG] Prevented duplicate message from being saved');
+            }
             
             // Send the AI response back via WebSocket
             if (ws.readyState === WebSocket.OPEN) {
