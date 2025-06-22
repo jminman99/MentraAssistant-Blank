@@ -271,7 +271,7 @@ CONVERSATION GUIDELINES:
 
   // Debug: Log the actual system prompt being sent to AI
   console.log(`[AI DEBUG] === FINAL SYSTEM PROMPT FOR ${mentor.name} ===`);
-  console.log(systemPrompt.substring(0, 500) + '...');
+  console.log('[DEBUG] Final system prompt sent to OpenAI:', systemPrompt);
   console.log(`[AI DEBUG] === END PROMPT PREVIEW ===`);
 
   try {
