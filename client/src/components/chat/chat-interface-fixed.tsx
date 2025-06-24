@@ -92,27 +92,70 @@ export function ChatInterface() {
     }
   }, [aiMentors, selectedMentorId]);
 
-  // Handle WebSocket AI responses - with optimistic updates
+  // Handle WebSocket AI responses - with streaming support
+  const [streamingMessage, setStreamingMessage] = useState<{
+    content: string;
+    mentorId: number;
+    timestamp: string;
+  } | null>(null);
+
   useEffect(() => {
-    if (lastMessage?.type === 'ai_response' && 
-        lastMessage.mentorId === selectedMentorId &&
-        lastMessage.content &&
-        lastMessage.timestamp) {
-      
-      const responseKey = `${lastMessage.mentorId}-${lastMessage.timestamp}`;
+    if (!lastMessage || lastMessage.mentorId !== selectedMentorId) return;
+
+    const responseKey = `${lastMessage.mentorId}-${lastMessage.timestamp}`;
+    
+    // Handle streaming responses
+    if (lastMessage.type === 'ai_response_stream_start') {
+      setIsTyping(true);
+      setStreamingMessage({
+        content: '',
+        mentorId: lastMessage.mentorId!,
+        timestamp: lastMessage.timestamp!
+      });
+    } else if (lastMessage.type === 'ai_response_stream_chunk' && streamingMessage) {
+      setStreamingMessage(prev => prev ? {
+        ...prev,
+        content: prev.content + lastMessage.content
+      } : null);
+    } else if (lastMessage.type === 'ai_response_stream_complete') {
+      setIsTyping(false);
+      setStreamingMessage(null);
       
       // Prevent processing the same response multiple times
       if (!processedResponsesRef.current.has(responseKey)) {
         processedResponsesRef.current.add(responseKey);
-        setIsTyping(false);
         
-        // Optimistically add AI response to avoid flash
+        // Add final message to cache
         const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
-        if (currentMessages) {
+        if (currentMessages && lastMessage.fullContent) {
           const aiMessage: ChatMessage = {
             id: Date.now() + 1, // Temporary unique ID
             userId: user!.id,
-            aiMentorId: lastMessage.mentorId,
+            aiMentorId: lastMessage.mentorId!,
+            content: lastMessage.fullContent,
+            role: 'assistant',
+            createdAt: lastMessage.timestamp!,
+          };
+          queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
+        }
+        
+        // Sync with server after a short delay
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+        }, 500);
+      }
+    } else if (lastMessage.type === 'ai_response' && lastMessage.content && lastMessage.timestamp) {
+      // Handle legacy non-streaming responses
+      if (!processedResponsesRef.current.has(responseKey)) {
+        processedResponsesRef.current.add(responseKey);
+        setIsTyping(false);
+        
+        const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
+        if (currentMessages) {
+          const aiMessage: ChatMessage = {
+            id: Date.now() + 1,
+            userId: user!.id,
+            aiMentorId: lastMessage.mentorId!,
             content: lastMessage.content,
             role: 'assistant',
             createdAt: lastMessage.timestamp,
@@ -120,13 +163,12 @@ export function ChatInterface() {
           queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
         }
         
-        // Sync with server after a short delay to get real message ID
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
         }, 500);
       }
     }
-  }, [lastMessage?.type, lastMessage?.mentorId, lastMessage?.content, lastMessage?.timestamp, selectedMentorId, queryClient, user]);
+  }, [lastMessage?.type, lastMessage?.mentorId, lastMessage?.content, lastMessage?.fullContent, lastMessage?.timestamp, selectedMentorId, queryClient, user, streamingMessage]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -281,8 +323,28 @@ export function ChatInterface() {
           </div>
         ))}
 
-        {/* Typing Indicator */}
-        {isTyping && (
+        {/* Streaming Response Display */}
+        {streamingMessage && (
+          <div className="flex items-start space-x-3">
+            <img 
+              src={selectedMentor?.avatar} 
+              alt={selectedMentor?.name} 
+              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+            />
+            <div className="bg-slate-100 rounded-2xl rounded-tl-md px-4 py-3 max-w-xs lg:max-w-md">
+              <div className="text-xs font-medium text-slate-600 mb-1">
+                {selectedMentor?.name}
+              </div>
+              <p className="text-sm text-slate-800">
+                {streamingMessage.content}
+                <span className="inline-block w-2 h-4 bg-slate-400 ml-1 animate-pulse"></span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Typing Indicator (when not streaming) */}
+        {isTyping && !streamingMessage && (
           <div className="flex items-start space-x-3">
             <img 
               src={selectedMentor?.avatar} 

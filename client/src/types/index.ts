@@ -77,9 +77,10 @@ export interface User {
 }
 
 export interface WebSocketMessage {
-  type: 'chat_message' | 'ai_response';
+  type: 'chat_message' | 'ai_response' | 'ai_response_stream_start' | 'ai_response_stream_chunk' | 'ai_response_stream_complete';
   mentorId?: number;
   content?: string;
+  fullContent?: string;
   userId?: number;
   timestamp?: string;
 }

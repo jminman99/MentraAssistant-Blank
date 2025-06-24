@@ -21,6 +21,7 @@ import session from "express-session";
 import passport from "./auth-strategies";
 
 import { generateAIResponse } from "./ai";
+import { streamMentorResponse } from "./fastMentor";
 
 // Helper function to convert time slot to hour
 function getTimeSlotHour(timeSlot: string): number {
@@ -1578,37 +1579,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get user to access organization ID
             const user = await storage.getUser(userId);
             
-            // Generate AI response using the configurable semantic personality layer
-            const { generateAIResponse } = await import('./ai.js');
-            console.log('Generating AI response for user:', userId, 'mentor:', mentorId);
-            const aiResponse = await generateAIResponse(mentor, content, conversationHistory, user?.organizationId || undefined, userId);
-            console.log('AI response generated:', aiResponse.substring(0, 100) + '...');
+            console.log('Starting streaming AI response for user:', userId, 'mentor:', mentorId);
             
-            // Save the AI response to the database with unique check
-            const recentMessages = await storage.getChatMessages(userId, mentorId, 3);
-            const isDuplicate = recentMessages.some(msg => 
-              msg.role === 'assistant' && msg.content.trim() === aiResponse.trim()
-            );
+            let fullResponse = '';
+            let streamStarted = false;
             
-            if (!isDuplicate) {
-              await storage.createChatMessage({
-                userId,
-                aiMentorId: mentorId,
-                content: aiResponse,
-                role: 'assistant'
-              });
-            } else {
-              console.log('[DEBUG] Prevented duplicate message from being saved');
-            }
-            
-            // Send the AI response back via WebSocket
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                type: 'ai_response',
-                mentorId,
-                content: aiResponse,
-                timestamp: new Date().toISOString()
-              }));
+            // Stream the AI response
+            for await (const chunk of streamMentorResponse(
+              content, 
+              mentor, 
+              conversationHistory, 
+              user?.organizationId || undefined, 
+              userId
+            )) {
+              if (!streamStarted && ws.readyState === WebSocket.OPEN) {
+                // Send stream start signal
+                ws.send(JSON.stringify({
+                  type: 'ai_response_stream_start',
+                  mentorId,
+                  timestamp: chunk.timestamp
+                }));
+                streamStarted = true;
+              }
+              
+              if (chunk.isComplete) {
+                // Stream is complete - save the full response to database
+                console.log('AI streaming complete, full response length:', fullResponse.length);
+                
+                // Check for duplicates before saving
+                const recentMessages = await storage.getChatMessages(userId, mentorId, 3);
+                const isDuplicate = recentMessages.some(msg => 
+                  msg.role === 'assistant' && msg.content.trim() === fullResponse.trim()
+                );
+                
+                if (!isDuplicate && fullResponse.trim()) {
+                  await storage.createChatMessage({
+                    userId,
+                    aiMentorId: mentorId,
+                    content: fullResponse,
+                    role: 'assistant'
+                  });
+                } else {
+                  console.log('[DEBUG] Prevented duplicate or empty message from being saved');
+                }
+                
+                // Send completion signal
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify({
+                    type: 'ai_response_stream_complete',
+                    mentorId,
+                    fullContent: fullResponse,
+                    timestamp: chunk.timestamp
+                  }));
+                }
+              } else {
+                // Send streaming chunk
+                fullResponse += chunk.content;
+                
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(JSON.stringify({
+                    type: 'ai_response_stream_chunk',
+                    mentorId,
+                    content: chunk.content,
+                    timestamp: chunk.timestamp
+                  }));
+                }
+              }
             }
             
           } catch (aiError) {
