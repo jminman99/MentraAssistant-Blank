@@ -204,6 +204,19 @@ export function ChatInterface() {
 
     const content = messageInput.trim();
     setMessageInput("");
+    
+    // ✅ Immediately show user's message optimistically
+    const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]) || [];
+    const userMessage: ChatMessage = {
+      id: Date.now(), // Temporary ID
+      userId: user.id,
+      aiMentorId: selectedMentorId,
+      content,
+      role: 'user',
+      createdAt: new Date().toISOString(),
+    };
+    queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, userMessage]);
+    
     setIsTyping(true);
     
     try {
@@ -228,9 +241,9 @@ export function ChatInterface() {
           setIsTyping(false);
           setStreamingMessage(null);
           
-          // Add final message to cache
-          const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
-          if (currentMessages && currentStreamingContent) {
+          // Add final AI message to cache
+          const latestMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
+          if (latestMessages && currentStreamingContent) {
             const aiMessage: ChatMessage = {
               id: Date.now() + 1,
               userId: user.id,
@@ -239,13 +252,13 @@ export function ChatInterface() {
               role: 'assistant',
               createdAt: new Date().toISOString(),
             };
-            queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
+            queryClient.setQueryData(['/api/chat', selectedMentorId], [...latestMessages, aiMessage]);
           }
           
-          // Refresh from server
+          // Refresh from server to get real IDs
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
-          }, 500);
+          }, 1000);
         },
         onError: (error) => {
           setIsTyping(false);
@@ -261,6 +274,10 @@ export function ChatInterface() {
       console.error("Failed to send message:", error);
       setIsTyping(false);
       setStreamingMessage(null);
+      
+      // Remove optimistic user message on error
+      queryClient.setQueryData(['/api/chat', selectedMentorId], currentMessages);
+      
       toast({
         title: "Failed to send message",
         description: error instanceof Error ? error.message : "Please try again",
