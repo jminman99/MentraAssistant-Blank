@@ -3,11 +3,56 @@ import type { AiMentor } from "@shared/schema";
 import { storage } from "./storage";
 import { runAudit } from "./runAudit";
 
-// Import the story matching function from ai.ts
-async function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 5, mentorId?: string, userId?: number): Promise<any[]> {
-  // Import the function dynamically to avoid circular dependencies
-  const { findRelevantStoriesFromInput: findStories } = await import('./ai.js');
-  return findStories(userMessage, stories, limit, mentorId, userId);
+// Simplified story matching without circular dependencies
+function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 3): any[] {
+  if (!stories || stories.length === 0) return [];
+  
+  const userInput = userMessage.toLowerCase();
+  
+  // Score stories based on keyword matching and relevance
+  const scoredStories = stories.map(story => {
+    let score = 0;
+    
+    // Check keywords if they exist
+    if (story.keywords && Array.isArray(story.keywords)) {
+      story.keywords.forEach((keyword: string) => {
+        if (userInput.includes(keyword.toLowerCase())) {
+          score += 3;
+        }
+      });
+    }
+    
+    // Check title and story content for relevance
+    if (story.title && userInput.includes(story.title.toLowerCase())) {
+      score += 2;
+    }
+    
+    // Check category relevance
+    if (story.category) {
+      const categoryKeywords = {
+        'parenting': ['child', 'kid', 'son', 'daughter', 'parent', 'family'],
+        'marriage': ['wife', 'husband', 'marriage', 'relationship', 'spouse'],
+        'career': ['work', 'job', 'boss', 'career', 'business', 'office'],
+        'spiritual': ['god', 'pray', 'faith', 'church', 'jesus', 'spiritual'],
+        'childhood': ['young', 'child', 'growing up', 'school', 'youth']
+      };
+      
+      const categoryKeys = categoryKeywords[story.category.toLowerCase()] || [];
+      categoryKeys.forEach(keyword => {
+        if (userInput.includes(keyword)) {
+          score += 1;
+        }
+      });
+    }
+    
+    return { ...story, score };
+  });
+  
+  // Sort by score and return top stories
+  return scoredStories
+    .filter(story => story.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
