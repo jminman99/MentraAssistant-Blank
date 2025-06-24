@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { useSSE } from "@/hooks/use-sse";
 import { useAuth } from "@/lib/auth";
 import { AiMentorSelector } from "@/components/mentors/ai-mentor-selector";
 import { MessageCircle, Send } from "lucide-react";
@@ -20,6 +21,7 @@ export function ChatInterface() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { sendMessage, lastMessage } = useWebSocket();
+  const { startStream, isStreaming: isSSEStreaming } = useSSE();
 
   const { data: aiMentors = [] } = useQuery<AiMentor[]>({
     queryKey: ['/api/ai-mentors'],
@@ -202,33 +204,70 @@ export function ChatInterface() {
 
     const content = messageInput.trim();
     setMessageInput("");
+    setIsTyping(true);
     
     try {
-      // Send user message
-      await sendMessageMutation.mutateAsync({
+      let currentStreamingContent = '';
+      
+      // Start SSE streaming
+      await startStream('/api/chat/stream', {
         content,
         aiMentorId: selectedMentorId,
-        role: 'user',
-      });
-
-      // Send to WebSocket for AI response
-      setIsTyping(true);
-      sendMessage({
-        type: 'chat_message',
-        mentorId: selectedMentorId,
-        content,
-        userId: user.id,
+      }, {
+        onMessage: (message) => {
+          if (message.type === 'chunk') {
+            currentStreamingContent += message.content;
+            setStreamingMessage({
+              content: currentStreamingContent,
+              mentorId: selectedMentorId,
+              timestamp: new Date().toISOString()
+            });
+          }
+        },
+        onComplete: () => {
+          setIsTyping(false);
+          setStreamingMessage(null);
+          
+          // Add final message to cache
+          const currentMessages = queryClient.getQueryData<ChatMessage[]>(['/api/chat', selectedMentorId]);
+          if (currentMessages && currentStreamingContent) {
+            const aiMessage: ChatMessage = {
+              id: Date.now() + 1,
+              userId: user.id,
+              aiMentorId: selectedMentorId,
+              content: currentStreamingContent,
+              role: 'assistant',
+              createdAt: new Date().toISOString(),
+            };
+            queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
+          }
+          
+          // Refresh from server
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+          }, 500);
+        },
+        onError: (error) => {
+          setIsTyping(false);
+          setStreamingMessage(null);
+          toast({
+            title: "AI Response Failed",
+            description: error,
+            variant: "destructive",
+          });
+        }
       });
     } catch (error) {
       console.error("Failed to send message:", error);
       setIsTyping(false);
+      setStreamingMessage(null);
       toast({
         title: "Failed to send message",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
     }
-  }, [messageInput, selectedMentorId, user, sendMessageMutation, toast, sendMessage]);
+  }, [messageInput, selectedMentorId, user, startStream, toast, queryClient]);
 
   const selectedMentor = aiMentors.find(m => m.id === selectedMentorId);
 

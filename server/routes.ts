@@ -286,6 +286,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SSE endpoint for streaming AI responses
+  app.post('/api/chat/stream', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { content, aiMentorId } = req.body;
+
+      if (!content || !aiMentorId) {
+        return res.status(400).json({ message: 'Content and aiMentorId are required' });
+      }
+
+      // Get the AI mentor
+      const mentor = await storage.getAiMentor(aiMentorId);
+      if (!mentor) {
+        return res.status(404).json({ message: 'AI mentor not found' });
+      }
+
+      // Set SSE headers
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Headers", "Cache-Control");
+
+      // Save user message first
+      await storage.createChatMessage({
+        userId: user.id,
+        aiMentorId,
+        content,
+        role: 'user'
+      });
+
+      // Get conversation history
+      const history = await storage.getChatMessages(user.id, aiMentorId, 10);
+      const conversationHistory = history.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      }));
+
+      let fullResponse = '';
+
+      try {
+        // Stream the AI response
+        for await (const chunk of streamMentorResponse(
+          content, 
+          mentor, 
+          conversationHistory, 
+          user.organizationId || undefined, 
+          user.id
+        )) {
+          if (chunk.isComplete) {
+            // Save complete response to database
+            if (fullResponse.trim()) {
+              await storage.createChatMessage({
+                userId: user.id,
+                aiMentorId,
+                content: fullResponse,
+                role: 'assistant'
+              });
+            }
+            
+            // Send completion event
+            res.write(`data: {"type": "complete", "content": ""}\n\n`);
+            res.end();
+          } else {
+            // Send streaming chunk
+            fullResponse += chunk.content;
+            const eventData = JSON.stringify({
+              type: "chunk",
+              content: chunk.content
+            });
+            res.write(`data: ${eventData}\n\n`);
+          }
+        }
+      } catch (error) {
+        console.error('Streaming error:', error);
+        res.write(`data: {"type": "error", "content": "Sorry, I'm having trouble responding right now."}\n\n`);
+        res.end();
+      }
+    } catch (error) {
+      console.error('SSE endpoint error:', error);
+      res.status(500).json({ message: 'Failed to process request' });
+    }
+  });
+
   app.post('/api/chat', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
