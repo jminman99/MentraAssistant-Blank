@@ -13,6 +13,7 @@ import {
 } from './elder-thomas-semantic.js';
 import { runAudit } from './runAudit.js';
 import { generateMentorResponse } from './aiResponseMiddleware.js';
+import { findRelevantStory, updateSessionWithStory, type MentorLifeStory, type MentorSession } from './mentor-story-matcher.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY 
@@ -205,7 +206,7 @@ Remember: You've lived through real struggles and found real wisdom. Share that 
       console.log(`[AI DEBUG] Found ${mentorStories.length} life stories for ${mentor.name}`);
       
       // Find most relevant stories based on user input - increased from 3 to 5 for richer context
-      const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 5);
+      const relevantStories = findRelevantStoriesFromInput(userMessage, mentorStories, 5, mentor.id.toString(), userId);
       console.log(`[AI DEBUG] Selected ${relevantStories.length} relevant stories from ${mentorStories.length} total`);
       
       const storiesContext = relevantStories.length > 0 
@@ -362,59 +363,63 @@ CONVERSATION GUIDELINES:
   }
 }
 
-// Helper function to find relevant stories based on user input
-function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 5): any[] {
-  const userWords = userMessage.toLowerCase().split(/\s+/);
-  const userMessageLower = userMessage.toLowerCase();
+// Session memory for story tracking across conversations
+const mentorSessions = new Map<string, MentorSession>();
+
+function getOrCreateSession(mentorId: string, userId?: number): MentorSession {
+  const sessionKey = `${mentorId}-${userId || 'anonymous'}`;
+  if (!mentorSessions.has(sessionKey)) {
+    mentorSessions.set(sessionKey, {
+      usedStoryIds: new Set(),
+      mentorId: mentorId,
+      lastCategoryUsed: undefined,
+      recentEmotionalTone: []
+    });
+  }
+  return mentorSessions.get(sessionKey)!;
+}
+
+// Enhanced story matcher using the sophisticated algorithm for all AI mentors
+function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 5, mentorId?: string, userId?: number): any[] {
+  // Convert stories to MentorLifeStory format
+  const mentorStories: MentorLifeStory[] = stories.map(story => ({
+    id: story.id,
+    category: story.category,
+    title: story.title,
+    story: story.story,
+    lesson: story.lesson,
+    keywords: Array.isArray(story.keywords) ? story.keywords : [],
+    emotional_tone: story.emotionalTone || story.emotional_tone || 'reflective',
+    mentor_id: mentorId
+  }));
+
+  // Get session for story tracking
+  const session = mentorId ? getOrCreateSession(mentorId, userId) : {
+    usedStoryIds: new Set(),
+    mentorId: mentorId || 'unknown',
+    lastCategoryUsed: undefined,
+    recentEmotionalTone: []
+  };
+
+  // Use the sophisticated story matcher
+  const selectedStories: MentorLifeStory[] = [];
   
-  return stories
-    .map(story => {
-      let relevanceScore = 0;
-      const storyText = `${story.title} ${story.story} ${story.lesson}`.toLowerCase();
-      const storyKeywords = story.keywords || [];
-      
-      // Enhanced keyword matching
-      userWords.forEach(word => {
-        if (word.length > 2) { // Skip very short words
-          if (storyText.includes(word)) relevanceScore += 1;
-          if (storyKeywords.some((keyword: string) => keyword.toLowerCase().includes(word))) {
-            relevanceScore += 3; // Increased weight for keyword matches
-          }
-        }
-      });
-      
-      // Enhanced category matching with more emotional context
-      const categoryBoosts = {
-        'parenting': ['family', 'children', 'kids', 'dad', 'father', 'daughter', 'son', 'parent'],
-        'marriage': ['marriage', 'wife', 'spouse', 'relationship', 'intimate', 'couple'],
-        'spiritual': ['prayer', 'god', 'jesus', 'faith', 'church', 'spirit', 'believe'],
-        'career': ['work', 'job', 'career', 'boss', 'meeting', 'business', 'professional'],
-        'childhood': ['childhood', 'young', 'growing up', 'remember when', 'as a kid'],
-        'father': ['dad', 'father', 'my dad', 'father relationship'],
-        'mother': ['mom', 'mother', 'my mom', 'mother relationship']
-      };
-      
-      Object.entries(categoryBoosts).forEach(([category, keywords]) => {
-        if (story.category.toLowerCase().includes(category)) {
-          keywords.forEach(keyword => {
-            if (userMessageLower.includes(keyword)) {
-              relevanceScore += 4; // Higher boost for category alignment
-            }
-          });
-        }
-      });
-      
-      // Emotional context matching
-      const emotionalWords = ['struggling', 'difficult', 'hard', 'confused', 'lost', 'worried', 'afraid', 'anxious', 'grateful', 'joy'];
-      emotionalWords.forEach(emotion => {
-        if (userMessageLower.includes(emotion) && story.emotionalTone && story.emotionalTone.includes('vulnerable')) {
-          relevanceScore += 2;
-        }
-      });
-      
-      return { ...story, relevanceScore };
-    })
-    .filter(story => story.relevanceScore > 0)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, limit);
+  for (let i = 0; i < limit; i++) {
+    const story = findRelevantStory(userMessage, mentorStories, session);
+    if (story) {
+      selectedStories.push(story);
+      updateSessionWithStory(session, story);
+    } else {
+      break; // No more relevant stories found
+    }
+  }
+
+  console.log(`[AI DEBUG] Story matching for "${userMessage.substring(0, 50)}..."`);
+  console.log(`[AI DEBUG] Found ${selectedStories.length} relevant stories out of ${stories.length} total`);
+  console.log(`[AI DEBUG] Session has used ${session.usedStoryIds.size} stories total`);
+  if (selectedStories.length > 0) {
+    console.log(`[AI DEBUG] Top story: "${selectedStories[0].title}" (category: ${selectedStories[0].category})`);
+  }
+  
+  return selectedStories;
 }
