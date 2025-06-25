@@ -358,6 +358,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 24, 2025: UPDATED David's semantic configuration to v5.10 - applied enhanced prompt with prayer-centered response layers, template prayers for specific concerns (job stress, inadequacy, caring for loved ones), multi-dimensional faith guidance, engaged prayerful companionship instructions, and dialogue pacing before prayer - maintains authentic conversational style while adding deeper spiritual engagement capabilities
 - June 24, 2025: ENHANCED David's maturity guidelines - added rule to avoid childhood or trivial analogies (lemonade stands, little league) when users process adult leadership, authority, or spiritual struggles - ensures age-appropriate wisdom for serious concerns
 - June 24, 2025: IMPROVED David's conversational flow - added rule to avoid starting every response with "That reminds me..." or similar story triggers, stories now emerge organically rather than automatically for more natural dialogue
+- June 25, 2025: RESOLVED critical security vulnerability CVE-2025-30208 - upgraded Vite from 5.4.14 to 5.4.15 to patch file system bypass vulnerability that could expose sensitive files when development server is network-accessible
 
 ## Changelog
 
