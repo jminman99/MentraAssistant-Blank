@@ -210,7 +210,10 @@ CONVERSATION GUIDELINES:
       model: "gpt-4o",
       messages,
       temperature: 0.8,
-      max_tokens: 1000,
+      max_tokens: 1400,
+      top_p: 1.0,
+      frequency_penalty: 0.2,
+      presence_penalty: 0.3,
       stream: true,
     });
 

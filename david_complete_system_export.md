@@ -459,8 +459,9 @@ Current semantic configuration fields for David:
 ## SYSTEM STATUS
 
 ✅ v7.0 confessional core prompt active in database
+✅ Enhanced model settings: temp 0.8, max_tokens 1400, frequency/presence penalties
 ✅ Fast streaming responses with audit checking  
 ✅ Story matching from 30+ life experiences
 ✅ Wild at Heart theological framework integrated
-✅ Porch-swing conversational tone enforced
+✅ Authentic listening-based responses (no structured modes)
 ✅ 1-3 sentence response limits implemented

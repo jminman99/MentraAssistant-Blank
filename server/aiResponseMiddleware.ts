@@ -88,8 +88,11 @@ export async function generateMentorResponse({
       const retry = await openai.chat.completions.create({
         model,
         messages: retryMessages,
-        max_tokens: 400,
-        temperature: 0.9, // Increase variety
+        max_tokens: 1400,
+        temperature: 0.8,
+        top_p: 1.0,
+        frequency_penalty: 0.2,
+        presence_penalty: 0.3,
       });
 
       const improvedResponse = retry.choices[0].message.content || aiResponse;

@@ -361,6 +361,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 25, 2025: RESOLVED critical security vulnerability CVE-2025-30208 - upgraded Vite from 5.4.14 to 5.4.15 to patch file system bypass vulnerability that could expose sensitive files when development server is network-accessible
 - June 25, 2025: UPDATED David's semantic framework to incorporate John Eldredge (Wild at Heart) instead of Wendell Berry - aligned with adventure-based masculine spirituality approach for more authentic male mentoring style
 - June 25, 2025: COMPLETELY REWROTE David's prompt system to embody Wild at Heart masculine spirituality - replaced contemplative porch-style approach with warrior-mentor who calls men to adventure, battle, and purpose; challenges passivity and awakens the masculine heart to God's dangerous calling
+- June 25, 2025: IMPLEMENTED David v7.0 confessional core prompt - completely simplified approach removing structured response modes, emphasized authentic presence over coaching patterns, focused on being "undone by Father's love" rather than mentor framework, removed performance expectations and replaced with natural listening-based responses
+- June 25, 2025: ENHANCED AI model settings for David - increased temperature to 0.8 for warmth and vulnerability, expanded max_tokens to 1400 for deeper reflection and prayer, added frequency_penalty (0.2) and presence_penalty (0.3) to reduce repetition and encourage novel phrasing, set top_p to 1.0 for full expression diversity
 
 ## Changelog
 
