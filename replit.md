@@ -361,6 +361,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 25, 2025: RESOLVED critical security vulnerability CVE-2025-30208 - upgraded Vite from 5.4.14 to 5.4.15 to patch file system bypass vulnerability that could expose sensitive files when development server is network-accessible
 - June 27, 2025: INTEGRATED John Mark Inman AI mentor - added new mentor persona with "faith and fire" personality, operational intensity with spiritual surrender, direct plain-spoken communication style, expertise in leadership transitions and men in transition, fully integrated with existing chat system using semantic configuration layer
 - June 27, 2025: REMOVED artificial response length restrictions - replaced "1-2 sentences maximum" and "brief" constraints with "respond with as much detail as necessary to guide the user clearly" across all mentor prompts for more thorough, helpful guidance
+- June 27, 2025: UPDATED John Mark Inman's system prompt - enhanced communication style to use shorter bursts, plain language, shared personal struggles, gentle challenges through questions, and shorter prayers while maintaining his "faith and fire" spiritual intensity and expertise in leadership transitions
 
 ## Changelog
 
