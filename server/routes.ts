@@ -22,6 +22,7 @@ import passport from "./auth-strategies";
 
 import { generateAIResponse } from "./ai";
 import { streamMentorResponse } from "./fastMentor";
+import OpenAI from "openai";
 
 // Helper function to convert time slot to hour
 function getTimeSlotHour(timeSlot: string): number {
