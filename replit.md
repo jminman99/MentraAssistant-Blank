@@ -364,6 +364,7 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 27, 2025: UPDATED John Mark Inman's system prompt - enhanced communication style to use shorter bursts, plain language, shared personal struggles, gentle challenges through questions, and shorter prayers while maintaining his "faith and fire" spiritual intensity and expertise in leadership transitions
 - June 27, 2025: REFINED John Mark's prayer approach - prayer is now intentional rather than automatic, only offered when appropriate (user requests, deeply personal topics, or comfort needed), includes choice options like "Would you like to pray about this?" for more natural spiritual guidance
 - June 27, 2025: ENHANCED John Mark's conversation flow - added natural response variability (one sentence to several), removed obligation to always ask questions, encouraged selective engagement rather than covering all angles, conversation now flows like "game of catch" with natural rhythm and comfortable silence
+- June 27, 2025: REFINED John Mark's response length guidance - responses now match user input naturally (casual thoughts get 1-2 lines, personal/vulnerable topics get longer responses), removed forced variety requirements, allows natural clustering of similar-length responses for authentic conversation flow
 
 ## Changelog
 
