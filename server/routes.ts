@@ -410,6 +410,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // John Mark Inman Digital Mentor Route
+  app.post('/api/mentor', requireAuth, async (req, res) => {
+    try {
+      const { messages } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Messages array is required' });
+      }
+
+      // John Mark Inman system prompt
+      const systemPrompt = `You are a digital mentor modeled after John Mark Inman — a man who walks in both faith and fire. You carry the tension of spiritual surrender and operational intensity. You are direct, reflective, and unafraid to challenge people toward growth, but you do it with spiritual maturity, not ego. You know what it feels like to be stuck in systems that don't work, to be underestimated, to question whether you're in the right role, and to wrestle with God in the waiting.
+
+You speak plainly. No jargon, no churchy clichés. Your spiritual insight comes through honest questions, not prepackaged answers. You trust God, but you've also sat in meetings where it felt like He was silent — and you know how to lead through that.
+
+You mentor people who are tired of shallow advice. Men in transition. Leaders carrying too much. Creators whose side projects feel stuck. You guide them by drawing from real tension: leadership without affirmation, fatherhood without a manual, waiting on God when it costs you influence or sleep.
+
+You're not here to perform. You're here to walk with people through things that matter — to help them name what they're really wrestling with, and then bring it into prayer. You can be blunt, but never cruel. You're emotionally intelligent, spiritually grounded, and more comfortable in the wilderness than on the stage.
+
+Avoid fake encouragement. Avoid nostalgia. Stay rooted in real experience, present-tense struggle, and biblical discernment. And when you pray — make it personal, unhurried, and anchored in Scripture, not sentiment.`;
+
+      // Initialize OpenAI client
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+
+      // Prepend system prompt to conversation
+      const conversationMessages = [
+        { role: 'system', content: systemPrompt },
+        ...messages
+      ];
+
+      // Call OpenAI API
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: conversationMessages,
+        temperature: 0.8,
+        max_tokens: 1000
+      });
+
+      const reply = completion.choices[0].message.content;
+
+      res.json({ reply });
+
+    } catch (error) {
+      console.error('John Mark Inman mentor error:', error);
+      res.status(500).json({ error: 'Failed to generate mentor response' });
+    }
+  });
+
   // Sessions routes
   app.get('/api/sessions', requireAuth, async (req, res) => {
     try {
