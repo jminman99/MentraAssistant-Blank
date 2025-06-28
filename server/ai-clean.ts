@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
 import { storage } from './storage.js';
 import { generateMentorResponse } from './aiResponseMiddleware.js';
-import { findRelevantStory, updateSessionWithStory, type MentorLifeStory, type MentorSession } from './mentor-story-matcher.js';
+import { findRelevantStoriesFromInput } from './mentor-story-matcher.js';
 import { buildSystemPrompt, type SemanticConfig, type LifeStory } from './promptBuilder.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -12,15 +12,13 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-// Removed hardcoded personality profiles - now using structured prompt builder with semantic configuration
-
 function generateReflectiveResponse(): string {
   const reflectiveResponses = [
     "I remember sitting on my dad's porch when I was seven, just listening to the cicadas. Sometimes the quiet says more than words.",
     "When I lost my first job, I sat in my car for an hour just staring at the parking lot. Funny how empty spaces can feel so full.",
-    "My wife caught me praying in the garage once. She didn't say anything, just brought me coffee and sat down next to the lawnmower.",
-    "I used to think silence meant God wasn't listening. Turns out, sometimes He's just letting me catch my breath.",
-    "There's a crack in our kitchen window from when my son threw a baseball. We never fixed it because it catches the morning light just right."
+    "There's this moment right before dawn when everything feels possible. I've been chasing that feeling my whole life.",
+    "My daughter asked me once why I pray in the garage. I told her it's where I keep my broken things.",
+    "The day I stopped trying to fix everyone else was the day I started fixing myself."
   ];
   
   return reflectiveResponses[Math.floor(Math.random() * reflectiveResponses.length)];
@@ -37,13 +35,12 @@ export async function generateAIResponse(
     throw new Error('OpenAI API key not configured');
   }
 
-  // Special case: just typing "david" gets a reflective response
-  if (userMessage.trim().toLowerCase() === 'david') {
+  // Handle reflective responses for "david" input
+  if (userMessage.toLowerCase().trim() === 'david') {
     return generateReflectiveResponse();
   }
 
-  // Get semantic configuration from database (organization-specific or global fallback)
-  console.log(`[AI DEBUG] Looking for semantic config: mentor="${mentor.name}", orgId=${organizationId}`);
+  // Load semantic configuration and personality config
   let semanticConfig, personalityConfig;
   try {
     semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
@@ -53,20 +50,6 @@ export async function generateAIResponse(
     semanticConfig = null;
     personalityConfig = null;
   }
-  console.log(`[AI DEBUG] Found semantic config:`, !!semanticConfig);
-  console.log(`[AI DEBUG] Found personality config:`, !!personalityConfig);
-  console.log(`[AI DEBUG] Custom prompt available:`, !!(semanticConfig && semanticConfig.customPrompt));
-
-  console.log(`[AI DEBUG] Semantic config object:`, semanticConfig ? Object.keys(semanticConfig) : 'null');
-  if (semanticConfig && semanticConfig.customPrompt) {
-    console.log(`[AI DEBUG] Custom prompt preview:`, semanticConfig.customPrompt.substring(0, 100) + '...');
-  }
-  if (semanticConfig?.customPrompt) {
-    console.log(`[AI DEBUG] Using custom prompt for ${mentor.name} (length: ${semanticConfig.customPrompt.length})`);
-  }
-
-  // Use hardcoded fallback if no database config exists
-  const profile = personalityProfiles[mentor.name as keyof typeof personalityProfiles];
   
   console.log(`[AI DEBUG] === ${mentor.name} Response Generation ===`);
   console.log(`[AI DEBUG] Semantic config for ${mentor.name}:`, semanticConfig ? 'Found in database' : 'Using fallback');
@@ -77,8 +60,6 @@ export async function generateAIResponse(
     console.log(`[AI DEBUG] Database config style: ${semanticConfig.communicationStyle?.substring(0, 100)}...`);
     console.log(`[AI DEBUG] Common phrases count:`, semanticConfig.commonPhrases?.length || 0);
   }
-  
-  let systemPrompt = '';
 
   // Load mentor life stories from database
   const mentorStories = await storage.getMentorLifeStories(mentor.id);
@@ -116,28 +97,30 @@ export async function generateAIResponse(
   }
 
   // Use the new structured prompt builder approach
+  let systemPrompt: string;
+  
   if (semanticConfig) {
     console.log(`[AI DEBUG] ✓ USING STRUCTURED PROMPT BUILDER for ${mentor.name}`);
     
-    // Convert semantic config to the expected format, handling null values
+    // Convert semantic config to the expected format
     const formattedSemanticConfig: SemanticConfig = {
       id: semanticConfig.id,
       mentorName: semanticConfig.mentorName,
-      customPrompt: semanticConfig.customPrompt ?? undefined,
+      customPrompt: semanticConfig.customPrompt || undefined,
       communicationStyle: semanticConfig.communicationStyle,
       commonPhrases: semanticConfig.commonPhrases || [],
       decisionMaking: semanticConfig.decisionMaking,
       mentoring: semanticConfig.mentoring,
-      detailedBackground: semanticConfig.detailedBackground ?? undefined,
+      detailedBackground: semanticConfig.detailedBackground || undefined,
       coreValues: semanticConfig.coreValues || [],
       conversationStarters: semanticConfig.conversationStarters || [],
-      advicePatterns: semanticConfig.advicePatterns ?? undefined,
-      responseExamples: semanticConfig.responseExamples ?? undefined,
-      contextAwarenessRules: semanticConfig.contextAwarenessRules ?? undefined,
-      storySelectionLogic: semanticConfig.storySelectionLogic ?? undefined,
-      personalityConsistencyRules: semanticConfig.personalityConsistencyRules ?? undefined,
-      conversationFlowPatterns: semanticConfig.conversationFlowPatterns ?? undefined,
-      organizationId: semanticConfig.organizationId ?? undefined,
+      advicePatterns: semanticConfig.advicePatterns || undefined,
+      responseExamples: semanticConfig.responseExamples || undefined,
+      contextAwarenessRules: semanticConfig.contextAwarenessRules || undefined,
+      storySelectionLogic: semanticConfig.storySelectionLogic || undefined,
+      personalityConsistencyRules: semanticConfig.personalityConsistencyRules || undefined,
+      conversationFlowPatterns: semanticConfig.conversationFlowPatterns || undefined,
+      organizationId: semanticConfig.organizationId || undefined,
       isActive: semanticConfig.isActive ?? true
     };
 
@@ -159,8 +142,6 @@ export async function generateAIResponse(
       userContext
     });
   }
-
-
 
   // Debug: Log the actual system prompt being sent to AI
   console.log(`[AI DEBUG] === FINAL SYSTEM PROMPT FOR ${mentor.name} ===`);
@@ -192,62 +173,17 @@ export async function generateAIResponse(
 }
 
 // Session memory for story tracking across conversations
-const mentorSessions = new Map<string, MentorSession>();
+const mentorSessions = new Map<string, any>();
 
-function getOrCreateSession(mentorId: string, userId?: number): MentorSession {
+function getOrCreateSession(mentorId: string, userId?: number): any {
   const sessionKey = `${mentorId}-${userId || 'anonymous'}`;
   if (!mentorSessions.has(sessionKey)) {
     mentorSessions.set(sessionKey, {
-      usedStoryIds: new Set(),
-      mentorId: mentorId,
+      usedStoryIds: new Set<number>(),
+      mentorId,
       lastCategoryUsed: undefined,
       recentEmotionalTone: []
     });
   }
-  return mentorSessions.get(sessionKey)!;
-}
-
-// Enhanced story matcher using the sophisticated algorithm for all AI mentors
-function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 5, mentorId?: string, userId?: number): any[] {
-  // Convert stories to MentorLifeStory format
-  const mentorStories: MentorLifeStory[] = stories.map(story => ({
-    id: story.id,
-    category: story.category,
-    title: story.title,
-    story: story.story,
-    lesson: story.lesson,
-    keywords: Array.isArray(story.keywords) ? story.keywords : [],
-    emotional_tone: story.emotionalTone || story.emotional_tone || 'reflective',
-    mentor_id: mentorId
-  }));
-
-  // Get session for story tracking
-  const session = mentorId ? getOrCreateSession(mentorId, userId) : {
-    usedStoryIds: new Set(),
-    mentorId: mentorId || 'unknown',
-    lastCategoryUsed: undefined,
-    recentEmotionalTone: []
-  };
-
-  // Use the sophisticated story matcher
-  const selectedStories: MentorLifeStory[] = [];
-  
-  for (let i = 0; i < limit; i++) {
-    const story = findRelevantStory(userMessage, mentorStories, session);
-    if (story) {
-      selectedStories.push(story);
-      updateSessionWithStory(session, story);
-    } else {
-      break; // No more relevant stories found
-    }
-  }
-
-  console.log(`[AI DEBUG] Story matching for "${userMessage.substring(0, 50)}..."`);
-  console.log(`[AI DEBUG] Found ${selectedStories.length} relevant stories out of ${stories.length} total`);
-  console.log(`[AI DEBUG] Session has used ${session.usedStoryIds.size} stories total`);
-  if (selectedStories.length > 0) {
-    console.log(`[AI DEBUG] Top story: "${selectedStories[0].title}" (category: ${selectedStories[0].category})`);
-  }
-  
-  return selectedStories;
+  return mentorSessions.get(sessionKey);
 }
