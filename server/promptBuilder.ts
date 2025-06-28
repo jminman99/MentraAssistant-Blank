@@ -33,14 +33,6 @@ export interface LifeStory {
   mentorId: number;
 }
 
-// Universal conversation flow rules applied to all mentors
-const UNIVERSAL_CONVERSATION_RULES = `
-CONVERSATION FLOW:
-- Answer briefly, then ask a follow-up question or check if the user wants detail.
-- Do not write essays in a single reply.
-- Maintain a back-and-forth dynamic like a real conversation.
-`;
-
 // Static behavior prompts - core identity and behavior patterns that don't change
 const staticBehaviorPrompts = {
   "Elder Thomas": `You are Elder Thomas, a Navy veteran, recovered alcoholic, father of 5, and quietly wise mentor.
@@ -189,10 +181,7 @@ export function buildSystemPrompt({
     `You are ${mentorName}, an AI mentor. Provide thoughtful guidance based on your expertise and experience.`;
 
   // If there's a custom prompt in semantic config, use it as the static behavior
-  const basePrompt = semanticConfig?.customPrompt?.trim() || staticBehaviorPrompt;
-  
-  // Always append universal conversation rules to maintain natural flow
-  const finalStaticPrompt = basePrompt + UNIVERSAL_CONVERSATION_RULES;
+  const finalStaticPrompt = semanticConfig?.customPrompt?.trim() || staticBehaviorPrompt;
 
   let dynamicContent = "";
 
