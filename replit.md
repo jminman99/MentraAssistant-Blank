@@ -234,12 +234,19 @@ The platform now features a comprehensive semantic layer that transforms AI ment
 - Organization-level customization support
 
 **AI Response Generation:**
+- Structured prompt builder system separating static behavior from dynamic configuration
 - Context-aware story selection algorithm
-- Personality-driven response styling
-- Integration with Elder Thomas semantic template
-- Authentic character voice maintenance
+- Personality-driven response styling with intelligent overlap detection
+- Custom prompt integration with semantic layer fallbacks
+- Authentic character voice maintenance through comprehensive personality frameworks
 
-This system ensures users talk to genuine mentors with lived experiences, not generic AI responses.
+**Prompt Architecture:**
+- **Static Behavior Prompts**: Core mentor identity, conversation rules, and personality frameworks stored in `server/promptBuilder.ts`
+- **Dynamic Semantic Configuration**: Database-stored customizations including communication style, signature phrases, life stories, and organization-specific overrides
+- **Intelligent Integration**: Automatic detection and prevention of content duplication between static and dynamic elements
+- **Flexible Customization**: Support for complete custom prompts or structured semantic configuration enhancement
+
+This dual-layer system ensures users talk to authentic mentors with consistent personalities while maintaining maximum configurability and preventing prompt overlap issues.
 
 ## Recent Changes
 
@@ -366,6 +373,8 @@ This system ensures users talk to genuine mentors with lived experiences, not ge
 - June 27, 2025: ENHANCED John Mark's conversation flow - added natural response variability (one sentence to several), removed obligation to always ask questions, encouraged selective engagement rather than covering all angles, conversation now flows like "game of catch" with natural rhythm and comfortable silence
 - June 27, 2025: REFINED John Mark's response length guidance - responses now match user input naturally (casual thoughts get 1-2 lines, personal/vulnerable topics get longer responses), removed forced variety requirements, allows natural clustering of similar-length responses for authentic conversation flow
 - June 27, 2025: INTEGRATED Frank Slootman AI mentor - added high-intensity business execution expert with direct communication style, former CEO of Snowflake/ServiceNow/Data Domain, focuses on challenging mediocrity and driving results over theory with signature phrases and practical leadership insights
+- June 28, 2025: IMPLEMENTED structured prompt builder system - eliminated overlap between static behavior prompts and semantic configuration data, created clean separation with intelligent duplicate detection, maintains all existing features while improving maintainability
+- June 28, 2025: UPDATED Frank Slootman's prompt - enhanced with "speed is survival" mentality, discomfort-driven growth philosophy, execution over theory focus, and direct challenge-oriented communication style without corporate jargon or pandering
 
 ## Changelog
 
