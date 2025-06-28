@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { AiMentor } from "@shared/schema";
 import { storage } from "./storage";
 import { runAudit } from "./runAudit";
+import { buildSystemPrompt } from "./promptBuilder";
 
 
 
@@ -94,64 +95,40 @@ export async function* streamMentorResponse(
     personalityConfig = null;
   }
 
-  // Build system prompt (reusing existing logic)
-  let systemPrompt = '';
-  
-  if (semanticConfig?.customPrompt && semanticConfig.customPrompt.trim().length > 0) {
-    // Get user context
-    let userContext = `This person is seeking guidance and wisdom.`;
-    if (userId) {
-      try {
-        const user = await storage.getUser(userId);
-        if (user?.email === 'demo@example.com') {
-          userContext = `This is a 45-year-old father of two from Louisville who works as a Director of Data Analytics and is building an app called Mentra. He often wrestles with authenticity, purpose, and spiritual depth.`;
-        }
-      } catch (error) {
-        console.log('[FAST MENTOR] Could not load user profile for context');
+  // Get user context
+  let userContext = `This person is seeking guidance and wisdom.`;
+  if (userId) {
+    try {
+      const user = await storage.getUser(userId);
+      if (user?.email === 'demo@example.com') {
+        userContext = `This is a 45-year-old father of two from Louisville who works as a Director of Data Analytics and is building an app called Mentra. He often wrestles with authenticity, purpose, and spiritual depth.`;
       }
+    } catch (error) {
+      console.log('[FAST MENTOR] Could not load user profile for context');
     }
-
-    // Get relevant stories
-    const mentorStories = await storage.getMentorLifeStories(mentor.id);
-    const relevantStories = findRelevantStoriesFromInput(userInput, mentorStories, 3);
-    
-    const contextualStories = relevantStories.length > 0 
-      ? `\n\nSPECIFIC LIFE EXPERIENCES TO DRAW FROM:
-${relevantStories.map(story => 
-  `• "${story.title}": ${story.story}
-  Key lesson: ${story.lesson}
-  Emotional tone: ${story.emotionalTone || 'reflective'}`
-).join('\n\n')}`
-      : '\n\nNOTE: Draw from your general life experiences if no specific stories match.';
-
-    systemPrompt = `${semanticConfig.customPrompt}
-
-CONVERSATION CONTEXT:
-${userContext}
-${contextualStories}
-
-RESPONSE INSTRUCTIONS:
-- Draw from your real life experiences only if it helps the user feel less alone or gain clarity.
-- Otherwise, respond directly.
-- Keep any stories brief and directly tied to the user's situation.
-- When praying, mention specific details from the user's message.
-- Avoid clichés and churchy platitudes.
-
-Remember: You're sharing life with someone, not conducting a session.`;
-  } else {
-    // Fallback system prompt
-    systemPrompt = `You are ${mentor.name}, a mentor with authentic lived experiences.
-
-PERSONALITY: ${mentor.personality}
-EXPERTISE: ${mentor.expertise}
-
-CONVERSATION GUIDELINES:
-- Share authentic wisdom from lived experience
-- Respond with as much detail as necessary to guide the user clearly.
-- Keep your tone conversational and engaging.
-- Be warm and helpful while staying authentic
-- Draw from your specific background and expertise`;
   }
+
+  // Get relevant stories
+  const mentorStories = await storage.getMentorLifeStories(mentor.id);
+  const relevantStories = findRelevantStoriesFromInput(userInput, mentorStories, 3);
+  
+  // Use the structured prompt builder with universal conversation flow rules
+  const systemPrompt = buildSystemPrompt({
+    mentorName: mentor.name,
+    semanticConfig,
+    userMessage: userInput,
+    relevantStories: relevantStories.map(story => ({
+      id: story.id,
+      title: story.title,
+      story: story.story,
+      lesson: story.lesson,
+      category: story.category,
+      keywords: story.keywords || [],
+      emotionalTone: story.emotionalTone || 'reflective',
+      mentorId: mentor.id
+    })),
+    userContext
+  });
 
   const messages = [
     { role: "system" as const, content: systemPrompt },
