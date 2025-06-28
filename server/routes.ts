@@ -325,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      let fullResponse = '';
+      let chunkCount = 0;
 
       try {
         // Stream the AI response
@@ -337,22 +337,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user.id
         )) {
           if (chunk.isComplete) {
-            // Save complete response to database
-            if (fullResponse.trim()) {
-              await storage.createChatMessage({
-                userId: user.id,
-                aiMentorId,
-                content: fullResponse,
-                role: 'assistant'
-              });
-            }
-            
             // Send completion event
             res.write(`data: {"type": "complete", "content": ""}\n\n`);
             res.end();
           } else {
+            // Save each chunk as a separate message
+            if (chunk.content.trim()) {
+              await storage.createChatMessage({
+                userId: user.id,
+                aiMentorId,
+                content: chunk.content.trim(),
+                role: 'assistant'
+              });
+              chunkCount++;
+            }
+            
             // Send streaming chunk
-            fullResponse += chunk.content;
             const eventData = JSON.stringify({
               type: "chunk",
               content: chunk.content

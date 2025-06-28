@@ -211,28 +211,27 @@ CONVERSATION GUIDELINES:
       }
     }
 
-    // Run audit on complete response
-    const audit = runAudit(fullResponse, {
-      userMessage: userInput,
-      previousMessages: conversationHistory,
-      mentorId: mentor.id,
-    });
-
-    if (audit.flagged) {
-      console.warn('[FAST MENTOR AUDIT] Response flagged:', audit.issues);
-      // For streaming, we can't regenerate, so we log the issue
-      // In a production system, you might want to send a correction message
-    }
-
     // Break response into conversational chunks
     const chunks = chunkResponse(fullResponse);
     
     // Stream each chunk with a slight delay for natural conversation feel
     for (let i = 0; i < chunks.length; i++) {
       const isLastChunk = i === chunks.length - 1;
+      const chunk = chunks[i];
+      
+      // Run audit on each chunk individually
+      const audit = runAudit(chunk, {
+        userMessage: userInput,
+        previousMessages: conversationHistory,
+        mentorId: mentor.id,
+      });
+
+      if (audit.flagged) {
+        console.warn(`[FAST MENTOR AUDIT] Chunk ${i + 1} flagged:`, audit.issues);
+      }
       
       yield {
-        content: chunks[i],
+        content: chunk,
         isComplete: isLastChunk,
         mentorId: mentor.id,
         timestamp
