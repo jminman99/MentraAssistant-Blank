@@ -85,7 +85,8 @@ export async function* streamMentorResponse(
   }
 
   // Get semantic configuration and stories (same as existing system)
-  let semanticConfig, personalityConfig;
+  let semanticConfig: any = null;
+  let personalityConfig: any = null;
   try {
     semanticConfig = await storage.getSemanticConfiguration(mentor.name, organizationId);
     personalityConfig = await storage.getMentorPersonality(mentor.name, organizationId);
@@ -115,7 +116,12 @@ export async function* streamMentorResponse(
   // Use the structured prompt builder with universal conversation flow rules
   const systemPrompt = buildSystemPrompt({
     mentorName: mentor.name,
-    semanticConfig,
+    semanticConfig: semanticConfig ? {
+      ...semanticConfig,
+      customPrompt: semanticConfig.customPrompt || undefined,
+      commonPhrases: semanticConfig.commonPhrases || [],
+      coreValues: semanticConfig.coreValues || []
+    } : null,
     userMessage: userInput,
     relevantStories: relevantStories.map(story => ({
       id: story.id,
@@ -156,7 +162,7 @@ export async function* streamMentorResponse(
       }
     }
 
-    // Run audit on complete response
+    // Run audit on complete response (disabled for testing conversation flow rules)
     const audit = runAudit(fullResponse, {
       userMessage: userInput,
       previousMessages: conversationHistory,
@@ -164,8 +170,8 @@ export async function* streamMentorResponse(
     });
 
     if (audit.flagged) {
-      console.warn('[FAST MENTOR AUDIT] Response flagged:', audit.issues);
-      // For Frank Slootman (mentor.id 11), length flags are expected due to his direct style
+      console.warn('[FAST MENTOR AUDIT] Response flagged but proceeding:', audit.issues);
+      // Temporarily disabled audit blocking to test universal conversation flow rules
     }
 
     // Signal completion with full response
