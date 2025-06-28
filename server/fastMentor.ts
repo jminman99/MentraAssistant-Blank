@@ -3,6 +3,40 @@ import type { AiMentor } from "@shared/schema";
 import { storage } from "./storage";
 import { runAudit } from "./runAudit";
 
+/**
+ * Splits long LLM text into chat-friendly chunks.
+ *
+ * @param {string} text - The full LLM response.
+ * @returns {string[]} - Array of smaller message chunks.
+ */
+function chunkResponse(text: string): string[] {
+  // Split by double newlines (paragraphs)
+  const paragraphs = text
+    .split(/\n\s*\n/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const paragraph of paragraphs) {
+    if ((currentChunk + ' ' + paragraph).length > 300) {
+      // Push current chunk and start new one
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+    }
+    currentChunk += (currentChunk ? ' ' : '') + paragraph;
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
 // Simplified story matching without circular dependencies
 function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit: number = 3): any[] {
   if (!stories || stories.length === 0) return [];
@@ -29,7 +63,7 @@ function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit
     
     // Check category relevance
     if (story.category) {
-      const categoryKeywords = {
+      const categoryKeywords: Record<string, string[]> = {
         'parenting': ['child', 'kid', 'son', 'daughter', 'parent', 'family'],
         'marriage': ['wife', 'husband', 'marriage', 'relationship', 'spouse'],
         'career': ['work', 'job', 'boss', 'career', 'business', 'office'],
@@ -37,8 +71,8 @@ function findRelevantStoriesFromInput(userMessage: string, stories: any[], limit
         'childhood': ['young', 'child', 'growing up', 'school', 'youth']
       };
       
-      const categoryKeys = categoryKeywords[story.category.toLowerCase()] || [];
-      categoryKeys.forEach(keyword => {
+      const categoryKeys = categoryKeywords[story.category.toLowerCase() as keyof typeof categoryKeywords] || [];
+      categoryKeys.forEach((keyword: string) => {
         if (userInput.includes(keyword)) {
           score += 1;
         }
@@ -111,7 +145,7 @@ export async function* streamMentorResponse(
 
     // Get relevant stories
     const mentorStories = await storage.getMentorLifeStories(mentor.id);
-    const relevantStories = findRelevantStoriesFromInput(userInput, mentorStories, 3, mentor.id.toString(), userId);
+    const relevantStories = findRelevantStoriesFromInput(userInput, mentorStories, 3);
     
     const contextualStories = relevantStories.length > 0 
       ? `\n\nSPECIFIC LIFE EXPERIENCES TO DRAW FROM:
@@ -169,16 +203,11 @@ CONVERSATION GUIDELINES:
     let fullResponse = '';
     const timestamp = new Date().toISOString();
 
+    // Collect the full response first
     for await (const chunk of stream) {
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         fullResponse += content;
-        yield {
-          content,
-          isComplete: false,
-          mentorId: mentor.id,
-          timestamp
-        };
       }
     }
 
@@ -195,13 +224,25 @@ CONVERSATION GUIDELINES:
       // In a production system, you might want to send a correction message
     }
 
-    // Signal completion
-    yield {
-      content: '',
-      isComplete: true,
-      mentorId: mentor.id,
-      timestamp
-    };
+    // Break response into conversational chunks
+    const chunks = chunkResponse(fullResponse);
+    
+    // Stream each chunk with a slight delay for natural conversation feel
+    for (let i = 0; i < chunks.length; i++) {
+      const isLastChunk = i === chunks.length - 1;
+      
+      yield {
+        content: chunks[i],
+        isComplete: isLastChunk,
+        mentorId: mentor.id,
+        timestamp
+      };
+      
+      // Add small delay between chunks for natural conversation flow
+      if (!isLastChunk) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
 
   } catch (error) {
     console.error('[FAST MENTOR] Error generating response:', error);
