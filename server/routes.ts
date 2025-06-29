@@ -297,11 +297,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Content and aiMentorId are required' });
       }
 
+      // CRITICAL: Check message limit before processing
+      if (user.messagesUsed >= user.messagesLimit) {
+        return res.status(403).json({ message: 'Message limit reached for this month' });
+      }
+
       // Get the AI mentor
       const mentor = await storage.getAiMentor(aiMentorId);
       if (!mentor) {
         return res.status(404).json({ message: 'AI mentor not found' });
       }
+
+      // CRITICAL: Increment user's message count immediately
+      await storage.updateUser(user.id, {
+        messagesUsed: user.messagesUsed + 1
+      });
 
       // Set SSE headers
       res.setHeader("Content-Type", "text/event-stream");
@@ -434,14 +444,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const { plan } = req.body;
 
-      let messagesLimit = 100;  // AI-Only: 100 messages
+      let messagesLimit = 150;  // AI-Only: 150 messages
       let sessionsLimit = 0;
       
       if (plan === 'individual') {
-        messagesLimit = 200;  // Individual: 200 messages + 2 sessions
+        messagesLimit = 300;  // Individual: 300 messages + 2 sessions
         sessionsLimit = 2;
       } else if (plan === 'council') {
-        messagesLimit = 150;  // Council: 150 messages + 1 council session
+        messagesLimit = 300;  // Council: 300 messages + 1 council session
         sessionsLimit = 1;
       }
 
