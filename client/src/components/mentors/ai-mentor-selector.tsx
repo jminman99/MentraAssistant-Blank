@@ -16,6 +16,8 @@ const getMentorSummary = (mentorName: string): string => {
       return 'Operational leader with spiritual depth. Helps men navigate transitions, unstuck projects, and finding clarity in complex decisions.';
     case 'Frank Slootman':
       return 'High-intensity business executor. Direct, no-nonsense guidance on leadership under pressure, scaling companies, and driving results.';
+    case 'Gregg Dedrick':
+      return 'Former KFC President turned Christian leader. Integrates faith with marketplace success through authentic vulnerability and spiritual partnership.';
     default:
       return '';
   }
