@@ -376,6 +376,8 @@ This dual-layer system ensures users talk to authentic mentors with consistent p
 - June 28, 2025: IMPLEMENTED structured prompt builder system - eliminated overlap between static behavior prompts and semantic configuration data, created clean separation with intelligent duplicate detection, maintains all existing features while improving maintainability
 - June 28, 2025: UPDATED Frank Slootman's prompt - enhanced with "speed is survival" mentality, discomfort-driven growth philosophy, execution over theory focus, and direct challenge-oriented communication style without corporate jargon or pandering
 - June 28, 2025: COMPLETED Frank Slootman's semantic configuration - added comprehensive personality data including 7 authentic life stories (Data Domain crisis, sailboat sacrifice, mediocrity confrontation, Tom Brady analogy, malcontent psychology, ServiceNow boardroom tension, Dutch cultural influence), signature phrases, core values, and detailed communication patterns for authentic AI responses
+- June 29, 2025: FIXED critical message counter bug - streaming chat endpoint now properly checks and enforces usage limits before processing, corrected subscription limits to match PRD (AI-Only: 150, Individual/Council: 300 messages), added user data cache invalidation to update UI counter immediately after sending messages
+- June 29, 2025: STREAMLINED AI mentor lineup - removed Marcus, Robert, James, and Michael mentors, keeping focused roster of three distinct personalities: David (life transitions/relationships), John Mark (leadership transitions/spiritual guidance), Frank Slootman (business execution/high-performance leadership)
 
 ## Changelog
 
