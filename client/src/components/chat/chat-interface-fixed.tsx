@@ -141,9 +141,10 @@ export function ChatInterface() {
           queryClient.setQueryData(['/api/chat', selectedMentorId], [...currentMessages, aiMessage]);
         }
         
-        // Sync with server after a short delay
+        // Sync with server after a short delay and update user data
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+          queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
         }, 500);
       }
     } else if (lastMessage.type === 'ai_response' && lastMessage.content && lastMessage.timestamp) {
@@ -255,9 +256,10 @@ export function ChatInterface() {
             queryClient.setQueryData(['/api/chat', selectedMentorId], [...latestMessages, aiMessage]);
           }
           
-          // Refresh from server to get real IDs
+          // Refresh from server to get real IDs and update user data (message counter)
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+            queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
           }, 1000);
         },
         onError: (error) => {
