@@ -379,6 +379,7 @@ This dual-layer system ensures users talk to authentic mentors with consistent p
 - June 29, 2025: FIXED critical message counter bug - streaming chat endpoint now properly checks and enforces usage limits before processing, corrected subscription limits to match PRD (AI-Only: 150, Individual/Council: 300 messages), added user data cache invalidation to update UI counter immediately after sending messages
 - June 29, 2025: STREAMLINED AI mentor lineup - removed Marcus, Robert, James, and Michael mentors, keeping focused roster of three distinct personalities: David (life transitions/relationships), John Mark (leadership transitions/spiritual guidance), Frank Slootman (business execution/high-performance leadership)
 - June 29, 2025: ADDED inline mentor summaries - concise 1-2 sentence descriptions appear below mentor selection to help users understand each mentor's approach and expertise at a glance, implemented with non-interfering design that shows only for selected mentor
+- June 29, 2025: OPTIMIZED mentor summary UI - made summaries compact to prevent scrolling issues, reduced padding and text size, added hover tooltips for full context, maintains clean chat flow without UI interference
 
 ## Changelog
 

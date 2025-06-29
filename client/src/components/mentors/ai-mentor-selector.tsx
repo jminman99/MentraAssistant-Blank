@@ -22,8 +22,11 @@ const getMentorSummary = (mentorName: string): string => {
 };
 
 export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSelectorProps) {
+  const selectedMentor = mentors.find(m => m.id === selectedId);
+  const summary = selectedMentor ? getMentorSummary(selectedMentor.name) : '';
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Mentor Selection Buttons */}
       <div className="flex space-x-2 overflow-x-auto pb-2">
         {mentors.map((mentor) => (
@@ -33,6 +36,7 @@ export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSele
             size="sm"
             onClick={() => onSelect(mentor.id)}
             className="flex-shrink-0 flex items-center space-x-2"
+            title={getMentorSummary(mentor.name)} // Show full summary on hover
           >
             <img 
               src={mentor.avatar} 
@@ -44,11 +48,11 @@ export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSele
         ))}
       </div>
       
-      {/* Selected Mentor Summary */}
-      {selectedId && (
-        <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {getMentorSummary(mentors.find(m => m.id === selectedId)?.name || '')}
+      {/* Compact Selected Mentor Summary */}
+      {selectedId && summary && (
+        <div className="bg-slate-50 rounded px-3 py-2 border-l-2 border-slate-300">
+          <p className="text-xs text-slate-600 line-clamp-2">
+            {summary}
           </p>
         </div>
       )}
