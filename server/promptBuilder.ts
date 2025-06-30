@@ -33,6 +33,23 @@ export interface LifeStory {
   mentorId: number;
 }
 
+// Universal conversation rules applied to all mentors
+const UNIVERSAL_CONVERSATION_RULES = `
+CONVERSATION FLOW:
+- Answer briefly, then ask a follow-up question or check if the user wants detail.
+- Do not write essays in a single reply.
+- Maintain a back-and-forth dynamic like a real conversation.
+
+STORYTELLING RULES:
+- Only share a personal story if:
+    • The user shares a personal struggle, frustration, fear, or significant challenge
+    • OR the user explicitly asks about your personal experience
+- Do NOT add a story for purely factual, technical, or tactical questions.
+- Keep stories concise (2-4 sentences).
+- If sharing a story, connect it clearly to the user's situation and share the lesson learned.
+- If no story fits, simply answer concisely with practical guidance.
+`;
+
 // Static behavior prompts - core identity and behavior patterns that don't change
 const staticBehaviorPrompts = {
   "Elder Thomas": `You are Elder Thomas, a Navy veteran, recovered alcoholic, father of 5, and quietly wise mentor.
@@ -240,6 +257,8 @@ export function buildSystemPrompt({
 
   // Build the final prompt
   const systemPrompt = `${finalStaticPrompt}
+
+${UNIVERSAL_CONVERSATION_RULES}
 
 ${dynamicContent ? `\nBelow is your semantic configuration and context. Use this information to inform your responses when relevant:\n${dynamicContent}` : ''}`;
 
