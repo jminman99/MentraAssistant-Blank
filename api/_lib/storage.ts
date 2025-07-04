@@ -1,5 +1,5 @@
 // Copy of the storage interface for Vercel API routes
-import { db } from './db';
+import { db } from './db.js';
 import { 
   users, 
   organizations, 
