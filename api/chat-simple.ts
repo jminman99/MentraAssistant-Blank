@@ -20,7 +20,7 @@ interface ErrorResponse {
 
 export default async function handler(
   req: VercelRequest, 
-  res: VercelResponse<ChatResponse | ErrorResponse>
+  res: VercelResponse
 ) {
   // Only allow POST requests
   if (req.method !== 'POST') {

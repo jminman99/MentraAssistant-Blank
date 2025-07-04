@@ -4,6 +4,8 @@ import { Compass, MessageCircle, Sparkles, Heart, Star, Crown, Settings } from "
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { ChatInterface } from "@/components/chat/chat-interface-fixed";
+import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
+import { deploymentConfig } from "@/lib/deployment-config";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
@@ -449,7 +451,9 @@ export default function Dashboard() {
           
           {/* Main Content Area */}
           <div className="lg:col-span-2">
-            {selectedTab === "ai-mentors" && <ChatInterface />}
+            {selectedTab === "ai-mentors" && (
+              deploymentConfig.isVercel ? <ChatInterfaceVercel /> : <ChatInterface />
+            )}
             
             {selectedTab === "human-mentors" && user.subscriptionPlan !== 'council' && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
