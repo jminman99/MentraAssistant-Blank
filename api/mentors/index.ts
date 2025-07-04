@@ -7,10 +7,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const mentors = await storage.getAIMentors();
+    // Return human mentors for council sessions
+    const mentors = await storage.getHumanMentors();
     res.json(mentors);
   } catch (error) {
-    console.error('Error fetching mentors:', error);
+    console.error('Error fetching human mentors:', error);
     res.status(500).json({ message: 'Failed to fetch mentors' });
   }
 }
