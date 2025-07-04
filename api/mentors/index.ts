@@ -7,8 +7,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Return human mentors for council sessions
-    const mentors = await storage.getHumanMentors();
+    // Return human mentors for council sessions - default to organization 1
+    const mentors = await storage.getHumanMentorsByOrganization(1);
     res.json(mentors);
   } catch (error) {
     console.error('Error fetching human mentors:', error);
