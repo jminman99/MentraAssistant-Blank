@@ -99,6 +99,19 @@ export class VercelApiClient {
 
     return response.json();
   }
+
+  async logout() {
+    const response = await fetch(`${this.baseUrl}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to logout');
+    }
+
+    return response.json();
+  }
 }
 
 export const vercelApiClient = new VercelApiClient();

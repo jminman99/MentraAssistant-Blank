@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
 import { User } from "@/types";
+import { deploymentConfig } from "./deployment-config";
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -46,7 +47,11 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/auth/logout', {});
+      if (deploymentConfig.isVercel && deploymentConfig.apiClient) {
+        await deploymentConfig.apiClient.logout();
+      } else {
+        await apiRequest('POST', '/api/auth/logout', {});
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(['/api/auth/me'], null);
