@@ -143,6 +143,7 @@ export default function CouncilScheduling() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
   
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -160,10 +161,17 @@ export default function CouncilScheduling() {
     },
   });
 
-  // Fetch available mentors for council sessions
-  const { data: mentors, isLoading } = useQuery<HumanMentor[]>({
+  // Fetch available mentors for council sessions (only if authenticated)
+  const { data: mentors, isLoading, error } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
+    enabled: !!user && !authLoading, // Only fetch when user is authenticated
   });
+
+  // Redirect to login if not authenticated
+  if (!authLoading && !user) {
+    navigate('/login');
+    return null;
+  }
 
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
@@ -231,15 +239,17 @@ export default function CouncilScheduling() {
     bookCouncilSession(data);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading mentors...</div>
+          <div className="text-lg">{authLoading ? "Loading..." : "Loading mentors..."}</div>
         </div>
       </div>
     );
   }
+
+
 
   return (
     <div className="min-h-screen bg-slate-50">
