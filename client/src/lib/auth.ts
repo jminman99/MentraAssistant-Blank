@@ -15,6 +15,13 @@ export function useAuth() {
     refetchInterval: false,
     queryFn: async () => {
       try {
+        // Use deployment-aware API client if available
+        if (deploymentConfig.isVercel && deploymentConfig.apiClient) {
+          const result = await deploymentConfig.apiClient.getCurrentUser();
+          return result?.user || result; // Handle both {user: ...} and direct user objects
+        }
+        
+        // Fallback to direct fetch for Replit
         const res = await fetch('/api/auth/me', {
           credentials: 'include',
         });
