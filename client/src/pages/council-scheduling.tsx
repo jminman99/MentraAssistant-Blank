@@ -297,6 +297,16 @@ export default function CouncilScheduling() {
             </div>
           </div>
 
+          {/* Debug Info */}
+          <div className="mb-4 p-4 bg-yellow-100 rounded">
+            <p>Debug: mentors = {JSON.stringify(mentors?.slice(0, 1))}</p>
+            <p>mentors length: {mentors?.length}</p>
+            <p>isLoading: {isLoading}</p>
+            <p>authLoading: {authLoading}</p>
+            <p>user: {user ? `${user.firstName} (${user.subscriptionPlan})` : 'null'}</p>
+            <p>error: {error ? error.message : 'none'}</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mentors?.map((mentor: HumanMentor) => (
               <Card 
