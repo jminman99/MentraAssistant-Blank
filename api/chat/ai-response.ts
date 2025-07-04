@@ -34,8 +34,8 @@ export default requireAuth(async (req, res) => {
     }));
 
     // Get semantic configuration and life stories
-    let semanticConfig;
-    let lifeStories = [];
+    let semanticConfig: any = null;
+    let lifeStories: any[] = [];
     try {
       semanticConfig = await storage.getSemanticConfiguration(mentor.name, req.user.organizationId);
       lifeStories = await storage.getMentorLifeStories(mentor.id);
@@ -54,7 +54,7 @@ export default requireAuth(async (req, res) => {
 
     // Add context about available stories for authentic responses
     if (lifeStories.length > 0) {
-      const storyTitles = lifeStories.slice(0, 5).map(s => `"${s.title}"`).join(', ');
+      const storyTitles = lifeStories.slice(0, 5).map((s: any) => `"${s.title}"`).join(', ');
       systemPrompt += `\n\nYou have authentic life experiences including: ${storyTitles}. Draw from these when relevant to share wisdom naturally.`;
     }
 
