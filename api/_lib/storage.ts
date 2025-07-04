@@ -84,6 +84,11 @@ export class VercelStorage {
     return result[0] || null;
   }
 
+  // Organization methods
+  async getOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations);
+  }
+
   // Chat methods
   async getChatMessages(userId: number, aiMentorId: number, limit: number = 50): Promise<ChatMessage[]> {
     return await db.select()
