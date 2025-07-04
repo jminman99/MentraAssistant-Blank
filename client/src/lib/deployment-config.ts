@@ -8,13 +8,28 @@ export interface DeploymentConfig {
   chatComponent: string;
 }
 
-// Detect deployment environment
-const isVercel = (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) || 
-                 (typeof import.meta !== 'undefined' && import.meta.env?.VERCEL === '1');
-const isReplit = !isVercel && typeof window !== 'undefined' && (
-  window.location.hostname.includes('replit') || 
-  window.location.hostname.includes('replit.dev')
-);
+// Detect deployment environment safely - browser only
+function getDeploymentEnvironment() {
+  // Default to Vercel if no window (SSR context)
+  if (typeof window === 'undefined') {
+    return {
+      isVercel: true,
+      isReplit: false
+    };
+  }
+  
+  // Client-side detection using hostname only
+  const hostname = window.location.hostname;
+  const isVercel = hostname.includes('vercel.app');
+  const isReplit = !isVercel && (
+    hostname.includes('replit') || 
+    hostname.includes('replit.dev')
+  );
+  
+  return { isVercel, isReplit };
+}
+
+const { isVercel, isReplit } = getDeploymentEnvironment();
 
 export const deploymentConfig: DeploymentConfig = {
   isVercel,
