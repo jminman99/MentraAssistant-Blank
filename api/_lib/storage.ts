@@ -147,7 +147,109 @@ export class VercelStorage {
     }
   }
 
+  // Human Mentor methods
+  async getHumanMentorsByOrganization(organizationId: number): Promise<any[]> {
+    const results = await db
+      .select({
+        id: humanMentors.id,
+        userId: humanMentors.userId,
+        expertise: humanMentors.expertise,
+        bio: humanMentors.bio,
+        experience: humanMentors.experience,
+        hourlyRate: humanMentors.hourlyRate,
+        rating: humanMentors.rating,
+        totalSessions: humanMentors.totalSessions,
+        availability: humanMentors.availability,
+        isActive: humanMentors.isActive,
+        organizationId: humanMentors.organizationId,
+        createdAt: humanMentors.createdAt,
+        user: users,
+      })
+      .from(humanMentors)
+      .innerJoin(users, eq(humanMentors.userId, users.id))
+      .where(eq(humanMentors.organizationId, organizationId));
+    return results;
+  }
+
+  // Council methods
+  async getCouncilParticipants(userId: number): Promise<any[]> {
+    const results = await db.execute(sql`
+      SELECT 
+        cp.id,
+        cp.session_goals as "sessionGoals",
+        cp.questions,
+        cp.status,
+        cs.id as "sessionId",
+        cs.title,
+        cs.description,
+        cs.scheduled_date as "scheduledDate",
+        cs.duration,
+        cs.status as "sessionStatus",
+        COALESCE(
+          (SELECT COUNT(*) FROM council_mentors cm WHERE cm.council_session_id = cs.id),
+          3
+        ) as "mentorCount"
+      FROM council_participants cp
+      JOIN council_sessions cs ON cp.council_session_id = cs.id
+      WHERE cp.mentee_id = ${userId}
+      AND cp.status != 'cancelled'
+      ORDER BY cs.scheduled_date DESC
+    `);
+    return results.rows || [];
+  }
+
+  async createCouncilBooking(data: any): Promise<any> {
+    // Create council session
+    const [session] = await db.insert(councilSessions).values({
+      title: `Council Session for ${data.userName}`,
+      description: data.sessionGoals || 'Council mentoring session',
+      scheduledDate: new Date(data.preferredDate),
+      duration: 60,
+      maxMentees: 1,
+      currentMentees: 1,
+      meetingType: 'video',
+      status: 'confirmed',
+      organizationId: data.organizationId || 1,
+    }).returning();
+
+    // Create participant
+    await db.insert(councilParticipants).values({
+      councilSessionId: session.id,
+      menteeId: data.userId,
+      sessionGoals: data.sessionGoals,
+      questions: data.questions,
+      status: 'registered',
+    });
+
+    // Add mentors to session
+    for (const mentorId of data.selectedMentorIds) {
+      await db.insert(councilMentors).values({
+        councilSessionId: session.id,
+        humanMentorId: mentorId,
+        role: 'mentor',
+        confirmed: true,
+      });
+    }
+
+    return session;
+  }
+
   // Additional methods can be added as needed for specific API routes
 }
 
 export const storage = new VercelStorage();
+
+// Export individual functions for cleaner imports
+export const { 
+  getUser, 
+  getUserByEmail, 
+  createUser,
+  updateUser,
+  getOrganizations,
+  getAiMentors,
+  getChatMessages,
+  createChatMessage,
+  getHumanMentorsByOrganization,
+  getCouncilParticipants,
+  createCouncilBooking
+} = storage;

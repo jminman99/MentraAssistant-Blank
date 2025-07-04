@@ -133,6 +133,7 @@ export default function CouncilScheduling() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
   
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [mentors, setMentors] = useState<HumanMentor[]>([]);
@@ -142,6 +143,12 @@ export default function CouncilScheduling() {
   const [selectedDateTime, setSelectedDateTime] = useState<{date: Date; time: string} | null>(null);
   const [availabilityData, setAvailabilityData] = useState<any>({});
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+
+  // Redirect to login if not authenticated
+  if (!authLoading && !user) {
+    navigate('/login');
+    return null;
+  }
 
   // Fetch mentors
   useEffect(() => {
