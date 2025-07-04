@@ -9,11 +9,11 @@ export interface DeploymentConfig {
 }
 
 // Detect deployment environment
-const isVercel = process.env.VERCEL === '1' || window.location.hostname.includes('vercel.app');
-const isReplit = !isVercel && (
+const isVercel = (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) || 
+                 (typeof import.meta !== 'undefined' && import.meta.env?.VERCEL === '1');
+const isReplit = !isVercel && typeof window !== 'undefined' && (
   window.location.hostname.includes('replit') || 
-  window.location.hostname.includes('replit.dev') ||
-  process.env.REPLIT === '1'
+  window.location.hostname.includes('replit.dev')
 );
 
 export const deploymentConfig: DeploymentConfig = {
