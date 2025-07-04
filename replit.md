@@ -277,6 +277,7 @@ The application has been refactored for Vercel deployment while maintaining full
 
 ## Recent Changes
 
+- July 4, 2025: **FIXED Council Sessions authentication** - added proper authentication protection to council scheduling page, mentors now only load for authenticated users, unauthorized users redirected to login, resolves mentor loading issue
 - July 4, 2025: **COMPLETED Vercel deployment** - successfully deployed application to https://mentra-assistant.vercel.app/ with full functionality including authentication, AI chat system, and database connectivity, all API endpoints operational
 - July 2, 2025: **REFACTORED application for Vercel deployment** - created complete serverless API structure with HTTP polling for real-time features, maintained all existing functionality while optimizing for Vercel's serverless environment
 - June 19, 2025: Initial setup with full-stack architecture
