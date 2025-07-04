@@ -15,7 +15,7 @@ import {
   mentorPersonalities,
   mentorLifeStories,
   mentorAvailability
-} from '../../shared/schema';
+} from '../shared/schema.js';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import type {
   User,
@@ -42,7 +42,7 @@ import type {
   InsertMentorPersonality,
   InsertMentorLifeStory,
   InsertMentorAvailability
-} from '../../shared/schema';
+} from '../shared/schema.js';
 
 export class VercelStorage {
   // User methods
