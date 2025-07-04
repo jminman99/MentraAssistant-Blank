@@ -277,6 +277,7 @@ The application has been refactored for Vercel deployment while maintaining full
 
 ## Recent Changes
 
+- July 4, 2025: **FIXED serverless function crashes** - removed .js extensions from all imports, added comprehensive error handling with try/catch blocks, created test endpoint for debugging, fixed module loading issues causing 401 errors on Vercel
 - July 4, 2025: **COMPLETED serverless council migration** - created missing serverless API endpoints (human-mentors, council-bookings, council-sessions/book), added authentication protection to council scheduling page, council system now fully compatible with Vercel deployment
 - July 4, 2025: **FIXED Council Sessions authentication** - added proper authentication protection to council scheduling page, mentors now only load for authenticated users, unauthorized users redirected to login, resolves mentor loading issue
 - July 4, 2025: **COMPLETED Vercel deployment** - successfully deployed application to https://mentra-assistant.vercel.app/ with full functionality including authentication, AI chat system, and database connectivity, all API endpoints operational

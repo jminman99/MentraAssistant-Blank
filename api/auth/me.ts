@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth.js';
+import { requireAuth } from '../_lib/auth';
 
 export default requireAuth(async (req, res) => {
   // User is already authenticated and available in req.user
