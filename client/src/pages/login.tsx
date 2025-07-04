@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import { SiGoogle, SiFacebook, SiX, SiApple } from "react-icons/si";
 export default function Login() {
   const { login, register } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const [loginData, setLoginData] = useState({
     email: "",
@@ -40,7 +42,7 @@ export default function Login() {
       });
       // Navigate to dashboard after successful login
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        setLocation('/dashboard');
       }, 1000);
     } catch (error: any) {
       toast({
@@ -70,7 +72,7 @@ export default function Login() {
       });
       // Navigate to dashboard after successful registration
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        setLocation('/dashboard');
       }, 1000);
     } catch (error: any) {
       toast({
