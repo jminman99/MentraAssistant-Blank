@@ -248,8 +248,36 @@ The platform now features a comprehensive semantic layer that transforms AI ment
 
 This dual-layer system ensures users talk to authentic mentors with consistent personalities while maintaining maximum configurability and preventing prompt overlap issues.
 
+## Vercel Deployment Architecture
+
+The application has been refactored for Vercel deployment while maintaining full functionality:
+
+### API Structure
+- **Express.js server** → **Serverless API routes** in `/api` directory
+- **WebSocket/SSE streaming** → **HTTP polling** with optimistic UI updates
+- **Session middleware** → **Function-level authentication** with cookie tokens
+- **Real-time features** → **TanStack Query** cache invalidation patterns
+
+### Key Components
+- `api/_lib/` - Shared utilities (database, auth, storage)
+- `api/auth/` - Authentication endpoints
+- `api/chat/` - Chat functionality with AI response generation
+- `api/ai-mentors/` - Mentor management endpoints
+- `client/src/lib/api-client-vercel.ts` - HTTP-only API client
+- `client/src/components/chat/chat-interface-vercel.tsx` - Polling-based chat UI
+
+### Database
+- Uses Neon PostgreSQL HTTP interface for serverless compatibility
+- No schema changes required - same database works for both platforms
+
+### Authentication
+- Cookie-based session tokens replace Express sessions
+- Middleware adapted for serverless function context
+- Maintains same security model with function-level protection
+
 ## Recent Changes
 
+- July 2, 2025: **REFACTORED application for Vercel deployment** - created complete serverless API structure with HTTP polling for real-time features, maintained all existing functionality while optimizing for Vercel's serverless environment
 - June 19, 2025: Initial setup with full-stack architecture
 - June 19, 2025: Implemented semantic personality layer for AI mentors
 - June 19, 2025: Added Claude AI integration with personality-driven responses
