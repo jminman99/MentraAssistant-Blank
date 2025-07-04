@@ -1,5 +1,5 @@
 // Copy of the storage interface for Vercel API routes
-import { db } from './db.js';
+import { db } from './db';
 import { 
   users, 
   organizations, 
@@ -15,7 +15,7 @@ import {
   mentorPersonalities,
   mentorLifeStories,
   mentorAvailability
-} from '../../shared/schema.js';
+} from '../../shared/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import type {
   User,
@@ -42,7 +42,7 @@ import type {
   InsertMentorPersonality,
   InsertMentorLifeStory,
   InsertMentorAvailability
-} from '../../shared/schema.js';
+} from '../../shared/schema';
 
 export class VercelStorage {
   // User methods
