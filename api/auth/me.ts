@@ -8,6 +8,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Debug logs for cookie and session tracking
+    console.log("Cookies seen in /me:", req.headers.cookie);
+    console.log("Session token:", getSessionToken(req));
+    
     // Get token from Authorization header or cookie
     const token = getSessionToken(req);
     
