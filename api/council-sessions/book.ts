@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { VercelRequest, NextResponse } from "next/server";
 import { storage } from "../_lib/storage.js";
 
-async function getUser(req: NextRequest) {
+async function getUser(req: VercelRequest) {
   const cookie = req.cookies.get("session")?.value;
   if (!cookie) return null;
 
@@ -11,17 +11,17 @@ async function getUser(req: NextRequest) {
   return await storage.getUser(parseInt(userId));
 }
 
-export async function POST(req: NextRequest) {
+async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
     const user = await getUser(req);
     if (!user) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Authentication required" },
-        { status: 401 }
+        
       );
     }
 
-    const body = await req.json();
+    const body = req.body;
     const {
       selectedMentorIds,
       sessionGoals,
@@ -31,16 +31,16 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!selectedMentorIds || selectedMentorIds.length < 3) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Select at least 3 mentors" },
-        { status: 400 }
+        
       );
     }
 
     if (!preferredDate) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Preferred date is required" },
-        { status: 400 }
+        
       );
     }
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const session = await storage.createCouncilBooking(bookingData);
 
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       data: {
         sessionId: session.id,
@@ -66,12 +66,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error booking council session:", error);
-    return NextResponse.json(
+    return res.status(200).json(
       {
         success: false,
         error: error?.message || "Failed to book council session",
       },
-      { status: 500 }
+      
     );
   }
 }

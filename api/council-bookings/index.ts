@@ -21,17 +21,17 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       || req.headers.get("authorization")?.split(" ")[1];
 
     if (!token) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        
       );
     }
 
     const payload = verifySessionToken(token);
     if (!payload) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Invalid token" },
-        { status: 401 }
+        
       );
     }
 
@@ -40,47 +40,47 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     // Fetch council session registrations
     const registrations = await storage.getCouncilParticipants(userId);
 
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       data: registrations
     });
   } catch (error: any) {
     console.error("Error fetching council registrations:", error);
-    return NextResponse.json(
+    return res.status(200).json(
       { success: false, error: error?.message || "Failed to fetch council registrations" },
-      { status: 500 }
+      
     );
   }
 }
 
-export async function POST(req: NextRequest) {
+async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
     // Auth check
     const token = req.cookies.get("session")?.value
       || req.headers.get("authorization")?.split(" ")[1];
 
     if (!token) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        
       );
     }
 
     const payload = verifySessionToken(token);
     if (!payload) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Invalid token" },
-        { status: 401 }
+        
       );
     }
 
-    const body = await req.json();
+    const body = req.body;
     const { sessionDate, sessionTime, selectedMentors, sessionGoals } = body;
 
     if (!sessionDate || !sessionTime || !selectedMentors || selectedMentors.length < 3) {
-      return NextResponse.json(
+      return res.status(200).json(
         { success: false, error: "Session date, time, and at least 3 mentors are required" },
-        { status: 400 }
+        
       );
     }
 
@@ -93,15 +93,15 @@ export async function POST(req: NextRequest) {
       sessionGoals: sessionGoals || ""
     });
 
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       data: booking
     });
   } catch (error: any) {
     console.error("Error creating council booking:", error);
-    return NextResponse.json(
+    return res.status(200).json(
       { success: false, error: error?.message || "Failed to create council booking" },
-      { status: 500 }
+      
     );
   }
 }

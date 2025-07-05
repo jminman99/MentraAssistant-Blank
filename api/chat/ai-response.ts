@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
-import { verifySessionToken } from '../_lib/auth.js';
+import { getSessionToken, verifySessionToken } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -10,39 +10,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   try {
     // Authentication check
-    const token = req.cookies.get('session')?.value || req.headers.get('authorization')?.split(' ')[1];
+    const token = getSessionToken(req);
     
     if (!token) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'Authentication required'
-      }, { status: 401 });
+      });
     }
 
     const payload = verifySessionToken(token);
     if (!payload) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'Unauthorized'
-      }, { status: 401 });
+      });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: "OpenAI API key not configured"
-      }, { status: 500 });
+      });
     }
 
-    const body = await req.json();
+    const body = req.body;
     const { message, aiMentorId } = body;
 
     if (!message || !aiMentorId) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: "Message and AI mentor ID are required"
-      }, { status: 400 });
+      });
     }
 
     const openai = new OpenAI({ apiKey });
@@ -88,15 +88,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       role: 'assistant'
     });
 
-    return NextResponse.json({
+    return res.status(401).json({
       success: true,
       data: { reply: aiResponse }
     });
   } catch (error) {
     console.error("AI response error:", error);
-    return NextResponse.json({
+    return res.status(401).json({
       success: false,
       error: "Failed to generate response"
-    }, { status: 500 });
+    });
   }
 }
