@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
 import { User } from "../types";
-import { deploymentConfig } from "./deployment-config";
+import { deploymentConfig } from ".åΩ/deployment-config";
 import { 
   isRealApiAvailable, 
   DevAuthService, 
