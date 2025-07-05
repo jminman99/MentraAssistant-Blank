@@ -1,39 +1,52 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import { storage } from '../_lib/storage';
+import { verifySessionToken } from '../_lib/auth';
 
-// Extract user from request - simplified for now
-async function getUser(req: VercelRequest): Promise<any> {
-  // Check for session cookie
-  const sessionToken = req.cookies?.session;
-  if (!sessionToken) return null;
-  
-  const [userId] = sessionToken.split(':');
-  if (!userId) return null;
-  
-  return await storage.getUser(parseInt(userId));
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function POST(req: NextRequest) {
   try {
-    const user = await getUser(req);
-    if (!user) {
-      return res.status(401).json({ message: 'Authentication required' });
+    // Auth check
+    const token = req.cookies.get("session")?.value
+      || req.headers.get("authorization")?.split(" ")[1];
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // All users now have access to council sessions
+    const payload = verifySessionToken(token);
+    if (!payload) {
+      return NextResponse.json(
+        { success: false, error: "Invalid token" },
+        { status: 401 }
+      );
+    }
 
-    const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
+    // Get user details
+    const user = await storage.getUser(payload.userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const body = await req.json();
+    const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = body;
 
     if (!selectedMentorIds || selectedMentorIds.length < 3) {
-      return res.status(400).json({ message: 'Select at least 3 mentors' });
+      return NextResponse.json(
+        { success: false, error: "Select at least 3 mentors" },
+        { status: 400 }
+      );
     }
 
     if (!preferredDate) {
-      return res.status(400).json({ message: 'Preferred date is required' });
+      return NextResponse.json(
+        { success: false, error: "Preferred date is required" },
+        { status: 400 }
+      );
     }
 
     const bookingData = {
@@ -49,13 +62,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const session = await storage.createCouncilBooking(bookingData);
     
-    res.json({
-      message: 'Council session booked successfully',
-      sessionId: session.id,
-      scheduledDate: session.scheduledDate
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Council session booked successfully',
+        sessionId: session.id,
+        scheduledDate: session.scheduledDate
+      }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error booking council session:', error);
-    res.status(500).json({ message: 'Failed to book council session' });
+    return NextResponse.json(
+      { success: false, error: error?.message || "Failed to book council session" },
+      { status: 500 }
+    );
   }
 }
