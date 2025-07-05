@@ -1,27 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-export async function POST(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    // Create response with cleared session cookie
-    const response = NextResponse.json({
+    // Clear session cookie
+    res.setHeader('Set-Cookie', [
+      'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict' + 
+      (process.env.NODE_ENV === 'production' ? '; Secure' : '')
+    ]);
+
+    res.status(200).json({
       success: true,
       message: 'Logged out successfully'
     });
-    
-    response.cookies.set('session', '', {
-      httpOnly: true,
-      path: '/',
-      maxAge: 0,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production'
-    });
-
-    return response;
   } catch (error) {
     console.error('Logout error:', error);
-    return NextResponse.json({
+    res.status(500).json({
       success: false,
       error: 'Internal server error'
-    }, { status: 500 });
+    });
   }
 }

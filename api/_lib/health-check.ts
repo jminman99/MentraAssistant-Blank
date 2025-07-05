@@ -1,4 +1,4 @@
-import type { NextRequest } from 'next/server';
+import type { VercelRequest } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import { createDatabaseConnection } from './db.js';
 

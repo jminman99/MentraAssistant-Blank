@@ -1,17 +1,17 @@
 import { storage } from './storage.js';
 import bcrypt from 'bcryptjs';
-import type { NextRequest } from 'next/server';
+import type { VercelRequest } from '@vercel/node';
 
 // Simple JWT-like session handling for Vercel
-export interface AuthenticatedRequest extends NextRequest {
+export interface AuthenticatedRequest extends VercelRequest {
   user?: any;
 }
 
-export async function authenticateUser(req: NextRequest): Promise<{ user: any } | null> {
+export async function authenticateUser(req: VercelRequest): Promise<{ user: any } | null> {
   try {
     // Check for session token in cookies or Authorization header
-    const cookieStore = req.cookies;
-    const sessionToken = cookieStore.get('session')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
+    const sessionToken = req.cookies?.session || 
+                        (typeof req.headers.authorization === 'string' ? req.headers.authorization.replace('Bearer ', '') : null);
     
     if (!sessionToken) {
       return null;
