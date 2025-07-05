@@ -29,11 +29,11 @@ export default function Dashboard() {
 
   // ✅ ADDED: safely fetch mentors
   const {
-    data: humanMentors = [],
+    data,
     isLoading,
     isError,
     error,
-  } = useQuery<HumanMentor[]>({
+  } = useQuery({
     queryKey: ["/api/human-mentors"],
     queryFn: async () => {
       try {
@@ -59,7 +59,7 @@ export default function Dashboard() {
         
         const data = await res.json();
         console.log("Human mentors data received:", data);
-        return Array.isArray(data) ? data : [];
+        return data;
       } catch (error) {
         console.error("Human mentors query error:", error);
         throw error;
@@ -67,6 +67,8 @@ export default function Dashboard() {
     },
     retry: false,
   });
+
+  const humanMentors = Array.isArray(data?.data) ? data.data : [];
 
   // Handle URL params
   useEffect(() => {

@@ -159,7 +159,8 @@ export default function CouncilScheduling() {
         });
         if (response.ok) {
           const data = await response.json();
-          setMentors(data || []);
+          const mentorsList = Array.isArray(data?.data) ? data.data : [];
+          setMentors(mentorsList);
         }
       } catch (error) {
         console.error('Failed to fetch mentors:', error);

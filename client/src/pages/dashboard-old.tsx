@@ -33,9 +33,10 @@ function CouncilSchedulingContent() {
   const queryClient = useQueryClient();
   
   // Fetch available mentors for council sessions
-  const { data: mentors = [], isLoading } = useQuery<HumanMentor[]>({
+  const { data, isLoading } = useQuery({
     queryKey: ['/api/human-mentors'],
   });
+  const mentors = Array.isArray(data?.data) ? data.data : [];
 
   const form = useForm<CouncilBookingData>({
     resolver: zodResolver(councilBookingSchema),

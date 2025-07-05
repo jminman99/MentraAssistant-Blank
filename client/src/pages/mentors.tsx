@@ -8,9 +8,10 @@ import { useLocation } from 'wouter';
 
 export default function Mentors() {
   const [, setLocation] = useLocation();
-  const { data: mentors = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['/api/human-mentors'],
   });
+  const mentors = Array.isArray(data?.data) ? data.data : [];
 
   if (isLoading) {
     return <div className="flex justify-center p-8">Loading mentors...</div>;

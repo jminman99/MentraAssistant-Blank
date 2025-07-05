@@ -36,10 +36,11 @@ export default function IndividualBooking() {
   const hasAccess = user && ['individual', 'council'].includes(user.subscriptionPlan);
 
   // Fetch mentors
-  const { data: mentors = [], isLoading: isLoadingMentors } = useQuery<HumanMentor[]>({
+  const { data: mentorsData, isLoading: isLoadingMentors } = useQuery({
     queryKey: ['/api/human-mentors'],
     enabled: hasAccess,
   });
+  const mentors = Array.isArray(mentorsData?.data) ? mentorsData.data : [];
 
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
