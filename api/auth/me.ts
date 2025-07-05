@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAuth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from "../_lib/storage.js";
+import { getSessionToken } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -9,22 +9,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Get Clerk auth context from the request
-    const { userId } = getAuth(req);
-
-    if (!userId) {
+    // Extract and verify Clerk JWT token
+    const token = getSessionToken(req);
+    if (!token) {
       return res.status(401).json({ 
         success: false, 
         error: "Not authenticated" 
       });
     }
 
-    // Fetch full user data from Clerk
-    const clerkUser = await clerkClient.users.getUser(userId);
-    console.log("✅ Clerk user info:", clerkUser);
+    // Verify the token with Clerk and get user ID
+    let clerkUser;
+    try {
+      // Use Clerk's verifyToken to validate the JWT
+      const verifiedToken = await clerkClient.verifyToken(token);
+      const userId = verifiedToken.sub; // subject contains the user ID
+      
+      // Fetch full user data from Clerk
+      clerkUser = await clerkClient.users.getUser(userId);
+      console.log("✅ Clerk user verified:", clerkUser.id);
+    } catch (verifyError) {
+      console.error("Token verification failed:", verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
+    }
 
     // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(userId);
+    const user = await storage.getUserByClerkId(clerkUser.id);
     if (!user) {
       return res.status(404).json({ 
         success: false, 
