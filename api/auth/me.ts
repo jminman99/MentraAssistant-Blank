@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        profileImage: user.profileImage,
+        profilePictureUrl: user.profilePictureUrl,
         role: user.role,
         subscriptionPlan: user.subscriptionPlan
       }
