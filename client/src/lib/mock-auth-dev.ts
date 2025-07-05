@@ -4,7 +4,7 @@
  * Will be automatically disabled when real API endpoints are working
  */
 
-export const DEV_MODE = import.meta.env.DEV;
+export const DEV_MODE = false; // Disabled for production
 
 // Mock user data for development testing
 export const MOCK_USER = {
