@@ -227,16 +227,31 @@ export class VercelStorage {
     const rows = await db
       .select({
         id: humanMentors.id,
-        expertise: humanMentors.expertise,
+        title: humanMentors.title,
         bio: humanMentors.bio,
+        expertiseAreas: humanMentors.expertiseAreas,
+        yearsExperience: humanMentors.yearsExperience,
+        hourlyRate: humanMentors.hourlyRate,
+        languages: humanMentors.languages,
+        availabilityTimezone: humanMentors.availabilityTimezone,
+        calendlyLink: humanMentors.calendlyLink,
+        videoCallLink: humanMentors.videoCallLink,
+        rating: humanMentors.rating,
+        totalSessions: humanMentors.totalSessions,
+        isActive: humanMentors.isActive,
+        applicationStatus: humanMentors.applicationStatus,
         user: {
           firstName: users.firstName,
           lastName: users.lastName,
+          email: users.email,
         },
       })
       .from(humanMentors)
       .leftJoin(users, eq(humanMentors.userId, users.id))
-      .where(eq(humanMentors.organizationId, orgId));
+      .where(and(
+        eq(humanMentors.organizationId, orgId),
+        eq(humanMentors.isActive, true)
+      ));
 
     return rows;
   }

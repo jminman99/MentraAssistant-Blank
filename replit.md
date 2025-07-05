@@ -430,12 +430,14 @@ client/
   - ✅ Architecture documentation now 100% accurate with zero legacy authentication references
   - ✅ Production-ready with modern serverless authentication patterns
 
-- July 05, 2025: ✅ COMPLETED Next.js dependency removal and pure Vercel serverless optimization
+- July 05, 2025: ✅ COMPLETED Next.js dependency removal and database schema alignment
   - ✅ Removed @clerk/nextjs package (31 packages eliminated) for leaner serverless functions
   - ✅ Replaced getAuth() with proper JWT verification using clerkClient.verifyToken() 
-  - ✅ Updated all API endpoints: human-mentors, auth/me, mentors, chat/index with JWT validation
+  - ✅ Updated all API endpoints: human-mentors, auth/me, mentors, chat/index, council-bookings with JWT validation
   - ✅ Enhanced security with direct Clerk token verification instead of Next.js abstractions
   - ✅ Improved serverless cold start performance by removing unnecessary Next.js dependencies
+  - ✅ Aligned database schema with actual PostgreSQL table structure for human_mentors
+  - ✅ Updated column names: expertise_areas, years_experience, availability_timezone, application_status
   - ✅ Production-ready architecture using pure @clerk/clerk-sdk-node for server-side operations
   - ✅ All endpoints now use consistent JWT extraction and validation patterns
 

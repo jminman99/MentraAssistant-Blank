@@ -59,30 +59,23 @@ export const aiMentors = pgTable("ai_mentors", {
 
 export const humanMentors = pgTable("human_mentors", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  expertise: text("expertise").notNull(),
-  bio: text("bio").notNull(),
-  experience: text("experience").notNull(),
-  hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
-  rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
-  totalSessions: integer("total_sessions").notNull().default(0),
-  availability: jsonb("availability").$type<any>().default({}),
-  isActive: boolean("is_active").notNull().default(true),
-  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
-  
-  // Calendly Integration
-  calendlyUrl: text("calendly_url"),
-  calendlyApiKey: text("calendly_api_key"),
-  calendlyEventTypes: jsonb("calendly_event_types").$type<any[]>().default([]),
-  useCalendly: boolean("use_calendly").default(false),
-  
-  // Native Scheduling Settings
-  defaultSessionDuration: integer("default_session_duration").default(30),
-  bufferTime: integer("buffer_time").default(15),
-  advanceBookingDays: integer("advance_booking_days").default(30),
-  timezone: varchar("timezone", { length: 50 }).default("America/New_York"),
-  
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 100 }),
+  bio: text("bio"),
+  expertiseAreas: text("expertise_areas").array(),
+  yearsExperience: integer("years_experience"),
+  hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }),
+  languages: text("languages").array(),
+  availabilityTimezone: varchar("availability_timezone", { length: 50 }).default("UTC"),
+  calendlyLink: text("calendly_link"),
+  videoCallLink: text("video_call_link"),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("5.0"),
+  totalSessions: integer("total_sessions").default(0),
+  isActive: boolean("is_active").default(true),
+  applicationStatus: mentorApplicationStatusEnum("application_status").default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const chatMessages = pgTable("chat_messages", {
