@@ -36,7 +36,9 @@ export default function Dashboard() {
   } = useQuery<HumanMentor[]>({
     queryKey: ["/api/human-mentors"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/human-mentors");
+      const res = await fetch("/api/human-mentors", {
+        credentials: "include",
+      });
       if (!res.ok) {
         console.error("Failed to fetch mentors:", res.status);
         throw new Error("Not authorized or server error");
