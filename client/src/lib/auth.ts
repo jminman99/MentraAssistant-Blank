@@ -15,7 +15,10 @@ export function useAuth() {
     refetchInterval: false,
     queryFn: async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", {
+          credentials: 'include'
+        });
+        
         if (res.status === 401) {
           // Don't redirect if we're already on login page
           if (window.location.pathname !== "/login") {
@@ -23,11 +26,21 @@ export function useAuth() {
           }
           return null;
         }
+        
         if (!res.ok) {
-          throw new Error('Failed to fetch user');
+          console.error('Auth fetch failed:', res.status, res.statusText);
+          return null;
         }
+        
         const data = await res.json();
-        return data.data || data.user || data;
+        
+        // Handle Vercel API response format {success: true, data: user}
+        if (data.success && data.data) {
+          return data.data;
+        }
+        
+        // Handle legacy formats
+        return data.user || data;
       } catch (error) {
         console.error('Auth fetch error:', error);
         return null;
@@ -37,31 +50,48 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await apiRequest('POST', '/api/auth/login', credentials);
-      return response.json();
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(credentials)
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
-      // Handle both direct user object and nested data structure
-      console.log('Login success data:', data);
-      const userData = data.data?.user || data.user || data;
-      console.log('Extracted user data:', userData);
+      // Handle Vercel API response format {success: true, data: user}
+      const userData = data.data;
       queryClient.setQueryData(['/api/auth/me'], userData);
-      // Force a refetch instead of just invalidating
       queryClient.refetchQueries({ queryKey: ['/api/auth/me'] });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      if (deploymentConfig.isVercel && deploymentConfig.apiClient) {
-        await deploymentConfig.apiClient.logout();
-      } else {
-        await apiRequest('POST', '/api/auth/logout', {});
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Logout failed');
       }
+      
+      return res.json();
     },
     onSuccess: () => {
       queryClient.setQueryData(['/api/auth/me'], null);
       queryClient.clear();
+      window.location.href = '/login';
     },
   });
 
