@@ -471,6 +471,10 @@ client/
   - ✅ Corrected name field length from 200 to 100 characters
   - ✅ Removed createdAt/updatedAt fields to match actual database
   - ✅ Updated frontend Organization interface and admin dashboard component
+  - ✅ Updated users table schema to match PostgreSQL structure exactly
+  - ✅ Added missing username field with unique constraint
+  - ✅ Removed notNull constraints from optional fields (role, subscriptionPlan, timestamps)
+  - ✅ Updated frontend User interface with complete field definitions
   - ✅ Schema now perfectly aligned with production database
 
 - July 05, 2025: Initial setup

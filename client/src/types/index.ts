@@ -2,10 +2,23 @@
 export interface User {
   id: number;
   email: string;
-  name: string;
   firstName?: string;
   lastName?: string;
+  role?: string;
   subscriptionPlan?: string;
+  organizationId?: number;
+  profilePictureUrl?: string;
+  bio?: string;
+  phoneNumber?: string;
+  location?: string;
+  timezone?: string;
+  individualSessionsUsed?: number;
+  councilSessionsUsed?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  clerkUserId?: string;
+  username?: string;
 }
 
 export interface HumanMentor {
