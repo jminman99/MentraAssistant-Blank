@@ -1,13 +1,11 @@
 import React from "react";
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
 import Dashboard from "./pages/dashboard.tsx";
 import TestPage from "./pages/test.tsx";
 import SignInPage from "./pages/sign-in.tsx";
 import SignUpPage from "./pages/sign-up.tsx";
 import DevSignInPage from "./pages/dev-sign-in.tsx";
-import { AuthProvider, useAuth } from "./lib/clerk-auth";
+import { useAuth } from "./lib/auth-hook";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function Router() {
@@ -49,11 +47,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <Router />
-        </QueryClientProvider>
-      </AuthProvider>
+      <Router />
     </ErrorBoundary>
   );
 }
