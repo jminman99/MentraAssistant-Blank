@@ -21,6 +21,8 @@ import { useAuth } from "@/lib/auth";
 function Router() {
   const { user, isLoading } = useAuth();
 
+  console.log('Router state:', { user, isLoading });
+
   if (isLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">

@@ -18,6 +18,7 @@ export function useAuth() {
         // Use deployment-aware API client if available
         if (deploymentConfig.isVercel && deploymentConfig.apiClient) {
           const result = await deploymentConfig.apiClient.getCurrentUser();
+          console.log('Auth API client result:', result);
           return result?.user || result; // Handle both {user: ...} and direct user objects
         }
         
@@ -26,12 +27,14 @@ export function useAuth() {
           credentials: 'include',
         });
         if (res.status === 401) {
+          console.log('User not authenticated (401)');
           return null;
         }
         if (!res.ok) {
           throw new Error('Failed to fetch user');
         }
         const data = await res.json();
+        console.log('Auth /me response:', data);
         return data.user;
       } catch (error) {
         console.error('Auth fetch error:', error);
@@ -46,7 +49,11 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['/api/auth/me'], data.user);
+      // Handle both direct user object and nested data structure
+      console.log('Login success data:', data);
+      const userData = data.data?.user || data.user || data;
+      console.log('Extracted user data:', userData);
+      queryClient.setQueryData(['/api/auth/me'], userData);
       // Force a refetch instead of just invalidating
       queryClient.refetchQueries({ queryKey: ['/api/auth/me'] });
     },
@@ -80,7 +87,9 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['/api/auth/me'], data.user);
+      // Handle both direct user object and nested data structure
+      const userData = data.data?.user || data.user || data;
+      queryClient.setQueryData(['/api/auth/me'], userData);
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
   });
