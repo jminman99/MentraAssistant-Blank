@@ -38,16 +38,16 @@ export function parseCookies(req: VercelRequest): Record<string, string> {
 export function getSessionToken(req: VercelRequest): string | null {
   const cookies = parseCookies(req);
 
-  // Clerk's default session cookie is __session
-  if (cookies.__session) {
-    return cookies.__session;
-  }
-
-  if (req.headers.authorization) {
-    return req.headers.authorization.replace("Bearer ", "");
-  }
-
-  return null;
+  // Try multiple possible cookie names from Clerk or Vercel
+  return (
+    cookies.__session ||
+    cookies.__clerk_db_jwt ||
+    cookies._vercel_jwt ||
+    cookies.session ||
+    (req.headers.authorization
+      ? req.headers.authorization.replace("Bearer ", "")
+      : null)
+  );
 }
 
 // Simple JWT-like session handling for Vercel
