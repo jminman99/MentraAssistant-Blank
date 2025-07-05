@@ -398,7 +398,9 @@ export default function CouncilScheduling() {
                   <h4 className="font-medium mb-2">Your Selected Council:</h4>
                   <div className="flex flex-wrap gap-2">
                     {Array.isArray(mentors) && selectedMentors.map((mentorId) => {
-                      const mentor = mentors.find((m) => m.id === mentorId);
+                      const mentor = Array.isArray(mentors)
+                        ? mentors.find(m => m.id === mentorId)
+                        : undefined;
                       return mentor ? (
                         <Badge key={mentorId} variant="secondary">
                           {mentor.user?.firstName} {mentor.user?.lastName} - {mentor.expertise}

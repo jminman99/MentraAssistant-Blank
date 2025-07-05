@@ -120,7 +120,9 @@ function CouncilSchedulingContent() {
                 <h3 className="font-medium text-slate-900">Selected Council Members ({selectedMentors.length})</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {selectedMentors.map(mentorId => {
-                    const mentor = mentors.find(m => m.id === mentorId);
+                    const mentor = Array.isArray(mentors)
+                      ? mentors.find(m => m.id === mentorId)
+                      : undefined;
                     return mentor ? (
                       <div key={mentorId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                         <span className="font-medium">{mentor.user?.firstName} {mentor.user?.lastName}</span>
