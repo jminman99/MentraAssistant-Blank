@@ -39,39 +39,11 @@ function Router() {
 
   const CouncilRoute = () => {
     if (!user) return <Login />;
-    if (user.subscriptionPlan !== 'council') {
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <div className="max-w-md mx-auto text-center p-8">
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
-              <div className="text-6xl mb-4">🏛️</div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-4">Council Access Required</h1>
-              <p className="text-slate-600 mb-6">
-                Council sessions are only available with a Council subscription plan.
-              </p>
-              <div className="space-y-3">
-                <Link href="/dashboard">
-                  <Button className="w-full">
-                    Back to Dashboard
-                  </Button>
-                </Link>
-                <p className="text-sm text-slate-500">
-                  Upgrade to Council plan to access group mentoring sessions
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
     return <CouncilScheduling />;
   };
 
   const IndividualBookingRoute = () => {
     if (!user) return <Login />;
-    if (!['individual', 'council'].includes(user.subscriptionPlan)) {
-      return <NotFound />;
-    }
     return <IndividualBooking />;
   };
 

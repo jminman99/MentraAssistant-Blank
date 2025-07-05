@@ -311,22 +311,7 @@ export default function Login() {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="plan">Choose Your Plan</Label>
-                    <Select 
-                      value={registerData.subscriptionPlan} 
-                      onValueChange={(value) => setRegisterData({ ...registerData, subscriptionPlan: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ai-only">AI-Only - $19/month</SelectItem>
-                        <SelectItem value="individual">Individual - $50/month</SelectItem>
-                        <SelectItem value="council">Council - $50/month</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* All users now get full access to all features */}
                   <Button type="submit" className="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white border-0 shadow-lg transition-all duration-200 transform hover:scale-[1.02]" disabled={register.isPending}>
                     {register.isPending ? "Creating account..." : "Begin Your Journey"}
                   </Button>

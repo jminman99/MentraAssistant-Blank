@@ -24,10 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // Check if user has council plan access
-    if (user.subscriptionPlan !== 'council') {
-      return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-    }
+    // All users now have access to council sessions
 
     const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
 

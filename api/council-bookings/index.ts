@@ -8,15 +8,11 @@ export default requireAuth(async (req, res) => {
   }
 
   try {
-    // Check if user has council plan access
-    if (req.user.subscriptionPlan !== 'council') {
-      return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-    }
-
+    // All users now have access to council sessions
     const registrations = await getCouncilParticipants(req.user.id);
     res.json(registrations);
   } catch (error) {
     console.error('Error fetching council registrations:', error);
     res.status(500).json({ message: 'Failed to fetch council registrations' });
   }
-}
+});

@@ -132,16 +132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
-      // Set subscription limits based on plan
-      let messagesLimit = 100;  // AI-Only: 100 messages
-      let sessionsLimit = 0;
-      if (data.subscriptionPlan === 'individual') {
-        messagesLimit = 200;  // Individual: 200 messages + 2 sessions
-        sessionsLimit = 2;
-      } else if (data.subscriptionPlan === 'council') {
-        messagesLimit = 150;  // Council: 150 messages + 1 council session
-        sessionsLimit = 1;
-      }
+      // All users now get full access to all features
+      const messagesLimit = 1000;  // Generous message limit for all users
+      const sessionsLimit = 10;    // Generous session limit for all users
 
       const user = await storage.createUser({
         username: data.username,
@@ -783,11 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       
-      // Check if user has council plan access
-      if (user.subscriptionPlan !== 'council') {
-        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-      }
-      
+      // All users now have access to council sessions
       const orgId = user.organizationId || 1;
       
       // Get upcoming council sessions with mentors
@@ -803,11 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       
-      // Check if user has council plan access
-      if (user.subscriptionPlan !== 'council') {
-        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-      }
-      
+      // All users now have access to council registrations
       const registrations = await storage.getCouncilParticipants(user.id);
       res.json(registrations);
     } catch (error) {
@@ -883,13 +868,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Authentication required' });
       }
       
-      console.log('Using authenticated user:', user.id, 'plan:', user.subscriptionPlan);
+      console.log('Using authenticated user:', user.id);
       
-      // Check if user has council plan access
-      if (user.subscriptionPlan !== 'council') {
-        console.log('User does not have council plan:', user.subscriptionPlan);
-        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-      }
+      // All users now have access to council sessions
 
       const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = req.body;
 
@@ -1022,10 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Authentication required' });
       }
       
-      // Check if user has council plan access
-      if (user.subscriptionPlan !== 'council') {
-        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-      }
+      // All users now have access to council sessions
 
       console.log(`[DEBUG] Fetching council bookings for user ${user.id}`);
       
@@ -1108,10 +1086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       
-      // Check if user has council plan access
-      if (user.subscriptionPlan !== 'council') {
-        return res.status(403).json({ message: 'Council access requires Council plan subscription' });
-      }
+      // All users now have access to council sessions
       
       const { councilSessionId, sessionGoals, questions } = req.body;
 
@@ -1305,18 +1280,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       
       console.log('[DEBUG] Individual session booking request:', JSON.stringify(req.body, null, 2));
-      console.log('[DEBUG] Authenticated user:', user ? { id: user.id, email: user.email, plan: user.subscriptionPlan } : 'No user');
+      console.log('[DEBUG] Authenticated user:', user ? { id: user.id, email: user.email } : 'No user');
       
       if (!user || !user.id) {
         console.log('[DEBUG] Authentication failed');
         return res.status(401).json({ message: 'Authentication required' });
       }
 
-      // Check subscription access for individual sessions
-      if (!['individual', 'council'].includes(user.subscriptionPlan)) {
-        console.log('[DEBUG] Invalid subscription plan:', user.subscriptionPlan);
-        return res.status(403).json({ message: 'Individual or Council subscription required for session booking' });
-      }
+      // All users now have access to individual sessions
 
       // Use Zod validation like the working endpoints
       const data = insertSessionBookingSchema.parse(req.body);

@@ -9,7 +9,7 @@ import { deploymentConfig } from "@/lib/deployment-config";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
-import { UpgradeModal } from "@/components/subscription/upgrade-modal";
+import { WelcomeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
 import CalendarAvailability from "@/components/calendar-availability";
@@ -345,27 +345,23 @@ export default function Dashboard() {
               >
                 Wise Guides
               </button>
-              {user.subscriptionPlan === 'council' && (
-                <button 
-                  onClick={() => setSelectedTab("council")}
-                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1 ${
-                    selectedTab === "council" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
-                  }`}
-                >
-                  <Crown className="w-3 h-3" />
-                  <span>Council</span>
-                </button>
-              )}
-              {user.subscriptionPlan !== 'council' && (
-                <button 
-                  onClick={() => setSelectedTab("human-mentors")}
-                  className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
-                    selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
-                  }`}
-                >
-                  Experienced Guides
-                </button>
-              )}
+              <button 
+                onClick={() => setSelectedTab("human-mentors")}
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
+                  selectedTab === "human-mentors" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
+                }`}
+              >
+                Experienced Guides
+              </button>
+              <button 
+                onClick={() => setSelectedTab("council")}
+                className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1 ${
+                  selectedTab === "council" ? "border-b-2 border-primary pb-1 text-primary font-medium" : ""
+                }`}
+              >
+                <Crown className="w-3 h-3" />
+                <span>Council</span>
+              </button>
               <button 
                 onClick={() => setSelectedTab("sessions")}
                 className={`whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm ${
@@ -393,10 +389,10 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Subscription Status */}
+              {/* Status */}
               <div className="hidden sm:flex items-center space-x-2 bg-slate-100 px-3 py-1 rounded-full">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-slate-600 capitalize">{user.subscriptionPlan} Plan</span>
+                <span className="text-sm text-slate-600">Active</span>
               </div>
               
               {/* User Profile */}
@@ -455,7 +451,7 @@ export default function Dashboard() {
               deploymentConfig.isVercel ? <ChatInterfaceVercel /> : <ChatInterface />
             )}
             
-            {selectedTab === "human-mentors" && user.subscriptionPlan !== 'council' && (
+            {selectedTab === "human-mentors" && (
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-slate-900">Experienced Guides</h2>
@@ -501,7 +497,7 @@ export default function Dashboard() {
 
             {selectedTab === "plan" && (
               <div className="space-y-6">
-                <UsageCard user={user} onUpgrade={() => setShowUpgradeModal(true)} />
+                <UsageCard user={user} />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Sessions</h3>
                   <UpcomingSessions compact />
@@ -509,7 +505,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {selectedTab === "council" && user.subscriptionPlan === 'council' && (
+            {selectedTab === "council" && (
               <CouncilSchedulingContent />
             )}
           </div>
@@ -531,28 +527,24 @@ export default function Dashboard() {
                   <Sparkles className="h-4 w-4 mr-2" />
                   Wise Guides
                 </Button>
-                {user.subscriptionPlan === 'council' && (
-                  <Button 
-                    variant={selectedTab === "council" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedTab("council")}
-                    className="w-full justify-start h-10"
-                  >
-                    <Crown className="h-4 w-4 mr-2" />
-                    Council Sessions
-                  </Button>
-                )}
-                {user.subscriptionPlan !== 'council' && (
-                  <Button 
-                    variant={selectedTab === "human-mentors" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedTab("human-mentors")}
-                    className="w-full justify-start h-10"
-                  >
-                    <Compass className="h-4 w-4 mr-2" />
-                    Experienced Guides
-                  </Button>
-                )}
+                <Button 
+                  variant={selectedTab === "human-mentors" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("human-mentors")}
+                  className="w-full justify-start h-10"
+                >
+                  <Compass className="h-4 w-4 mr-2" />
+                  Experienced Guides
+                </Button>
+                <Button 
+                  variant={selectedTab === "council" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("council")}
+                  className="w-full justify-start h-10"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Council Sessions
+                </Button>
                 <Link href="/sessions" className="block">
                   <Button 
                     variant="outline"
@@ -587,21 +579,18 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Wise Guides</span>
             </button>
           </Link>
-          {user.subscriptionPlan === 'council' ? (
-            <Link href="/council-scheduling-new">
-              <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
-                <Crown className="h-5 w-5" />
-                <span className="text-xs font-medium">Council</span>
-              </button>
-            </Link>
-          ) : (
-            <Link href="/individual-booking">
-              <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
-                <Compass className="h-5 w-5" />
-                <span className="text-xs font-medium">Experienced Guides</span>
-              </button>
-            </Link>
-          )}
+          <Link href="/individual-booking">
+            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+              <Compass className="h-5 w-5" />
+              <span className="text-xs font-medium">Guides</span>
+            </button>
+          </Link>
+          <Link href="/council-scheduling-new">
+            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+              <Crown className="h-5 w-5" />
+              <span className="text-xs font-medium">Council</span>
+            </button>
+          </Link>
           <Link href="/sessions">
             <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
               <Star className="h-5 w-5 text-slate-700" />
@@ -622,8 +611,7 @@ export default function Dashboard() {
 
       {/* Modals */}
       {showUpgradeModal && (
-        <UpgradeModal
-          currentPlan={user.subscriptionPlan}
+        <WelcomeModal
           onClose={() => setShowUpgradeModal(false)}
         />
       )}
