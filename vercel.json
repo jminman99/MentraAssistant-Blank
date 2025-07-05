@@ -5,8 +5,5 @@
     "api/**/*.ts": {
       "runtime": "nodejs20.x"
     }
-  },
-  "includeFiles": [
-    "api/_lib/**"
-  ]
+  }
 }
