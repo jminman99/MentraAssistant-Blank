@@ -70,40 +70,33 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(credentials)
-        });
-        
-        if (!res.ok) {
-          // In development, fallback to mock authentication
-          if (DEV_MODE) {
-            console.log("[AUTH] Login API failed, using mock login");
-            const result = await devAuth.login(credentials.email, credentials.password);
-            return result;
+      if (process.env.NODE_ENV === "development") {
+        // This block currently short-circuits your dev logins
+        console.log("[DEV] Using mock login!");
+        return {
+          success: true,
+          data: {
+            id: 1,
+            email: credentials.email,
+            username: "devuser",
+            firstName: "Dev",
+            lastName: "User",
+            role: "admin",
+            subscriptionPlan: "individual"
           }
-          throw new Error(`HTTP ${res.status}`);
-        }
-        
-        const data = await res.json();
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Login failed');
-        }
-        
-        return data;
-      } catch (error) {
-        // In development, fallback to mock authentication
-        if (DEV_MODE) {
-          console.log("[AUTH] Login error, falling back to mock:", error);
-          const result = await devAuth.login(credentials.email, credentials.password);
-          return result;
-        }
-        throw error;
+        };
       }
+
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(credentials),
+        credentials: "include"
+      });
+
+      return await res.json();
     },
     onSuccess: (data) => {
       // Handle both real API and mock responses
