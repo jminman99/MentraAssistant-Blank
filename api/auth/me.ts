@@ -1,43 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage";
 import { verifySessionToken } from '../_lib/auth';
 
-export async function GET(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     // Get token from Authorization header or cookie
-    const authHeader = req.headers.get("authorization");
+    const authHeader = req.headers.authorization;
     const headerToken = authHeader?.split(" ")[1];
-    const cookieToken = req.cookies.get('session')?.value;
+    const cookieToken = req.cookies?.session;
     
     const token = headerToken || cookieToken;
     
     if (!token) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'No authentication token provided'
-      }, { status: 401 });
+      });
     }
 
     // Validate the token
     const payload = verifySessionToken(token);
     if (!payload) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'Invalid token'
-      }, { status: 401 });
+      });
     }
 
     // Fetch user from database
     const user = await storage.getUser(payload.userId);
     if (!user) {
-      return NextResponse.json({
+      return res.status(404).json({
         success: false,
         error: 'User not found'
-      }, { status: 404 });
+      });
     }
 
     // Return user data (excluding sensitive fields)
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       data: {
         id: user.id,
@@ -52,9 +56,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Me endpoint error:', error);
-    return NextResponse.json({
+    return res.status(500).json({
       success: false,
       error: 'Internal server error'
-    }, { status: 500 });
+    });
   }
 }

@@ -1,24 +1,22 @@
 import { performHealthCheck } from './_lib/health-check';
-import { NextRequest } from 'next/server';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export async function GET(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const health = await performHealthCheck();
     const statusCode = health.status === 'healthy' ? 200 : 503;
     
-    return new Response(JSON.stringify(health), {
-      status: statusCode,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(statusCode).json(health);
   } catch (error) {
     console.error('Health check failed:', error);
-    return new Response(JSON.stringify({
+    return res.status(500).json({
       status: 'unhealthy',
       error: 'Health check failed',
       timestamp: new Date().toISOString()
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
     });
   }
 }

@@ -254,6 +254,8 @@ client/
   - ⚠️ DEPLOYMENT FIX: Resolved PHP runtime error by updating vercel.json configuration
   - ✅ FIXED: Created explicit Node.js 20.x runtime configuration to override cached legacy settings
   - ✅ VERIFIED: No legacy @vercel/node or now-php references in codebase
+  - ✅ SIMPLIFIED: Minimal vercel.json to let Vercel auto-detect serverless functions
+  - ✅ INSTALLED: @vercel/node package for proper TypeScript support
 
 - July 05, 2025: Initial setup
 

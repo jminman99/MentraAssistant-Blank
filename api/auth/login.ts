@@ -1,42 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from '../_lib/storage';
 import { validatePassword, createSessionToken } from '../_lib/auth';
 
-export async function POST(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return NextResponse.json({
+      return res.status(400).json({
         success: false,
         error: 'Email and password are required'
-      }, { status: 400 });
+      });
     }
 
     // Get user by email
     const user = await storage.getUserByEmail(email);
     if (!user) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
-      }, { status: 401 });
+      });
     }
 
     // Validate password
     const isValid = await validatePassword(password, user.password);
     if (!isValid) {
-      return NextResponse.json({
+      return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
-      }, { status: 401 });
+      });
     }
 
     // Create session token
     const token = createSessionToken(user.id);
 
-    // Create response with secure session cookie
-    const response = NextResponse.json({
+    // Set secure session cookie
+    res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+
+    return res.status(200).json({
       success: true,
       data: {
         user: {
@@ -47,21 +52,11 @@ export async function POST(req: NextRequest) {
         }
       }
     });
-
-    response.cookies.set('session', token, {
-      httpOnly: true,
-      path: '/',
-      maxAge: 604800,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production'
-    });
-
-    return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({
+    return res.status(500).json({
       success: false,
       error: 'Internal server error'
-    }, { status: 500 });
+    });
   }
 }
