@@ -15,27 +15,16 @@ export function useAuth() {
     refetchInterval: false,
     queryFn: async () => {
       try {
-        // Use deployment-aware API client if available
-        if (deploymentConfig.isVercel && deploymentConfig.apiClient) {
-          const result = await deploymentConfig.apiClient.getCurrentUser();
-          console.log('Auth API client result:', result);
-          return result?.user || result; // Handle both {user: ...} and direct user objects
-        }
-        
-        // Fallback to direct fetch for Replit
-        const res = await fetch('/api/auth/me', {
-          credentials: 'include',
-        });
+        const res = await fetch("/api/auth/me");
         if (res.status === 401) {
-          console.log('User not authenticated (401)');
+          window.location.href = "/login";
           return null;
         }
         if (!res.ok) {
           throw new Error('Failed to fetch user');
         }
         const data = await res.json();
-        console.log('Auth /me response:', data);
-        return data.user;
+        return data.user || data;
       } catch (error) {
         console.error('Auth fetch error:', error);
         return null;
