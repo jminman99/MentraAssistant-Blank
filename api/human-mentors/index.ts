@@ -1,19 +1,53 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth';
-import { storage } from '../_lib/storage';
+import { NextRequest, NextResponse } from "next/server";
+import { storage } from "../_lib/storage";
+import { verifySessionToken } from "../_lib/auth";
 
-export default requireAuth(async (req, res) => {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    const orgId = req.user.organizationId || 1; // Default org
+    // Auth check
+    const token = req.cookies.get("session")?.value
+      || req.headers.get("authorization")?.split(" ")[1];
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const payload = verifySessionToken(token);
+    if (!payload) {
+      return NextResponse.json(
+        { success: false, error: "Invalid token" },
+        { status: 401 }
+      );
+    }
+
+    // Get user to access organization ID
+    const user = await storage.getUser(payload.userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const orgId = user.organizationId || 1;
+
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
-    
-    res.json(mentors);
-  } catch (error) {
-    console.error('Error fetching human mentors:', error);
-    res.status(500).json({ message: 'Failed to fetch human mentors' });
+
+    return NextResponse.json({
+      success: true,
+      data: mentors
+    });
+  } catch (error: any) {
+    console.error("Error fetching human mentors:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message || "Failed to fetch human mentors"
+      },
+      { status: 500 }
+    );
   }
-});
+}
