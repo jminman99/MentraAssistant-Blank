@@ -10,12 +10,29 @@ export interface User {
 
 export interface HumanMentor {
   id: number;
-  name: string;
-  bio?: string;
-  expertise?: string[];
-  rating?: number;
-  availability?: boolean;
+  userId?: number;
   organizationId?: number;
+  title?: string;
+  bio?: string;
+  expertiseAreas?: string[];
+  yearsExperience?: number;
+  hourlyRate?: string;
+  languages?: string[];
+  availabilityTimezone?: string;
+  calendlyLink?: string;
+  videoCallLink?: string;
+  rating?: string;
+  totalSessions?: number;
+  isActive?: boolean;
+  applicationStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    profileImage?: string;
+  };
 }
 
 export interface AiMentor {
