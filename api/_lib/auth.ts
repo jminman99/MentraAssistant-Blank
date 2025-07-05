@@ -1,4 +1,4 @@
-import { storage } from './storage';
+import { storage } from './storage.js';
 import bcrypt from 'bcryptjs';
 import type { NextRequest } from 'next/server';
 

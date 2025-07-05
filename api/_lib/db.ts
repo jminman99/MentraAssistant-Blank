@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
-import * as schema from '../shared/schema';
+import * as schema from '../shared/schema.js';
 
 // Lazy database connection for Vercel serverless compatibility
 let dbInstance: ReturnType<typeof drizzle> | null = null;

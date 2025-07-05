@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storage } from "../_lib/storage";
+import { storage } from "../_lib/storage.js";
 
 async function getUser(req: NextRequest) {
   const cookie = req.cookies.get("session")?.value;

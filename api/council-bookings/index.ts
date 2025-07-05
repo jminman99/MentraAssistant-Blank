@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storage } from "../_lib/storage";
-import { verifySessionToken } from "../_lib/auth";
+import { storage } from "../_lib/storage.js";
+import { verifySessionToken } from "../_lib/auth.js";
 
 export async function GET(req: NextRequest) {
   try {

@@ -42,7 +42,7 @@ import type {
   InsertMentorPersonality,
   InsertMentorLifeStory,
   InsertMentorAvailability
-} from '../shared/schema';
+} from '../shared/schema.js';
 
 export class VercelStorage {
   // Error handling helper
