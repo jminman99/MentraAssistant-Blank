@@ -258,7 +258,7 @@ export class VercelStorage {
   async createCouncilBooking(data: any): Promise<any> {
     // Create council session
     const [session] = await db.insert(councilSessions).values({
-      title: `Council Session for ${data.userName}`,
+      title: `Council Session for ${data.userEmail || 'User'}`,
       description: data.sessionGoals || 'Council mentoring session',
       scheduledDate: new Date(data.preferredDate),
       duration: 60,
