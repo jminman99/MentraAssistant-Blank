@@ -133,6 +133,7 @@ export default function CalendarAvailability({
       const response = await fetch('/api/mentor-availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           mentorIds: displayMentorIds,
           date: dateKey

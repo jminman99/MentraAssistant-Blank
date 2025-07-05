@@ -189,6 +189,7 @@ export default function CouncilScheduling() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(requestBody),
       });
       
