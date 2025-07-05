@@ -1,72 +1,63 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../_lib/storage.js';
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { verifySessionToken, getSessionToken } from "../_lib/auth.js";
+import { storage } from "../_lib/storage.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   try {
-    console.log('Sync Clerk User - Request body:', req.body);
+    // ✅ Extract Clerk token
+    const token = getSessionToken(req);
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: "No authentication token provided",
+      });
+    }
+
+    // ✅ Optionally verify Clerk JWT if desired
+    // const payload = verifySessionToken(token);
+
     const { clerkUserId, email, firstName, lastName } = req.body;
 
     if (!clerkUserId || !email) {
-      console.log('Missing required fields:', { clerkUserId: !!clerkUserId, email: !!email });
-      return res.status(400).json({ success: false, error: 'Missing required fields' });
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+      });
     }
 
-    console.log('Looking up user by Clerk ID:', clerkUserId);
-    // Check if user already exists in your database by Clerk ID first
     let user = await storage.getUserByClerkId(clerkUserId);
-    console.log('User found by Clerk ID:', !!user);
-    
-    // If not found by Clerk ID, try email (for migration purposes)
+
     if (!user) {
-      console.log('Fallback: Looking up user by email:', email);
       user = await storage.getUserByEmail(email);
-      console.log('User found by email:', !!user);
     }
 
     if (!user) {
-      console.log('Creating new user...');
-      // Create new user in your database without organizationId for now
       user = await storage.createUser({
         email,
-        firstName: firstName || '',
-        lastName: lastName || '',
+        firstName: firstName || "",
+        lastName: lastName || "",
         clerkUserId,
-        role: 'user',
-        subscriptionPlan: 'ai-only',
-        // Remove organizationId temporarily to avoid foreign key issues
+        role: "user",
+        subscriptionPlan: "ai-only",
       });
-      console.log('User created successfully:', user.id);
     } else if (!user.clerkUserId) {
-      console.log('Updating existing user with Clerk ID...');
-      // Update existing user with Clerk ID
       user = await storage.updateUser(user.id, {
         clerkUserId,
         firstName: firstName || user.firstName,
         lastName: lastName || user.lastName,
       });
-      console.log('User updated successfully');
-    } else {
-      console.log('User already has Clerk ID, no update needed');
     }
 
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    console.error('Error syncing Clerk user:', error);
-    const errorInfo = error instanceof Error ? {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    } : { message: String(error) };
-    
-    console.error('Error details:', errorInfo);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? errorInfo.message : undefined
+    return res.status(200).json({ success: true, data: user });
+  } catch (error: any) {
+    console.error("Error syncing Clerk user:", error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Internal server error",
     });
   }
 }
