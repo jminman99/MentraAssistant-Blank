@@ -1,10 +1,13 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { NextRequest, NextResponse } from 'next/server';
-import { storage } from "../_lib/storage";
-import { verifySessionToken } from '../_lib/auth';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { storage } from "../_lib/storage.js";
+import { verifySessionToken } from '../_lib/auth.js';
 
-export async function POST(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
   try {
     // Authentication check
     const token = req.cookies.get('session')?.value || req.headers.get('authorization')?.split(' ')[1];

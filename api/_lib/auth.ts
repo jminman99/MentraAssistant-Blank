@@ -2,6 +2,27 @@ import { storage } from './storage.js';
 import bcrypt from 'bcryptjs';
 import type { VercelRequest } from '@vercel/node';
 
+// Helper function to parse cookies from Vercel request
+export function parseCookies(req: VercelRequest): Record<string, string> {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return {};
+  
+  return cookieHeader.split(';').reduce((acc: Record<string, string>, cookie: string) => {
+    const [key, value] = cookie.trim().split('=');
+    if (key && value) {
+      acc[key] = decodeURIComponent(value);
+    }
+    return acc;
+  }, {});
+}
+
+// Helper function to get session token from request
+export function getSessionToken(req: VercelRequest): string | null {
+  const cookies = parseCookies(req);
+  return cookies.session || 
+         (req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : null);
+}
+
 // Simple JWT-like session handling for Vercel
 export interface AuthenticatedRequest extends VercelRequest {
   user?: any;
@@ -9,10 +30,7 @@ export interface AuthenticatedRequest extends VercelRequest {
 
 export async function authenticateUser(req: VercelRequest): Promise<{ user: any } | null> {
   try {
-    // Check for session token in cookies or Authorization header
-    const sessionToken = req.cookies?.session || 
-                        (typeof req.headers.authorization === 'string' ? req.headers.authorization.replace('Bearer ', '') : null);
-    
+    const sessionToken = getSessionToken(req);
     if (!sessionToken) {
       return null;
     }

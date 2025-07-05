@@ -1,8 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
 import { verifySessionToken } from "../_lib/auth.js";
 
-export async function GET(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  if (req.method === 'GET') {
+    return handleGet(req, res);
+  } else {
+    return handlePost(req, res);
+  }
+}
+
+async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
     // Auth check
     const token = req.cookies.get("session")?.value
