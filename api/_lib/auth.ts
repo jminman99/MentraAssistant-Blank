@@ -1,4 +1,4 @@
-import { storage } from './storage';
+import { storage } from './storage.js';
 import bcrypt from 'bcrypt';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
