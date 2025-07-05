@@ -16,8 +16,9 @@ import { Building2, Users, Settings, Shield, Plus, Trash2, Edit, X } from "lucid
 // Types
 interface User {
   id: number;
-  username: string;
   email: string;
+  firstName: string;
+  lastName: string;
   role: 'user' | 'admin' | 'super_admin';
   createdAt: string;
 }
@@ -430,7 +431,7 @@ export default function AdminDashboard() {
               {users.map((user) => (
                 <Card key={user.id}>
                   <CardHeader>
-                    <CardTitle>{user.username}</CardTitle>
+                    <CardTitle>{user.firstName} {user.lastName}</CardTitle>
                     <CardDescription>{user.email} • {user.role}</CardDescription>
                   </CardHeader>
                 </Card>
