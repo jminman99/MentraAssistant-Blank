@@ -50,10 +50,16 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
     // Get council participants (other users in the same organization who can be in councils)
     const participants = await storage.getCouncilParticipants(user.id);
+    // Ensure participants is always an array, never undefined
+    const safeParticipants = Array.isArray(participants) ? participants : [];
+    
+    if (!participants) {
+      console.warn('Council participants query returned null/undefined, using empty array');
+    }
 
     return res.status(200).json({
       success: true,
-      data: participants
+      data: safeParticipants
     });
   } catch (error: any) {
     console.error('Council bookings GET error:', error);

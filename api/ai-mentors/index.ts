@@ -34,9 +34,16 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     }
 
     const mentors = await storage.getAiMentors();
+    // Ensure mentors is always an array, never undefined
+    const safeMentors = Array.isArray(mentors) ? mentors : [];
+    
+    if (!mentors) {
+      console.warn('AI mentors query returned null/undefined, using empty array');
+    }
+    
     return res.status(200).json({
       success: true,
-      data: { mentors }
+      data: safeMentors
     });
   } catch (error) {
     console.error('AI mentors fetch error:', error);

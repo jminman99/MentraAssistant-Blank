@@ -298,14 +298,14 @@ export default function CalendarAvailability({
                 Selected mentors: {displayMentorIds.length}
               </p>
               <div className="flex flex-wrap gap-1">
-                {displayMentorIds.map(mentorId => {
-                  const mentor = mentors?.find(m => m.id === mentorId);
+                {Array.isArray(displayMentorIds) ? displayMentorIds.map(mentorId => {
+                  const mentor = Array.isArray(mentors) ? mentors.find(m => m.id === mentorId) : null;
                   return (
                     <Badge key={mentorId} variant="secondary" className="text-xs">
                       {mentor?.user?.firstName} {mentor?.user?.lastName}
                     </Badge>
                   );
-                })}
+                }) : []}
               </div>
             </div>
           )}

@@ -2,11 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
 import { User } from "../types";
 import { deploymentConfig } from "./deployment-config";
+import { 
+  isRealApiAvailable, 
+  DevAuthService, 
+  MOCK_USER, 
+  DEV_MODE 
+} from "./mock-auth-dev";
 
 export function useAuth() {
   const queryClient = useQueryClient();
+  const devAuth = DevAuthService.getInstance();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isError } = useQuery({
     queryKey: ['/api/auth/me'],
     queryFn: async () => {
       try {
@@ -21,43 +28,87 @@ export function useAuth() {
         if (!res.ok) {
           const errorText = await res.text();
           console.log("useAuth - Error response body:", errorText);
+          
+          // In development, fallback to mock authentication
+          if (DEV_MODE) {
+            console.log("[AUTH] API failed, using development mock authentication");
+            const mockResult = await devAuth.getCurrentUser();
+            return mockResult;
+          }
+          
           return null;
         }
         
         const data = await res.json();
         console.log("useAuth - Success response:", data);
-        return data;
+        
+        // Ensure we always return a consistent structure
+        if (data && typeof data === 'object') {
+          return data;
+        } else {
+          console.warn("useAuth - Unexpected response format:", data);
+          return null;
+        }
       } catch (error) {
         console.error("useAuth - Fetch error:", error);
+        
+        // In development, fallback to mock authentication
+        if (DEV_MODE) {
+          console.log("[AUTH] Network error, falling back to mock authentication");
+          const mockResult = await devAuth.getCurrentUser();
+          return mockResult;
+        }
+        
         return null;
       }
     },
-    retry: false,
+    retry: false, // Don't retry in development mode
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const user = data?.data || null;
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(credentials)
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Login failed');
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(credentials)
+        });
+        
+        if (!res.ok) {
+          // In development, fallback to mock authentication
+          if (DEV_MODE) {
+            console.log("[AUTH] Login API failed, using mock login");
+            const result = await devAuth.login(credentials.email, credentials.password);
+            return result;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Login failed');
+        }
+        
+        return data;
+      } catch (error) {
+        // In development, fallback to mock authentication
+        if (DEV_MODE) {
+          console.log("[AUTH] Login error, falling back to mock:", error);
+          const result = await devAuth.login(credentials.email, credentials.password);
+          return result;
+        }
+        throw error;
       }
-      
-      return data;
     },
     onSuccess: (data) => {
-      // Handle Vercel API response format {success: true, data: user}
-      const userData = data.data;
-      queryClient.setQueryData(['/api/auth/me'], userData);
+      // Handle both real API and mock responses
+      const userData = data.data || data;
+      queryClient.setQueryData(['/api/auth/me'], { success: true, data: userData });
       queryClient.refetchQueries({ queryKey: ['/api/auth/me'] });
     },
   });

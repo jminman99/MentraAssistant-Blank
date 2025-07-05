@@ -6,6 +6,7 @@ import Login from "./pages/login.tsx";
 import Dashboard from "./pages/dashboard.tsx";
 import TestPage from "./pages/test.tsx";
 import { useAuth } from "./lib/auth";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -40,9 +41,11 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

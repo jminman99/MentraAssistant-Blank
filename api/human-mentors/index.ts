@@ -42,10 +42,16 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const orgId = user.organizationId || 1;
 
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
+    // Ensure mentors is always an array, never undefined
+    const safeMentors = Array.isArray(mentors) ? mentors : [];
+    
+    if (!mentors) {
+      console.warn('Human mentors query returned null/undefined, using empty array');
+    }
 
     return res.status(200).json({
       success: true,
-      data: mentors
+      data: safeMentors
     });
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
