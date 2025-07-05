@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSessionToken, verifySessionToken } from '../_lib/auth.js';
+import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from '../_lib/storage.js';
 import { URL } from 'url';
 
@@ -15,20 +16,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
-    // Authentication check
-    const token = getSessionToken(req);
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
+    // Get Clerk auth context from the request
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized'
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
       });
     }
 
@@ -45,7 +45,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
     // Fetch chat messages
     const messages = await storage.getChatMessages(
-      payload.userId, 
+      user.id, 
       parseInt(aiMentorId), 
       50
     );
@@ -66,20 +66,19 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
-    // Authentication check
-    const token = getSessionToken(req);
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
+    // Get Clerk auth context from the request
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized'
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
       });
     }
 
@@ -93,30 +92,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check user's message limit
-    const user = await storage.getUser(payload.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    if (user.messagesUsed >= user.messagesLimit) {
-      return res.status(403).json({
-        success: false,
-        error: 'Message limit reached'
-      });
-    }
-
-    // Increment user's message count
-    await storage.updateUser(payload.userId, {
-      messagesUsed: user.messagesUsed + 1
-    });
-
-    // Save user message
+    // Save user message (removed message limit check since it's AI-only plan)
     const userMessage = await storage.createChatMessage({
-      userId: payload.userId,
+      userId: user.id,
       aiMentorId,
       content,
       role: 'user'
