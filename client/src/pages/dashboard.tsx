@@ -295,7 +295,7 @@ export default function Dashboard() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [, setLocation] = useLocation();
 
-  const { data: humanMentors = [] } = useQuery<HumanMentor[]>({
+  const { data: humanMentors } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/human-mentors");
@@ -303,32 +303,25 @@ export default function Dashboard() {
     },
   });
 
-  // Handle URL parameters for tab selection
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
-    if (tabParam && (tabParam === 'council' || tabParam === 'ai-mentors' || tabParam === 'human-mentors' || tabParam === 'sessions' || tabParam === 'plan')) {
-      setSelectedTab(tabParam);
-    }
-    window.scrollTo(0, 0);
-  }, []);
+  // ✅ Add safe fallback
+  const mentorsSafe = Array.isArray(humanMentors) ? humanMentors : [];
 
-  const handleLogout = async () => {
-    try {
-      await logout.mutateAsync();
-    } catch (error) {
-      console.error("Logout failed:", error);
+  useEffect(() => {
+    if (!user) {
+      setLocation("/login");
     }
-  };
+  }, [user, setLocation]);
 
   if (!user) {
-    setLocation("/login");
     return (
       <div className="p-8 text-center text-slate-600">
         Redirecting to login...
       </div>
     );
   }
+
+  console.log("USER IN DASHBOARD:", user);
+  console.log("MENTORS FETCHED:", humanMentors);
 
   return (
     <div className="min-h-screen bg-slate-50">
