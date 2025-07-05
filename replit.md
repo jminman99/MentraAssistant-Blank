@@ -277,6 +277,7 @@ The application has been refactored for Vercel deployment while maintaining full
 
 ## Recent Changes
 
+- January 5, 2025: **CONVERTED TO SINGLE-TIER PRODUCT** - completely removed all subscription plan restrictions and tiers, all users now get full access to AI mentors (1000 messages), individual sessions (10 sessions), and council sessions without limitations, simplified registration form and UI components, updated backend to give all users generous limits regardless of selected plan
 - July 4, 2025: **FIXED serverless function ES module issues** - added .js extensions back for Vercel ES module compatibility, fixed ERR_MODULE_NOT_FOUND errors, serverless functions now properly resolve internal imports
 - July 4, 2025: **COMPLETED serverless council migration** - created missing serverless API endpoints (human-mentors, council-bookings, council-sessions/book), added authentication protection to council scheduling page, council system now fully compatible with Vercel deployment
 - July 4, 2025: **FIXED Council Sessions authentication** - added proper authentication protection to council scheduling page, mentors now only load for authenticated users, unauthorized users redirected to login, resolves mentor loading issue
