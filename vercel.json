@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "buildCommand": "npm ci --no-audit --no-fund && npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci --no-audit --no-fund --prefer-offline",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@3"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
