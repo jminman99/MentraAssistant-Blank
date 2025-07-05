@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
-import { verifySessionToken } from '../_lib/auth.js';
+import { getSessionToken, verifySessionToken } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -9,11 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Get token from Authorization header or cookie
-    const authHeader = req.headers.authorization;
-    const headerToken = authHeader?.split(" ")[1];
-    const cookieToken = req.cookies?.session;
-    
-    const token = headerToken || cookieToken;
+    const token = getSessionToken(req);
     
     if (!token) {
       return res.status(401).json({
