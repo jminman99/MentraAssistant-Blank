@@ -1,4 +1,4 @@
-// Deployment configuration - disable Vercel-specific client for development
+// Vercel-only deployment configuration
 import { vercelApiClient } from './api-client-vercel';
 
 export interface DeploymentConfig {
@@ -7,9 +7,9 @@ export interface DeploymentConfig {
   chatComponent: string;
 }
 
-// Use Vercel configuration only in production
+// Always use Vercel configuration
 export const deploymentConfig: DeploymentConfig = {
-  isVercel: false, // Set to false for now to use direct fetch
+  isVercel: true,
   apiClient: vercelApiClient,
   chatComponent: 'ChatInterfaceVercel'
 };
