@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
-import { User } from "@/types";
+import { User } from "../types";
 import { deploymentConfig } from "./deployment-config";
 
 export function useAuth() {
@@ -17,14 +17,17 @@ export function useAuth() {
       try {
         const res = await fetch("/api/auth/me");
         if (res.status === 401) {
-          window.location.href = "/login";
+          // Don't redirect if we're already on login page
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
           return null;
         }
         if (!res.ok) {
           throw new Error('Failed to fetch user');
         }
         const data = await res.json();
-        return data.user || data;
+        return data.data || data.user || data;
       } catch (error) {
         console.error('Auth fetch error:', error);
         return null;
