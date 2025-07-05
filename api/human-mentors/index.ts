@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from "../_lib/storage.js";
-import { verifySessionToken, getSessionToken } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
@@ -12,35 +13,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
-    // Use proper Vercel auth helper
-    const token = getSessionToken(req);
+    // Get Clerk auth context from the request
+    const { userId } = getAuth(req);
 
-    if (!token) {
-      return res.status(200).json(
-        { success: false, error: "Unauthorized" },
-        
-      );
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(200).json(
-        { success: false, error: "Invalid token" },
-        
-      );
-    }
+    // Fetch full user data from Clerk
+    const clerkUser = await clerkClient.users.getUser(userId);
+    console.log("✅ Clerk user info:", clerkUser);
 
-    // Get user to access organization ID
-    const user = await storage.getUser(payload.userId);
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
     if (!user) {
-      return res.status(200).json(
-        { success: false, error: "User not found" },
-        
-      );
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
+      });
     }
 
     const orgId = user.organizationId || 1;
 
+    // Fetch human mentors for the organization
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
     // Ensure mentors is always an array, never undefined
     const safeMentors = Array.isArray(mentors) ? mentors : [];
@@ -51,16 +46,20 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      data: safeMentors
+      data: safeMentors,
+      user: {
+        id: clerkUser.id,
+        email: clerkUser.emailAddresses[0]?.emailAddress,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+      }
     });
+
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
-    return res.status(200).json(
-      {
-        success: false,
-        error: error?.message || "Failed to fetch human mentors"
-      },
-      
-    );
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Failed to fetch human mentors"
+    });
   }
 }
