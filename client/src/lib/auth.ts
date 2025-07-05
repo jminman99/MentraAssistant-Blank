@@ -69,34 +69,15 @@ export function useAuth() {
   const user = data?.data || null;
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
-      if (process.env.NODE_ENV === "development") {
-        // This block currently short-circuits your dev logins
-        console.log("[DEV] Using mock login!");
-        return {
-          success: true,
-          data: {
-            id: 1,
-            email: credentials.email,
-            username: "devuser",
-            firstName: "Dev",
-            lastName: "User",
-            role: "admin",
-            subscriptionPlan: "individual"
-          }
-        };
-      }
-
-      const res = await fetch("/api/auth/login", {
+    mutationFn: (credentials: { email: string; password: string }) => {
+      return fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(credentials),
         credentials: "include"
-      });
-
-      return await res.json();
+      }).then((res) => res.json());
     },
     onSuccess: (data) => {
       // Handle both real API and mock responses
