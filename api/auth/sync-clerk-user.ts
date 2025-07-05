@@ -32,24 +32,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let user = await storage.getUserByClerkId(clerkUserId);
 
     if (!user) {
-      user = await storage.getUserByEmail(email);
-    }
-
-    if (!user) {
-      user = await storage.createUser({
-        email,
-        firstName: firstName || "",
-        lastName: lastName || "",
-        clerkUserId,
-        role: "user",
-        subscriptionPlan: "ai-only",
-      });
-    } else if (!user.clerkUserId) {
-      user = await storage.updateUser(user.id, {
-        clerkUserId,
-        firstName: firstName || user.firstName,
-        lastName: lastName || user.lastName,
-      });
+      // Try email fallback for migration of existing users
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        // Update existing user with Clerk ID
+        user = await storage.updateUser(existingUser.id, {
+          clerkUserId,
+          firstName: firstName || existingUser.firstName,
+          lastName: lastName || existingUser.lastName,
+        });
+      } else {
+        // Create new user with Clerk authentication
+        user = await storage.createUser({
+          email,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          clerkUserId,
+          role: "user",
+          subscriptionPlan: "ai-only",
+        });
+      }
     }
 
     return res.status(200).json({ success: true, data: user });

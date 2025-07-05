@@ -15,31 +15,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
-    // Enhanced authentication debugging for council bookings
-    console.log("Council bookings GET - Headers:", req.headers);
-    console.log("Council bookings GET - Cookies:", req.headers.cookie);
-    
-    const token = getSessionToken(req);
-    console.log("Council bookings GET - Token extracted:", token ? 'present' : 'missing');
+    // Get Clerk auth context from the request
+    const { userId } = getAuth(req);
 
-    if (!token) {
-      console.log("Council bookings GET - No token found");
-      return res.status(401).json({ 
-        success: false, 
-        error: "Unauthorized",
-        debug: { message: "No session token found" }
-      });
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    console.log("Council bookings GET - Token payload:", payload);
-    
-    if (!payload) {
-      console.log("Council bookings GET - Token verification failed");
-      return res.status(401).json({ 
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
+    if (!user) {
+      return res.status(404).json({ 
         success: false, 
-        error: "Invalid token",
-        debug: { message: "Token verification failed" }
+        error: "User not found in database. Please sync your account." 
       });
     }
 
@@ -73,22 +61,20 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
-    // Auth check using proper Vercel patterns
-    const token = getSessionToken(req);
+    // Get Clerk auth context from the request
+    const { userId } = getAuth(req);
 
-    if (!token) {
-      return res.status(401).json({ success: false, error: "Unauthorized" });
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(401).json({ success: false, error: "Invalid token" });
-    }
-
-    // Get user
-    const user = await storage.getUser(payload.userId);
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
+      });
     }
 
     // Validate request body
