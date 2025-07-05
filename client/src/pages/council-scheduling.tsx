@@ -397,11 +397,14 @@ export default function CouncilScheduling() {
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">Your Selected Council:</h4>
                   <div className="flex flex-wrap gap-2">
-                    {mentors?.filter(m => selectedMentors.includes(m.id)).map(mentor => (
-                      <Badge key={mentor.id} variant="secondary">
-                        {mentor.user.firstName} {mentor.user.lastName} - {mentor.expertise}
-                      </Badge>
-                    ))}
+                    {Array.isArray(mentors) && selectedMentors.map((mentorId) => {
+                      const mentor = mentors.find((m) => m.id === mentorId);
+                      return mentor ? (
+                        <Badge key={mentorId} variant="secondary">
+                          {mentor.user?.firstName} {mentor.user?.lastName} - {mentor.expertise}
+                        </Badge>
+                      ) : null;
+                    })}
                   </div>
                 </div>
 
