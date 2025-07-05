@@ -870,8 +870,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Deleting council session ${sessionId} for user ${user.id}`);
       
       // Import necessary modules
-      const { db } = await import('./db.js');
-      const { councilSessions, councilParticipants, councilMentors } = await import('../shared/schema.js');
+      const { db } = await import('./db');
+      const { councilSessions, councilParticipants, councilMentors } = await import('../shared/schema');
       const { eq } = await import('drizzle-orm');
       
       // Delete in order: participants, mentors, then session

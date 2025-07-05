@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 import type { AiMentor } from '@shared/schema';
-import { storage } from './storage.js';
-import { generateMentorResponse } from './aiResponseMiddleware.js';
-import { findRelevantStory, updateSessionWithStory, type MentorLifeStory, type MentorSession } from './mentor-story-matcher.js';
-import { buildSystemPrompt, type SemanticConfig, type LifeStory } from './promptBuilder.js';
+import { storage } from './storage';
+import { generateMentorResponse } from './aiResponseMiddleware';
+import { findRelevantStory, updateSessionWithStory, type MentorLifeStory, type MentorSession } from './mentor-story-matcher';
+import { buildSystemPrompt, type SemanticConfig, type LifeStory } from './promptBuilder';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY 

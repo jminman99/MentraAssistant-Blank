@@ -1,7 +1,7 @@
 // aiResponseMiddleware.ts
 // Middleware for auditing and rewriting AI mentor responses
 
-import { runAudit } from './runAudit.js';
+import { runAudit } from './runAudit';
 import OpenAI from 'openai';
 
 interface GenerateAIResponseParams {
