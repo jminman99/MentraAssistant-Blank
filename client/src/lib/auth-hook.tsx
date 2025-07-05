@@ -3,13 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Hook that works with both Clerk and development modes
 export function useAuth() {
+  // Use the same environment detection logic as main.tsx
   const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
+  
+  console.log('Auth hook - Clerk key available:', !!clerkPublishableKey);
   
   if (clerkPublishableKey) {
     // Production mode with Clerk
+    console.log('Using Clerk authentication');
     return useClerkAuthentication();
   } else {
     // Development mode without Clerk
+    console.log('Using development authentication');
     return useDevAuthentication();
   }
 }
