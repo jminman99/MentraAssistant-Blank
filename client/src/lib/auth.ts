@@ -6,50 +6,16 @@ import { deploymentConfig } from "./deployment-config";
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading } = useQuery<User | null>({
+  const { data, isLoading } = useQuery({
     queryKey: ['/api/auth/me'],
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    refetchInterval: false,
     queryFn: async () => {
-      try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log("User not logged in!");
-            // Don't redirect if we're already on login page
-            if (window.location.pathname !== "/login") {
-              window.location.href = "/login";
-            }
-            return null;
-          } else {
-            const text = await response.text();
-            console.error('Auth fetch failed:', text);
-            return null;
-          }
-        }
-
-        const json = await response.json();
-        console.log('Auth response:', json);
-        
-        // Handle Vercel API response format {success: true, data: user}
-        if (json.success && json.data) {
-          return json.data;
-        }
-        
-        // Handle legacy formats
-        return json.user || json;
-      } catch (error) {
-        console.error('Auth fetch error:', error);
-        return null;
-      }
+      const res = await fetch('/api/auth/me');
+      if (!res.ok) return null;
+      return res.json();
     },
   });
+
+  const user = data?.data || null;
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
