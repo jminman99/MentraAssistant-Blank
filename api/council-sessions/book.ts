@@ -1,77 +1,70 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
+import { verifySessionToken, getSessionToken } from "../_lib/auth.js";
 
 async function getUser(req: VercelRequest) {
-  const cookie = req.cookies.get("session")?.value;
-  if (!cookie) return null;
+  const token = getSessionToken(req);
+  if (!token) return null;
 
-  const [userId] = cookie.split(":");
-  if (!userId) return null;
+  const payload = verifySessionToken(token);
+  if (!payload) return null;
 
-  return await storage.getUser(parseInt(userId));
+  return await storage.getUser(payload.userId);
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
     const user = await getUser(req);
     if (!user) {
-      return res.status(200).json(
-        { success: false, error: "Authentication required" },
-        
-      );
+      return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
-    const body = req.body;
-    const {
-      selectedMentorIds,
-      sessionGoals,
-      questions,
-      preferredDate,
-      preferredTimeSlot,
-    } = body;
+    const { mentorIds, date, time, sessionGoals } = req.body;
 
-    if (!selectedMentorIds || selectedMentorIds.length < 3) {
-      return res.status(200).json(
-        { success: false, error: "Select at least 3 mentors" },
-        
-      );
+    if (!mentorIds || !Array.isArray(mentorIds) || mentorIds.length < 3) {
+      return res.status(400).json({
+        success: false,
+        error: "At least 3 mentors required for council session"
+      });
     }
 
-    if (!preferredDate) {
-      return res.status(200).json(
-        { success: false, error: "Preferred date is required" },
-        
-      );
+    if (!date || !time || !sessionGoals) {
+      return res.status(400).json({
+        success: false,
+        error: "Date, time, and session goals are required"
+      });
     }
 
-    const bookingData = {
+    // Create the council session booking
+    const sessionData = {
       userId: user.id,
-      userName: `${user.firstName} ${user.lastName}`,
-      selectedMentorIds,
-      sessionGoals: sessionGoals || "",
-      questions: questions || "",
-      preferredDate,
-      preferredTimeSlot: preferredTimeSlot || "09:00",
-      organizationId: user.organizationId || 1,
+      mentorIds,
+      sessionDate: new Date(date),
+      sessionTime: time,
+      sessionGoals,
+      status: 'pending' as const,
+      organizationId: user.organizationId || 1
     };
 
-    const session = await storage.createCouncilBooking(bookingData);
+    const session = await storage.createCouncilBooking(sessionData);
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      data: {
-        sessionId: session.id,
-        scheduledDate: session.scheduledDate,
-      },
+      data: session
     });
   } catch (error: any) {
-    console.error("Error booking council session:", error);
-    return res.status(200).json(
-      {
-        success: false,
-        error: error?.message || "Failed to book council session",
-      },
-      
-    );
+    console.error('Council session booking error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error"
+    });
+  }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'POST') {
+    return handlePost(req, res);
+  } else {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 }
