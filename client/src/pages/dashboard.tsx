@@ -318,7 +318,12 @@ export default function Dashboard() {
   };
 
   if (!user) {
-    return null;
+    setLocation("/login");
+    return (
+      <div className="p-8 text-center text-slate-600">
+        Redirecting to login...
+      </div>
+    );
   }
 
   return (
