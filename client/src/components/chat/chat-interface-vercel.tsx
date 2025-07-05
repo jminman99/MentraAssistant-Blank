@@ -50,9 +50,44 @@ export function ChatInterfaceVercel() {
     },
     onError: (error) => {
       setIsTyping(false);
+      
+      let title = "Message Failed";
+      let description = "Please try again";
+      
+      if (error instanceof Error) {
+        const message = error.message;
+        
+        // Provide user-friendly titles and descriptions based on error type
+        if (message.includes('log in')) {
+          title = "Authentication Required";
+          description = "Please log in to continue chatting with mentors";
+        } else if (message.includes('temporarily unavailable')) {
+          title = "Service Temporarily Down";
+          description = "Our AI mentors are temporarily unavailable. Please try again in a few minutes";
+        } else if (message.includes('usage limits exceeded') || message.includes('limit reached')) {
+          title = "Monthly Limit Reached";
+          description = "You've reached your monthly message limit. Limit resets next month";
+        } else if (message.includes('wait a moment')) {
+          title = "Please Slow Down";
+          description = "You're sending messages too quickly. Please wait a moment";
+        } else if (message.includes('mentor is not available')) {
+          title = "Mentor Unavailable";
+          description = "This mentor is currently unavailable. Please try a different mentor";
+        } else if (message.includes('Network error')) {
+          title = "Connection Problem";
+          description = "Please check your internet connection and try again";
+        } else if (message.includes('Server error')) {
+          title = "Server Issue";
+          description = "Our servers are experiencing issues. Please try again in a moment";
+        } else {
+          // Use the original error message for other cases
+          description = message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
+        title,
+        description,
         variant: "destructive",
       });
     },

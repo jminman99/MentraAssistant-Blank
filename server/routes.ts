@@ -286,19 +286,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const { content, aiMentorId } = req.body;
 
-      if (!content || !aiMentorId) {
-        return res.status(400).json({ message: 'Content and aiMentorId are required' });
+      // Enhanced input validation
+      if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        return res.status(400).json({ 
+          message: 'Valid message content is required',
+          error: 'Message content cannot be empty',
+          code: 'INVALID_CONTENT'
+        });
       }
 
-      // CRITICAL: Check message limit before processing
+      if (!aiMentorId || typeof aiMentorId !== 'number') {
+        return res.status(400).json({ 
+          message: 'Valid AI mentor ID is required',
+          error: 'aiMentorId must be a number',
+          code: 'INVALID_MENTOR_ID'
+        });
+      }
+
+      // Check message limit with detailed response
       if (user.messagesUsed >= user.messagesLimit) {
-        return res.status(403).json({ message: 'Message limit reached for this month' });
+        return res.status(403).json({ 
+          message: 'Monthly message limit reached',
+          error: `You have used ${user.messagesUsed} of ${user.messagesLimit} monthly messages`,
+          code: 'MESSAGE_LIMIT_EXCEEDED'
+        });
       }
 
-      // Get the AI mentor
-      const mentor = await storage.getAiMentor(aiMentorId);
+      // Get the AI mentor with error handling
+      let mentor;
+      try {
+        mentor = await storage.getAiMentor(aiMentorId);
+      } catch (dbError) {
+        console.error('Database error fetching mentor:', dbError);
+        return res.status(500).json({ 
+          message: 'Database error',
+          error: 'Failed to retrieve mentor information',
+          code: 'DATABASE_ERROR'
+        });
+      }
+
       if (!mentor) {
-        return res.status(404).json({ message: 'AI mentor not found' });
+        return res.status(404).json({ 
+          message: 'AI mentor not found',
+          error: `No mentor found with ID ${aiMentorId}`,
+          code: 'MENTOR_NOT_FOUND'
+        });
       }
 
       // CRITICAL: Increment user's message count immediately
