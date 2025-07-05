@@ -62,12 +62,15 @@ interface MentorApplication {
 interface AiMentor {
   id: number;
   name: string;
-  personality: string;
-  expertise: string;
+  description?: string;
+  personalityPrompt?: string;
+  avatarUrl?: string;
+  personalityTraits?: any;
+  expertiseAreas?: string[];
+  conversationStyle?: string;
   organizationId?: number;
   isActive: boolean;
   createdAt: string;
-  updatedAt: string;
 }
 
 export default function AdminDashboard() {
@@ -381,7 +384,9 @@ export default function AdminDashboard() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">{mentor.name}</CardTitle>
-                        <CardDescription className="mt-1">{mentor.expertise}</CardDescription>
+                        <CardDescription className="mt-1">
+                          {mentor.expertiseAreas?.join(', ') || mentor.conversationStyle || 'No expertise defined'}
+                        </CardDescription>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge variant={mentor.isActive ? "default" : "secondary"}>
@@ -391,7 +396,9 @@ export default function AdminDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-3">{mentor.personality}</p>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-3">
+                      {mentor.description || mentor.personalityPrompt || 'No description available'}
+                    </p>
                     <Button 
                       onClick={() => {
                         setSelectedAiMentor(mentor);

@@ -48,12 +48,14 @@ export const organizations = pgTable("organizations", {
 export const aiMentors = pgTable("ai_mentors", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  personality: text("personality").notNull(),
-  expertise: text("expertise").notNull(),
-  avatar: text("avatar").notNull(),
-  backstory: text("backstory").notNull(),
-  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
-  isActive: boolean("is_active").notNull().default(true),
+  description: text("description"),
+  personalityPrompt: text("personality_prompt"),
+  avatarUrl: text("avatar_url"),
+  personalityTraits: jsonb("personality_traits").$type<any>().default({}),
+  expertiseAreas: text("expertise_areas").array(),
+  conversationStyle: varchar("conversation_style", { length: 50 }),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'cascade' }),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

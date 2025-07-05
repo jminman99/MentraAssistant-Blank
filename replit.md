@@ -436,8 +436,10 @@ client/
   - ✅ Updated all API endpoints: human-mentors, auth/me, mentors, chat/index, council-bookings with JWT validation
   - ✅ Enhanced security with direct Clerk token verification instead of Next.js abstractions
   - ✅ Improved serverless cold start performance by removing unnecessary Next.js dependencies
-  - ✅ Aligned database schema with actual PostgreSQL table structure for human_mentors
-  - ✅ Updated column names: expertise_areas, years_experience, availability_timezone, application_status
+  - ✅ Aligned database schema with actual PostgreSQL table structure for human_mentors and ai_mentors
+  - ✅ Updated human_mentors column names: expertise_areas, years_experience, availability_timezone, application_status
+  - ✅ Updated ai_mentors column names: description, personality_prompt, avatar_url, personality_traits, expertise_areas, conversation_style
+  - ✅ Updated frontend UI components to use correct field names for AI mentor cards and admin dashboard
   - ✅ Production-ready architecture using pure @clerk/clerk-sdk-node for server-side operations
   - ✅ All endpoints now use consistent JWT extraction and validation patterns
 
