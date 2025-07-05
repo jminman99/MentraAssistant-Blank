@@ -1,17 +1,24 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth.js';
-import { storage } from '../_lib/storage.js';
+import { NextRequest, NextResponse } from "next/server";
+import { storage } from "../_lib/storage.js";
 
-export default requireAuth(async (req, res) => {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    const mentors = await storage.getAiMentors(req.user?.organizationId);
-    return res.status(200).json(mentors);
+    // Simple auth check
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const mentors = await storage.getAiMentors();
+    return NextResponse.json(mentors);
   } catch (error) {
-    console.error('Error fetching AI mentors:', error);
-    return res.status(500).json({ message: 'Failed to fetch AI mentors' });
+    console.error("Error fetching AI mentors:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch AI mentors" },
+      { status: 500 }
+    );
   }
-});
+}
