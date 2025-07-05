@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { clerkClient } from "@clerk/clerk-sdk-node";
+import { verifyToken } from "@clerk/backend";
 import { storage } from "../_lib/storage.js";
-import { getSessionToken } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
@@ -14,28 +13,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
     // Extract and verify Clerk JWT token
-    const token = getSessionToken(req);
+    const token = req.headers.authorization?.replace('Bearer ', '') ||
+                  req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
+    
     if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
     // Verify the token with Clerk and get user ID
-    let clerkUser;
+    let clerkUserId;
     try {
       // Use Clerk's verifyToken to validate the JWT
-      const verifiedToken = await clerkClient.verifyToken(token);
-      const userId = verifiedToken.sub; // subject contains the user ID
-      
-      // Fetch full user data from Clerk
-      clerkUser = await clerkClient.users.getUser(userId);
-      console.log("✅ Clerk user verified:", clerkUser.id);
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY!
+      });
+      clerkUserId = payload.sub; // subject contains the user ID
+      console.log("✅ Clerk user verified:", clerkUserId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
       return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
     // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(clerkUser.id);
+    const user = await storage.getUserByClerkId(clerkUserId);
     if (!user) {
       return res.status(404).json({ 
         success: false, 
@@ -58,10 +58,10 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       success: true,
       data: safeMentors,
       user: {
-        id: clerkUser.id,
-        email: clerkUser.emailAddresses[0]?.emailAddress,
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
       }
     });
 

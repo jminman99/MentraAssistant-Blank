@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { verifyToken } from "@clerk/backend";
 import { storage } from "../_lib/storage.js";
-import { verifySessionToken, getSessionToken } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
@@ -14,23 +14,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
-    // Get token from Authorization header or cookie using helper function
-    const token = getSessionToken(req);
+    // Extract and verify Clerk JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '') ||
+                  req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
     
     if (!token) {
-      return res.status(200).json({
-        success: false,
-        error: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    // Validate the token
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(200).json({
-        success: false,
-        error: 'Invalid token'
+    // Verify the token with Clerk and get user ID
+    let clerkUserId;
+    try {
+      // Use Clerk's verifyToken to validate the JWT
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY!
       });
+      clerkUserId = payload.sub; // subject contains the user ID
+      console.log("✅ Clerk user verified:", clerkUserId);
+    } catch (verifyError) {
+      console.error("Token verification failed:", verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
     const mentors = await storage.getAiMentors();
@@ -56,21 +59,26 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
-    const token = getSessionToken(req);
+    // Extract and verify Clerk JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '') ||
+                  req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
     
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token'
+    // Verify the token with Clerk and get user ID
+    let clerkUserId;
+    try {
+      // Use Clerk's verifyToken to validate the JWT
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY!
       });
+      clerkUserId = payload.sub; // subject contains the user ID
+      console.log("✅ Clerk user verified:", clerkUserId);
+    } catch (verifyError) {
+      console.error("Token verification failed:", verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
     // Add AI mentor creation logic here if needed

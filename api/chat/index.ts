@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { clerkClient } from "@clerk/clerk-sdk-node";
+import { verifyToken } from "@clerk/backend";
 import { storage } from '../_lib/storage.js';
-import { getSessionToken } from "../_lib/auth.js";
 import { URL } from 'url';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -17,7 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
     // Extract and verify Clerk JWT token
-    const token = getSessionToken(req);
+    const token = req.headers.authorization?.replace('Bearer ', '') ||
+                  req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
+    
     if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
@@ -26,8 +27,10 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     let userId;
     try {
       // Use Clerk's verifyToken to validate the JWT
-      const verifiedToken = await clerkClient.verifyToken(token);
-      userId = verifiedToken.sub; // subject contains the user ID
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY!
+      });
+      userId = payload.sub; // subject contains the user ID
       console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
@@ -78,26 +81,29 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
     // Extract and verify Clerk JWT token
-    const token = getSessionToken(req);
+    const token = req.headers.authorization?.replace('Bearer ', '') ||
+                  req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
+    
     if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
     // Verify the token with Clerk and get user ID
-    let clerkUser;
+    let userId;
     try {
-      clerkUser = await clerkClient.verifyToken(token);
+      // Use Clerk's verifyToken to validate the JWT
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY!
+      });
+      userId = payload.sub; // subject contains the user ID
+      console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
       return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
-    if (!clerkUser?.sub) {
-      return res.status(401).json({ success: false, error: "Invalid user token" });
-    }
-
     // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(clerkUser.sub);
+    const user = await storage.getUserByClerkId(userId);
     if (!user) {
       return res.status(404).json({ 
         success: false, 
