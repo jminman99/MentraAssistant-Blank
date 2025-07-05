@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Import storage inside try/catch to handle module loading issues
-    const { storage } = await import('../_lib/storage.js');
+    const { storage } = await import('../_lib/storage');
     
     // Return human mentors for council sessions - default to organization 1
     const mentors = await storage.getHumanMentorsByOrganization(1);
