@@ -3,18 +3,18 @@ import { requireAuth } from '../_lib/auth.js';
 import { storage } from '../_lib/storage.js';
 import OpenAI from 'openai';
 
-// Initialize OpenAI with error handling
-let openai: OpenAI | null = null;
-try {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('OPENAI_API_KEY is not configured - AI responses will not be available');
-  } else {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+// Initialize OpenAI client function for Vercel compatibility
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    console.error('OPENAI_API_KEY environment variable is not set');
+    throw new Error('OpenAI API key is not configured');
   }
-} catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
+  
+  return new OpenAI({
+    apiKey: apiKey,
+  });
 }
 
 export default requireAuth(async (req, res) => {
@@ -26,9 +26,12 @@ export default requireAuth(async (req, res) => {
   }
 
   try {
-    // Validate OpenAI configuration first
-    if (!openai) {
-      console.error('OpenAI client not initialized - API key missing or invalid');
+    // Initialize OpenAI client for this request
+    let openai: OpenAI;
+    try {
+      openai = getOpenAIClient();
+    } catch (error) {
+      console.error('OpenAI client initialization failed:', error);
       return res.status(503).json({ 
         message: 'AI service temporarily unavailable',
         error: 'AI service is not properly configured. Please contact support.',
