@@ -311,3 +311,8 @@ client/
 ## User Preferences
 
 Preferred communication style: Direct, no-nonsense communication. Focus on real functionality over workarounds.
+
+**Code Quality Standards:**
+- Human mentors should always be arrays: Use `const { data } = useQuery(...); const humanMentors = Array.isArray(data?.data) ? data.data : [];` pattern consistently
+- Do NOT repeat the same array safety pattern fixes multiple times - this has been implemented across all files already
+- Focus on new functionality rather than re-implementing existing patterns
