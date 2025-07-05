@@ -26,9 +26,13 @@ interface User {
 interface Organization {
   id: number;
   name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
+  type: string;
+  domain?: string;
+  description?: string;
+  adminContactEmail?: string;
+  brandingConfig?: any;
+  maxUsers?: number;
+  isActive?: boolean;
 }
 
 interface MentorApplication {
@@ -359,8 +363,10 @@ export default function AdminDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm text-slate-500">
-                      Created: {new Date(org.createdAt).toLocaleDateString()}
+                    <div className="text-sm text-slate-500 space-y-1">
+                      <div>Type: {org.type}</div>
+                      {org.domain && <div>Domain: {org.domain}</div>}
+                      <div>Users: {org.maxUsers || 100} max</div>
                     </div>
                   </CardContent>
                 </Card>

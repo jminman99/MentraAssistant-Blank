@@ -38,11 +38,14 @@ export const users = pgTable("users", {
 
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 200 }).notNull(),
-  description: text("description").default(""),
-  type: organizationTypeEnum("type").notNull().default("business"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  type: organizationTypeEnum("type").notNull(),
+  domain: varchar("domain", { length: 100 }),
+  description: text("description"),
+  adminContactEmail: varchar("admin_contact_email", { length: 255 }),
+  brandingConfig: jsonb("branding_config").$type<any>().default({}),
+  maxUsers: integer("max_users").default(100),
+  isActive: boolean("is_active").default(true),
 });
 
 export const aiMentors = pgTable("ai_mentors", {
