@@ -36,14 +36,34 @@ export default function Dashboard() {
   } = useQuery<HumanMentor[]>({
     queryKey: ["/api/human-mentors"],
     queryFn: async () => {
-      const res = await fetch("/api/human-mentors", {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        console.error("Failed to fetch mentors:", res.status);
-        throw new Error("Not authorized or server error");
+      try {
+        const res = await fetch("/api/human-mentors", {
+          credentials: "include",
+        });
+        
+        console.log("Human mentors fetch response:", {
+          status: res.status,
+          ok: res.ok,
+          headers: Object.fromEntries(res.headers.entries())
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Failed to fetch mentors:", {
+            status: res.status,
+            statusText: res.statusText,
+            body: errorText
+          });
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log("Human mentors data received:", data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Human mentors query error:", error);
+        throw error;
       }
-      return res.json();
     },
     retry: false,
   });

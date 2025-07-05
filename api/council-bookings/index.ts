@@ -14,16 +14,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   try {
-    // Auth check using proper Vercel patterns
+    // Enhanced authentication debugging for council bookings
+    console.log("Council bookings GET - Headers:", req.headers);
+    console.log("Council bookings GET - Cookies:", req.headers.cookie);
+    
     const token = getSessionToken(req);
+    console.log("Council bookings GET - Token extracted:", token ? 'present' : 'missing');
 
     if (!token) {
-      return res.status(401).json({ success: false, error: "Unauthorized" });
+      console.log("Council bookings GET - No token found");
+      return res.status(401).json({ 
+        success: false, 
+        error: "Unauthorized",
+        debug: { message: "No session token found" }
+      });
     }
 
     const payload = verifySessionToken(token);
+    console.log("Council bookings GET - Token payload:", payload);
+    
     if (!payload) {
-      return res.status(401).json({ success: false, error: "Invalid token" });
+      console.log("Council bookings GET - Token verification failed");
+      return res.status(401).json({ 
+        success: false, 
+        error: "Invalid token",
+        debug: { message: "Token verification failed" }
+      });
     }
 
     // Get user to access organization

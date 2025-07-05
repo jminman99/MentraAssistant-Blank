@@ -11,17 +11,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Debug logs for cookie and session tracking
-    console.log("Cookies seen in /me:", req.headers.cookie);
-    console.log("Session token:", getSessionToken(req));
+    // Enhanced debugging for authentication
+    console.log("Auth debug - Request method:", req.method);
+    console.log("Auth debug - Raw cookies:", req.headers.cookie);
+    console.log("Auth debug - Authorization header:", req.headers.authorization);
     
     // Get token from Authorization header or cookie
     const token = getSessionToken(req);
+    console.log("Auth debug - Extracted token:", token ? 'present' : 'missing');
     
     if (!token) {
+      console.log("Auth debug - No token found in request");
       return res.status(401).json({
         success: false,
-        error: 'No authentication token provided'
+        error: 'No authentication token provided',
+        debug: {
+          hasCookie: !!req.headers.cookie,
+          hasAuthHeader: !!req.headers.authorization
+        }
       });
     }
 

@@ -24,14 +24,16 @@ const getMentorSummary = (mentorName: string): string => {
 };
 
 export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSelectorProps) {
-  const selectedMentor = mentors.find(m => m.id === selectedId);
+  const selectedMentor = Array.isArray(mentors)
+    ? mentors.find(m => m.id === selectedId)
+    : null;
   const summary = selectedMentor ? getMentorSummary(selectedMentor.name) : '';
 
   return (
     <div className="space-y-2">
       {/* Mentor Selection Buttons */}
       <div className="flex space-x-2 overflow-x-auto pb-2">
-        {mentors.map((mentor) => (
+        {Array.isArray(mentors) ? mentors.map((mentor) => (
           <Button
             key={mentor.id}
             variant={selectedId === mentor.id ? "default" : "secondary"}
@@ -47,7 +49,7 @@ export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSele
             />
             <span>{mentor.name}</span>
           </Button>
-        ))}
+        )) : []}
       </div>
       
       {/* Compact Selected Mentor Summary */}

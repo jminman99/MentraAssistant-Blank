@@ -6,15 +6,33 @@ import { deploymentConfig } from "./deployment-config";
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['/api/auth/me'],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me', {
-        credentials: "include",
-      });
-      if (!res.ok) return null;
-      return res.json();
+      try {
+        console.log("useAuth - Fetching current user with credentials");
+        const res = await fetch('/api/auth/me', {
+          credentials: "include",
+        });
+        
+        console.log("useAuth - Response status:", res.status);
+        console.log("useAuth - Response ok:", res.ok);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.log("useAuth - Error response body:", errorText);
+          return null;
+        }
+        
+        const data = await res.json();
+        console.log("useAuth - Success response:", data);
+        return data;
+      } catch (error) {
+        console.error("useAuth - Fetch error:", error);
+        return null;
+      }
     },
+    retry: false,
   });
 
   const user = data?.data || null;
