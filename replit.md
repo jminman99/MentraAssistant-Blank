@@ -248,9 +248,9 @@ The platform now features a comprehensive semantic layer that transforms AI ment
 
 This dual-layer system ensures users talk to authentic mentors with consistent personalities while maintaining maximum configurability and preventing prompt overlap issues.
 
-## Vercel Deployment Architecture
+## Vercel-Only Deployment Architecture
 
-The application has been refactored for Vercel deployment while maintaining full functionality:
+The application is built exclusively for Vercel serverless deployment:
 
 ### API Structure
 - **Express.js server** → **Serverless API routes** in `/api` directory
@@ -277,13 +277,12 @@ The application has been refactored for Vercel deployment while maintaining full
 
 ## Recent Changes
 
-- January 5, 2025: **FIXED VERCEL IMPORT PATH COMPATIBILITY** - removed .js extensions from all API import statements for proper Vercel serverless function compatibility, ensuring all serverless endpoints resolve dependencies correctly
-- January 5, 2025: **ENHANCED ERROR HANDLING SYSTEM** - implemented comprehensive error handling across AI chat system with specific error codes, user-friendly error messages, OpenAI API error detection (quota exceeded, rate limits, invalid API key), graceful fallbacks for service unavailability, detailed validation for all inputs, improved frontend error display with contextual titles and descriptions
-- January 5, 2025: **CONVERTED TO SINGLE-TIER PRODUCT** - completely removed all subscription plan restrictions and tiers, all users now get full access to AI mentors (1000 messages), individual sessions (10 sessions), and council sessions without limitations, simplified registration form and UI components, updated backend to give all users generous limits regardless of selected plan
-- July 4, 2025: **FIXED serverless function ES module issues** - added .js extensions back for Vercel ES module compatibility, fixed ERR_MODULE_NOT_FOUND errors, serverless functions now properly resolve internal imports
-- July 4, 2025: **COMPLETED serverless council migration** - created missing serverless API endpoints (human-mentors, council-bookings, council-sessions/book), added authentication protection to council scheduling page, council system now fully compatible with Vercel deployment
-- July 4, 2025: **FIXED Council Sessions authentication** - added proper authentication protection to council scheduling page, mentors now only load for authenticated users, unauthorized users redirected to login, resolves mentor loading issue
-- July 4, 2025: **COMPLETED Vercel deployment** - successfully deployed application to https://mentra-assistant.vercel.app/ with full functionality including authentication, AI chat system, and database connectivity, all API endpoints operational
+- January 5, 2025: **CONVERTED TO VERCEL-ONLY DEPLOYMENT** - removed all Replit compatibility layers and Express.js server dependencies, application now exclusively uses Vercel serverless functions, removed deployment environment detection logic, always uses ChatInterfaceVercel component, streamlined for single-platform deployment
+- January 5, 2025: **FIXED ENVIRONMENT VARIABLE ACCESS** - implemented lazy initialization for OpenAI client and database connections to resolve Vercel serverless cold start issues, environment variables now properly accessed during function execution rather than module loading
+- January 5, 2025: **COMPLETED .JS EXTENSION COMPATIBILITY** - systematically added .js extensions to all TypeScript imports across entire API directory for Vercel ES module compatibility, resolved ERR_MODULE_NOT_FOUND errors in serverless functions
+- January 5, 2025: **ENHANCED ERROR HANDLING SYSTEM** - implemented comprehensive error handling across AI chat system with specific error codes, user-friendly error messages, OpenAI API error detection, graceful fallbacks for service unavailability
+- January 5, 2025: **CONVERTED TO SINGLE-TIER PRODUCT** - removed all subscription plan restrictions, all users get full access to AI mentors (1000 messages), individual sessions (10 sessions), and council sessions without limitations
+- July 4, 2025: **COMPLETED Vercel deployment** - successfully deployed application to https://mentra-assistant.vercel.app/ with full functionality including authentication, AI chat system, and database connectivity
 - July 2, 2025: **REFACTORED application for Vercel deployment** - created complete serverless API structure with HTTP polling for real-time features, maintained all existing functionality while optimizing for Vercel's serverless environment
 - June 19, 2025: Initial setup with full-stack architecture
 - June 19, 2025: Implemented semantic personality layer for AI mentors

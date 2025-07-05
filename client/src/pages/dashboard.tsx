@@ -3,9 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Compass, MessageCircle, Sparkles, Heart, Star, Crown, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
-import { ChatInterface } from "@/components/chat/chat-interface-fixed";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
-import { deploymentConfig } from "@/lib/deployment-config";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
 import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
@@ -448,7 +446,7 @@ export default function Dashboard() {
           {/* Main Content Area */}
           <div className="lg:col-span-2">
             {selectedTab === "ai-mentors" && (
-              deploymentConfig.isVercel ? <ChatInterfaceVercel /> : <ChatInterface />
+              <ChatInterfaceVercel />
             )}
             
             {selectedTab === "human-mentors" && (
