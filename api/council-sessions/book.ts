@@ -1,39 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { storage } from '../_lib/storage';
-import { verifySessionToken } from '../_lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { storage } from "../_lib/storage";
+
+async function getUser(req: NextRequest) {
+  const cookie = req.cookies.get("session")?.value;
+  if (!cookie) return null;
+
+  const [userId] = cookie.split(":");
+  if (!userId) return null;
+
+  return await storage.getUser(parseInt(userId));
+}
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth check
-    const token = req.cookies.get("session")?.value
-      || req.headers.get("authorization")?.split(" ")[1];
-
-    if (!token) {
+    const user = await getUser(req);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    const payload = verifySessionToken(token);
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
-        { status: 401 }
-      );
-    }
-
-    // Get user details
-    const user = await storage.getUser(payload.userId);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
-
     const body = await req.json();
-    const { selectedMentorIds, sessionGoals, questions, preferredDate, preferredTimeSlot } = body;
+    const {
+      selectedMentorIds,
+      sessionGoals,
+      questions,
+      preferredDate,
+      preferredTimeSlot,
+    } = body;
 
     if (!selectedMentorIds || selectedMentorIds.length < 3) {
       return NextResponse.json(
@@ -53,27 +48,29 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       userName: `${user.firstName} ${user.lastName}`,
       selectedMentorIds,
-      sessionGoals: sessionGoals || '',
-      questions: questions || '',
+      sessionGoals: sessionGoals || "",
+      questions: questions || "",
       preferredDate,
-      preferredTimeSlot: preferredTimeSlot || '09:00',
+      preferredTimeSlot: preferredTimeSlot || "09:00",
       organizationId: user.organizationId || 1,
     };
 
     const session = await storage.createCouncilBooking(bookingData);
-    
+
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Council session booked successfully',
         sessionId: session.id,
-        scheduledDate: session.scheduledDate
-      }
+        scheduledDate: session.scheduledDate,
+      },
     });
   } catch (error: any) {
-    console.error('Error booking council session:', error);
+    console.error("Error booking council session:", error);
     return NextResponse.json(
-      { success: false, error: error?.message || "Failed to book council session" },
+      {
+        success: false,
+        error: error?.message || "Failed to book council session",
+      },
       { status: 500 }
     );
   }
