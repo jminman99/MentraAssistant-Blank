@@ -25,9 +25,15 @@ function Router() {
         {user ? (
           <div className="p-8">
             <h1 className="text-2xl font-bold mb-4">Welcome to Mentra</h1>
-            <p>Logged in as: {user.email}</p>
-            <p>User ID: {user.id}</p>
-            <p>Name: {user.name}</p>
+            <p>Logged in as: {user.email || 'No email'}</p>
+            <p>User ID: {user.id || 'No ID'}</p>
+            <p>Name: {user.name || user.firstName + ' ' + user.lastName || 'No name'}</p>
+            <details className="mt-4">
+              <summary className="cursor-pointer text-sm text-gray-600">Debug User Object</summary>
+              <pre className="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto">
+                {JSON.stringify(user, null, 2)}
+              </pre>
+            </details>
             <button 
               onClick={async () => {
                 const response = await fetch('/api/auth/logout', { method: 'POST' });
