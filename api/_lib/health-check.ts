@@ -1,13 +1,12 @@
 import type { VercelRequest } from '@vercel/node';
-import bcrypt from 'bcryptjs';
 import { createDatabaseConnection } from './db.js';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';
   checks: {
     database: boolean;
-    bcrypt: boolean;
     environment: boolean;
+    clerk: boolean;
   };
   timestamp: string;
   errors?: string[];
@@ -17,33 +16,30 @@ export async function performHealthCheck(): Promise<HealthStatus> {
   const errors: string[] = [];
   const checks = {
     database: false,
-    bcrypt: false,
-    environment: false
+    environment: false,
+    clerk: false
   };
 
   // Check environment variables
   try {
-    if (process.env.DATABASE_URL && process.env.OPENAI_API_KEY) {
+    if (process.env.DATABASE_URL && process.env.CLERK_SECRET_KEY) {
       checks.environment = true;
     } else {
-      errors.push('Missing required environment variables');
+      errors.push('Missing required environment variables (DATABASE_URL, CLERK_SECRET_KEY)');
     }
   } catch (error) {
     errors.push('Environment check failed');
   }
 
-  // Check bcrypt functionality
+  // Check Clerk configuration
   try {
-    const testPassword = 'test123';
-    const hash = await bcrypt.hash(testPassword, 10);
-    const isValid = await bcrypt.compare(testPassword, hash);
-    if (isValid) {
-      checks.bcrypt = true;
+    if (process.env.CLERK_SECRET_KEY && process.env.VITE_CLERK_PUBLISHABLE_KEY) {
+      checks.clerk = true;
     } else {
-      errors.push('bcrypt validation failed');
+      errors.push('Clerk authentication not properly configured');
     }
   } catch (error) {
-    errors.push(`bcrypt error: ${error instanceof Error ? error.message : 'unknown'}`);
+    errors.push(`Clerk check error: ${error instanceof Error ? error.message : 'unknown'}`);
   }
 
   // Check database connection
