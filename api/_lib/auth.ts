@@ -6,14 +6,12 @@ import type { VercelRequest } from '@vercel/node';
 export function parseCookies(req: VercelRequest): Record<string, string> {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return {};
-  
-  return cookieHeader.split(';').reduce((acc: Record<string, string>, cookie: string) => {
-    const [key, value] = cookie.trim().split('=');
-    if (key && value) {
-      acc[key] = decodeURIComponent(value);
-    }
-    return acc;
-  }, {});
+  return Object.fromEntries(
+    cookieHeader.split(";").map((cookie) => {
+      const [key, value] = cookie.trim().split("=");
+      return [key, decodeURIComponent(value)];
+    })
+  );
 }
 
 // Helper function to get session token from request
