@@ -277,6 +277,7 @@ The application has been refactored for Vercel deployment while maintaining full
 
 ## Recent Changes
 
+- January 5, 2025: **FIXED VERCEL IMPORT PATH COMPATIBILITY** - removed .js extensions from all API import statements for proper Vercel serverless function compatibility, ensuring all serverless endpoints resolve dependencies correctly
 - January 5, 2025: **ENHANCED ERROR HANDLING SYSTEM** - implemented comprehensive error handling across AI chat system with specific error codes, user-friendly error messages, OpenAI API error detection (quota exceeded, rate limits, invalid API key), graceful fallbacks for service unavailability, detailed validation for all inputs, improved frontend error display with contextual titles and descriptions
 - January 5, 2025: **CONVERTED TO SINGLE-TIER PRODUCT** - completely removed all subscription plan restrictions and tiers, all users now get full access to AI mentors (1000 messages), individual sessions (10 sessions), and council sessions without limitations, simplified registration form and UI components, updated backend to give all users generous limits regardless of selected plan
 - July 4, 2025: **FIXED serverless function ES module issues** - added .js extensions back for Vercel ES module compatibility, fixed ERR_MODULE_NOT_FOUND errors, serverless functions now properly resolve internal imports
