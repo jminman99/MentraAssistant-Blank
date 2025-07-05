@@ -297,6 +297,10 @@ export default function Dashboard() {
 
   const { data: humanMentors = [] } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/human-mentors");
+      return res.json();
+    },
   });
 
   // Handle URL parameters for tab selection
