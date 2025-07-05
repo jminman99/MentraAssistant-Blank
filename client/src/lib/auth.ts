@@ -15,32 +15,35 @@ export function useAuth() {
     refetchInterval: false,
     queryFn: async () => {
       try {
-        const res = await fetch("/api/auth/me", {
-          credentials: 'include'
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
         });
-        
-        if (res.status === 401) {
-          // Don't redirect if we're already on login page
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log("User not logged in!");
+            // Don't redirect if we're already on login page
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
+            }
+            return null;
+          } else {
+            const text = await response.text();
+            console.error('Auth fetch failed:', text);
+            return null;
           }
-          return null;
         }
-        
-        if (!res.ok) {
-          console.error('Auth fetch failed:', res.status, res.statusText);
-          return null;
-        }
-        
-        const data = await res.json();
+
+        const json = await response.json();
+        console.log('Auth response:', json);
         
         // Handle Vercel API response format {success: true, data: user}
-        if (data.success && data.data) {
-          return data.data;
+        if (json.success && json.data) {
+          return json.data;
         }
         
         // Handle legacy formats
-        return data.user || data;
+        return json.user || json;
       } catch (error) {
         console.error('Auth fetch error:', error);
         return null;
