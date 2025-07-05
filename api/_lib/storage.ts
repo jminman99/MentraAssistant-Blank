@@ -65,6 +65,19 @@ export class VercelStorage {
     }
   }
 
+  async getUserByClerkId(clerkUserId: string): Promise<User | null> {
+    try {
+      if (!clerkUserId) {
+        throw new Error('Clerk User ID is required');
+      }
+      
+      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkUserId)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      this.handleError('getUserByClerkId', error);
+    }
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     try {
       if (!email || !email.includes('@')) {

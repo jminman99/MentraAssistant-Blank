@@ -15,10 +15,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
-    console.log('Looking up user by email:', email);
-    // Check if user already exists in your database
-    let user = await storage.getUserByEmail(email);
-    console.log('Existing user found:', !!user);
+    console.log('Looking up user by Clerk ID:', clerkUserId);
+    // Check if user already exists in your database by Clerk ID first
+    let user = await storage.getUserByClerkId(clerkUserId);
+    console.log('User found by Clerk ID:', !!user);
+    
+    // If not found by Clerk ID, try email (for migration purposes)
+    if (!user) {
+      console.log('Fallback: Looking up user by email:', email);
+      user = await storage.getUserByEmail(email);
+      console.log('User found by email:', !!user);
+    }
 
     if (!user) {
       console.log('Creating new user...');
