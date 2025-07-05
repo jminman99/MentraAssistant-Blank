@@ -5,19 +5,30 @@ import * as schema from '../shared/schema';
 // Lazy database connection for Vercel serverless compatibility
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-export function getDatabase() {
-  if (!dbInstance) {
-    const databaseUrl = process.env.DATABASE_URL;
-    
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL environment variable is required');
-    }
-    
-    const sql = neon(databaseUrl);
-    dbInstance = drizzle(sql, { schema });
+export function createDatabaseConnection() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not set');
   }
   
+  try {
+    const sql = neon(databaseUrl);
+    return drizzle(sql, { schema });
+  } catch (error) {
+    console.error('Failed to create database connection:', error);
+    throw new Error('Database connection failed');
+  }
+}
+
+export function getDatabase() {
+  if (!dbInstance) {
+    dbInstance = createDatabaseConnection();
+  }
   return dbInstance;
+}
+
+export function resetDatabaseConnection() {
+  dbInstance = null;
 }
 
 // Export db for backward compatibility

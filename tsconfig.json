@@ -1,6 +1,6 @@
 {
   "include": ["client/src/**/*", "api/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": ["node_modules", "build", "dist", ".vite", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
     "noEmit": false,

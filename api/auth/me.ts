@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage";
 
-export async function GET(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   try {
     // Simple auth check - replace with proper session validation
-    const authHeader = req.headers.get("authorization");
+    const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     // Mock user for now - replace with real session lookup
@@ -20,12 +21,9 @@ export async function GET(req: NextRequest) {
       subscriptionPlan: "individual"
     };
 
-    return NextResponse.json({ user });
+    return res.status(200).json({ user });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: "Internal server error" });
   }
 }

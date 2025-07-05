@@ -1,33 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from '../_lib/storage';
 import { validatePassword, createSessionToken } from '../_lib/auth';
 
-export async function POST(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+      return res.status(400).json({ message: 'Email and password are required' });
     }
 
     // Get user by email
     const user = await storage.getUserByEmail(email);
     if (!user) {
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Validate password
     const isValid = await validatePassword(password, user.password);
     if (!isValid) {
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Create session token
     const token = createSessionToken(user.id);
 
-    // Create response with session cookie
-    const response = NextResponse.json({
+    // Set session cookie
+    res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=strict`);
+    
+    return res.status(200).json({
       message: 'Login successful',
       user: {
         id: user.id,
@@ -36,17 +41,8 @@ export async function POST(req: NextRequest) {
         subscriptionPlan: user.subscriptionPlan
       }
     });
-
-    response.cookies.set('session', token, {
-      httpOnly: true,
-      path: '/',
-      maxAge: 604800,
-      sameSite: 'strict'
-    });
-
-    return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }

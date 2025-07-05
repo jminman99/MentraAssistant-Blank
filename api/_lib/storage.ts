@@ -45,43 +45,100 @@ import type {
 } from '../shared/schema';
 
 export class VercelStorage {
+  // Error handling helper
+  private handleError(operation: string, error: unknown): never {
+    console.error(`Storage operation failed: ${operation}`, error);
+    throw new Error(`Database operation failed: ${operation}`);
+  }
+
   // User methods
   async getUser(id: number): Promise<User | null> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0] || null;
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Invalid user ID provided');
+      }
+      
+      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      this.handleError('getUser', error);
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0] || null;
+    try {
+      if (!email || !email.includes('@')) {
+        throw new Error('Invalid email provided');
+      }
+      
+      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      this.handleError('getUserByEmail', error);
+    }
   }
 
   async createUser(data: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(data).returning();
-    return user;
+    try {
+      if (!data.email || !data.password) {
+        throw new Error('Email and password are required');
+      }
+      
+      const [user] = await db.insert(users).values(data).returning();
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
+      return user;
+    } catch (error) {
+      this.handleError('createUser', error);
+    }
   }
 
   async updateUser(id: number, data: Partial<InsertUser>): Promise<User | null> {
-    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
-    return user || null;
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Invalid user ID provided');
+      }
+      
+      const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+      return user || null;
+    } catch (error) {
+      this.handleError('updateUser', error);
+    }
   }
 
   // AI Mentor methods
   async getAiMentors(organizationId?: number): Promise<AiMentor[]> {
-    if (organizationId) {
-      return await db.select().from(aiMentors).where(
-        and(
-          eq(aiMentors.isActive, true),
-          eq(aiMentors.organizationId, organizationId)
-        )
-      );
+    try {
+      if (organizationId && organizationId <= 0) {
+        throw new Error('Invalid organization ID provided');
+      }
+      
+      if (organizationId) {
+        return await db.select().from(aiMentors).where(
+          and(
+            eq(aiMentors.isActive, true),
+            eq(aiMentors.organizationId, organizationId)
+          )
+        );
+      }
+      return await db.select().from(aiMentors).where(eq(aiMentors.isActive, true));
+    } catch (error) {
+      this.handleError('getAiMentors', error);
     }
-    return await db.select().from(aiMentors).where(eq(aiMentors.isActive, true));
   }
 
   async getAiMentor(id: number): Promise<AiMentor | null> {
-    const result = await db.select().from(aiMentors).where(eq(aiMentors.id, id)).limit(1);
-    return result[0] || null;
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Invalid mentor ID provided');
+      }
+      
+      const result = await db.select().from(aiMentors).where(eq(aiMentors.id, id)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      this.handleError('getAiMentor', error);
+    }
   }
 
   // Organization methods

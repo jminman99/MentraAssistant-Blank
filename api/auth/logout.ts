@@ -1,20 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export async function POST(req: NextRequest) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
   try {
     // Clear the session cookie
-    const response = NextResponse.json({ message: 'Logged out successfully' });
+    res.setHeader('Set-Cookie', 'session=; HttpOnly; Path=/; Max-Age=0; SameSite=strict');
     
-    response.cookies.set('session', '', {
-      httpOnly: true,
-      path: '/',
-      maxAge: 0,
-      sameSite: 'strict'
-    });
-
-    return response;
+    return res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }

@@ -1,5 +1,5 @@
 import { storage } from './storage';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Simple JWT-like session handling for Vercel
