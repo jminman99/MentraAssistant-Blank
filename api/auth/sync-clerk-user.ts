@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifySessionToken, getSessionToken } from "../_lib/auth.js";
+import { getSessionToken } from "../_lib/auth.js";
 import { storage } from "../_lib/storage.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -8,7 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // ✅ Extract Clerk token
+    // Extract Clerk JWT token from request
     const token = getSessionToken(req);
     if (!token) {
       return res.status(401).json({
@@ -17,8 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // ✅ Optionally verify Clerk JWT if desired
-    // const payload = verifySessionToken(token);
+    // Note: Clerk JWT verification should be handled by Clerk SDK in production
 
     const { clerkUserId, email, firstName, lastName } = req.body;
 
