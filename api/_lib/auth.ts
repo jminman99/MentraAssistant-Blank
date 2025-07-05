@@ -1,5 +1,4 @@
 import { storage } from './storage.js';
-import bcrypt from 'bcryptjs';
 import type { VercelRequest } from '@vercel/node';
 
 // Helper function to parse cookies from Vercel request
@@ -55,13 +54,7 @@ export async function authenticateUser(req: VercelRequest): Promise<{ user: any 
 // Note: requireAuth and requireAdmin middleware functions removed
 // Modern serverless functions handle authentication directly in each endpoint
 
-export async function validatePassword(password: string, hash: string): Promise<boolean> {
-  return await bcrypt.compare(password, hash);
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  return await bcrypt.hash(password, 10);
-}
+// Password validation and hashing functions removed - using Clerk authentication
 
 export function createSessionToken(userId: number): string {
   const timestamp = Date.now().toString();

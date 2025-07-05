@@ -107,11 +107,11 @@ export class DevAuthService {
     return DevAuthService.instance;
   }
 
-  async login(email: string, password: string) {
-    console.log('[DEV] Mock login attempt:', { email, password });
+  async login(email: string) {
+    console.log('[DEV] Mock login attempt:', { email });
     
     // Simple validation for development
-    if (email && password.length >= 3) {
+    if (email) {
       await mockApiCall(null, 800); // Simulate API call
       this.isAuthenticated = true;
       this.currentUser = MOCK_USER;
@@ -119,7 +119,7 @@ export class DevAuthService {
       console.log('[DEV] Mock login successful');
       return { success: true, data: MOCK_USER };
     } else {
-      throw new Error('Invalid credentials');
+      throw new Error('Email required');
     }
   }
 

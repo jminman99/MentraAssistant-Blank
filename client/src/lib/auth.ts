@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
 import { User } from "../types";
-import { deploymentConfig } from ".åΩ/deployment-config";
+// Deployment config import removed - no longer needed
 import { 
   isRealApiAvailable, 
   DevAuthService, 
@@ -69,7 +69,7 @@ export function useAuth() {
   const user = data?.data || null;
 
   const loginMutation = useMutation({
-    mutationFn: (credentials: { email: string; password: string }) => {
+    mutationFn: (credentials: { email: string }) => {
       return fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -111,10 +111,7 @@ export function useAuth() {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: {
-      username: string;
       email: string;
-      password: string;
-      confirmPassword: string;
       firstName: string;
       lastName: string;
       subscriptionPlan?: string;

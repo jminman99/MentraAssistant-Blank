@@ -41,17 +41,13 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Form types
+// Form types - Clerk authentication handles login/register
 export interface LoginData {
   email: string;
-  password: string;
 }
 
 export interface RegisterData {
-  username: string;
   email: string;
-  password: string;
-  confirmPassword: string;
   firstName: string;
   lastName: string;
   subscriptionPlan?: string;

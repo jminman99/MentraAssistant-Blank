@@ -105,12 +105,13 @@ export class VercelApiClient {
     return response.json();
   }
 
-  async login(email: string, password: string) {
+  // Legacy login method - now handled by Clerk authentication
+  async login(email: string) {
     const response = await fetch(`${this.baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email }),
     });
 
     if (!response.ok) {

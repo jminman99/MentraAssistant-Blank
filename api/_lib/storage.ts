@@ -80,8 +80,8 @@ export class VercelStorage {
 
   async createUser(data: InsertUser): Promise<User> {
     try {
-      if (!data.email || !data.password) {
-        throw new Error('Email and password are required');
+      if (!data.email) {
+        throw new Error('Email is required');
       }
       
       const [user] = await db.insert(users).values(data).returning();

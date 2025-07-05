@@ -18,7 +18,6 @@ export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 200 }).notNull().unique(),
-  password: text("password").notNull(),
   firstName: varchar("first_name", { length: 50 }).notNull(),
   lastName: varchar("last_name", { length: 50 }).notNull(),
   profileImage: text("profile_image"),
@@ -348,7 +347,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [humanMentors.userId],
   }),
-});
+}));
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
@@ -357,7 +356,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   semanticConfigurations: many(semanticConfigurations),
   mentorPersonalities: many(mentorPersonalities),
   mentorApplications: many(mentorApplications),
-});
+}));
 
 export const aiMentorsRelations = relations(aiMentors, ({ one, many }) => ({
   organization: one(organizations, {
@@ -365,7 +364,7 @@ export const aiMentorsRelations = relations(aiMentors, ({ one, many }) => ({
     references: [organizations.id],
   }),
   chatMessages: many(chatMessages),
-});
+}));
 
 export const humanMentorsRelations = relations(humanMentors, ({ one, many }) => ({
   user: one(users, {
@@ -378,7 +377,7 @@ export const humanMentorsRelations = relations(humanMentors, ({ one, many }) => 
   }),
   sessions: many(mentoringSessions),
   councilSessions: many(councilSessions),
-});
+}));
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   user: one(users, {
@@ -389,7 +388,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
     fields: [chatMessages.aiMentorId],
     references: [aiMentors.id],
   }),
-});
+}));
 
 export const mentoringSessionsRelations = relations(mentoringSessions, ({ one, many }) => ({
   user: one(users, {
@@ -401,7 +400,7 @@ export const mentoringSessionsRelations = relations(mentoringSessions, ({ one, m
     references: [humanMentors.id],
   }),
   councilMembers: many(councilSessions),
-});
+}));
 
 export const councilSessionsRelations = relations(councilSessions, ({ one, many }) => ({
   organization: one(organizations, {
@@ -410,35 +409,35 @@ export const councilSessionsRelations = relations(councilSessions, ({ one, many 
   }),
   councilMentors: many(councilMentors),
   councilParticipants: many(councilParticipants),
-});
+}));
 
 export const semanticConfigurationsRelations = relations(semanticConfigurations, ({ one }) => ({
   organization: one(organizations, {
     fields: [semanticConfigurations.organizationId],
     references: [organizations.id],
   }),
-});
+}));
 
 export const mentorPersonalitiesRelations = relations(mentorPersonalities, ({ one }) => ({
   organization: one(organizations, {
     fields: [mentorPersonalities.organizationId],
     references: [organizations.id],
   }),
-});
+}));
 
 export const brandingConfigurationsRelations = relations(brandingConfigurations, ({ one }) => ({
   organization: one(organizations, {
     fields: [brandingConfigurations.organizationId],
     references: [organizations.id],
   }),
-});
+}));
 
 export const mentorApplicationsRelations = relations(mentorApplications, ({ one }) => ({
   organization: one(organizations, {
     fields: [mentorApplications.organizationId],
     references: [organizations.id],
   }),
-});
+}));
 
 export const sessionBookingsRelations = relations(sessionBookings, ({ one, many }) => ({
   mentee: one(users, {
@@ -450,7 +449,7 @@ export const sessionBookingsRelations = relations(sessionBookings, ({ one, many 
     references: [humanMentors.id],
   }),
   councilParticipants: many(councilParticipants),
-});
+}));
 
 export const councilParticipantsRelations = relations(councilParticipants, ({ one }) => ({
   councilSession: one(councilSessions, {
@@ -461,21 +460,21 @@ export const councilParticipantsRelations = relations(councilParticipants, ({ on
     fields: [councilParticipants.menteeId],
     references: [users.id],
   }),
-});
+}));
 
 export const mentorAvailabilityRelations = relations(mentorAvailability, ({ one }) => ({
   humanMentor: one(humanMentors, {
     fields: [mentorAvailability.humanMentorId],
     references: [humanMentors.id],
   }),
-});
+}));
 
 export const mentorUnavailabilityRelations = relations(mentorUnavailability, ({ one }) => ({
   humanMentor: one(humanMentors, {
     fields: [mentorUnavailability.humanMentorId],
     references: [humanMentors.id],
   }),
-});
+}));
 
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -578,14 +577,10 @@ export const insertMentorLifeStorySchema = createInsertSchema(mentorLifeStories)
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
 });
 
 export const registerSchema = insertUserSchema.extend({
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  // No password fields needed with Clerk authentication
 });
 
 // Types

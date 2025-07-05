@@ -28,7 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         firstName: firstName || '',
         lastName: lastName || '',
         clerkUserId,
-        password: '', // Not needed with Clerk
         role: 'user',
         subscriptionPlan: 'ai-only',
         // Remove organizationId temporarily to avoid foreign key issues
@@ -50,15 +49,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error('Error syncing Clerk user:', error);
-    console.error('Error details:', {
+    const errorInfo = error instanceof Error ? {
       message: error.message,
       stack: error.stack,
       name: error.name
-    });
+    } : { message: String(error) };
+    
+    console.error('Error details:', errorInfo);
     res.status(500).json({ 
       success: false, 
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? errorInfo.message : undefined
     });
   }
 }
