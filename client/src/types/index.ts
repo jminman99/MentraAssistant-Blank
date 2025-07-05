@@ -1,86 +1,58 @@
-export interface AiMentor {
+// Basic types for the application
+export interface User {
   id: number;
+  email: string;
   name: string;
-  personality: string;
-  expertise: string;
-  avatar: string;
-  backstory: string;
-  organizationId: number;
-  isActive: boolean;
-  createdAt: string;
+  firstName?: string;
+  lastName?: string;
+  subscriptionPlan?: string;
 }
 
 export interface HumanMentor {
   id: number;
-  userId: number;
-  expertise: string;
-  bio: string;
-  experience: string;
-  hourlyRate: string;
-  rating: string;
-  totalSessions: number;
-  availability: any;
-  isActive: boolean;
-  organizationId: number;
-  createdAt: string;
-  user: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    profileImage?: string;
-    email: string;
-  };
+  name: string;
+  bio?: string;
+  expertise?: string[];
+  rating?: number;
+  availability?: boolean;
+  organizationId?: number;
+}
+
+export interface AiMentor {
+  id: number;
+  name: string;
+  description?: string;
+  organizationId?: number;
 }
 
 export interface ChatMessage {
   id: number;
-  userId: number;
-  aiMentorId: number;
   content: string;
   role: 'user' | 'assistant';
-  createdAt: string;
-}
-
-export interface MentoringSession {
-  id: number;
   userId: number;
-  humanMentorId?: number;
-  type: 'individual' | 'council';
-  status: 'scheduled' | 'completed' | 'cancelled';
-  scheduledAt: string;
-  duration: number;
-  topic?: string;
-  notes?: string;
-  rating?: number;
-  feedback?: string;
-  createdAt: string;
-  updatedAt: string;
-  humanMentor?: HumanMentor;
+  aiMentorId: number;
+  createdAt: Date;
 }
 
-export interface User {
-  id: number;
+// API Response types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Form types
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
   username: string;
   email: string;
+  password: string;
+  confirmPassword: string;
   firstName: string;
   lastName: string;
-  profileImage?: string;
-  subscriptionPlan: 'ai-only' | 'individual' | 'council';
-  messagesUsed: number;
-  messagesLimit: number;
-  sessionsUsed: number;
-  sessionsLimit: number;
-  organizationId?: number;
-  role: 'user' | 'admin' | 'super_admin';
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WebSocketMessage {
-  type: 'chat_message' | 'ai_response' | 'ai_response_stream_start' | 'ai_response_stream_chunk' | 'ai_response_stream_complete';
-  mentorId?: number;
-  content?: string;
-  fullContent?: string;
-  userId?: number;
-  timestamp?: string;
+  subscriptionPlan?: string;
 }
