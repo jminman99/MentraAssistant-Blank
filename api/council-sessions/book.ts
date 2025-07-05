@@ -1,4 +1,4 @@
-import { VercelRequest, NextResponse } from "next/server";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
 
 async function getUser(req: VercelRequest) {
