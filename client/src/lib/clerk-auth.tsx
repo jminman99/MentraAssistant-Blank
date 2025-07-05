@@ -1,12 +1,12 @@
 import { ClerkProvider, useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-// Clerk configuration
+// Get Clerk configuration with proper Vite environment variable access
 const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!clerkPublishableKey) {
-  throw new Error('Missing Clerk Publishable Key');
+  console.warn('Missing Clerk Publishable Key - using development fallback');
 }
 
 // Custom auth context that bridges Clerk with your app
@@ -21,8 +21,51 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Development fallback provider when Clerk is not configured
+function DevAuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const contextValue: AuthContextType = {
+    user,
+    isLoading,
+    isAuthenticated: false,
+    login: {
+      mutateAsync: async () => {
+        setIsLoading(true);
+        window.location.href = '/sign-in';
+        setIsLoading(false);
+      },
+      isPending: isLoading,
+    },
+    logout: {
+      mutateAsync: async () => {
+        setUser(null);
+      },
+      isPending: false,
+    },
+    register: {
+      mutateAsync: async () => {
+        window.location.href = '/sign-up';
+      },
+      isPending: false,
+    },
+  };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
 // Auth provider that wraps Clerk functionality
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // If no Clerk key is available, provide a development fallback
+  if (!clerkPublishableKey) {
+    return <DevAuthProvider>{children}</DevAuthProvider>;
+  }
+
   return (
     <ClerkProvider publishableKey={clerkPublishableKey}>
       <AuthContextProvider>
@@ -49,10 +92,9 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clerkUserId: clerkUser.id,
-          email: clerkUser.emailAddresses[0]?.emailAddress,
+          email: clerkUser.primaryEmailAddress?.emailAddress,
           firstName: clerkUser.firstName,
           lastName: clerkUser.lastName,
-          username: clerkUser.username || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0]
         }),
       });
       
@@ -62,7 +104,7 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
       
       return response.json();
     },
-    enabled: isLoaded && isSignedIn && !!clerkUser,
+    enabled: !!clerkUser && isSignedIn,
   });
 
   // Login mutation (redirects to Clerk)

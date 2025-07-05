@@ -6,12 +6,17 @@ import Dashboard from "./pages/dashboard.tsx";
 import TestPage from "./pages/test.tsx";
 import SignInPage from "./pages/sign-in.tsx";
 import SignUpPage from "./pages/sign-up.tsx";
+import DevSignInPage from "./pages/dev-sign-in.tsx";
 import { AuthProvider, useAuth } from "./lib/clerk-auth";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function Router() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Check if Clerk is configured
+  const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
+  const SignInComponent = clerkPublishableKey ? SignInPage : DevSignInPage;
 
   if (isLoading) {
     return (
@@ -24,7 +29,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/test" component={TestPage} />
-      <Route path="/sign-in" component={SignInPage} />
+      <Route path="/sign-in" component={SignInComponent} />
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
