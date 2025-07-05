@@ -38,8 +38,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Create session token
     const token = createSessionToken(user.id);
 
-    // Set secure session cookie
-    res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+    // Set secure session cookie optimized for Vercel
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict${isProduction ? '; Secure' : ''}`);
 
     return res.status(200).json({
       success: true,
