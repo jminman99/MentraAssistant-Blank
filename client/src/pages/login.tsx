@@ -35,7 +35,9 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Calling login mutation:", loginData);
       await login.mutateAsync(loginData);
+      console.log("Login mutation finished!");
       toast({
         title: "Success",
         description: "Welcome back to Mentra!",

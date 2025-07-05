@@ -29,7 +29,9 @@ export default function LoginSimple() {
     setError('');
     
     try {
+      console.log("Calling login mutation:", loginData);
       await login.mutateAsync(loginData);
+      console.log("Login mutation finished!");
       console.log('Login successful, redirecting...');
       setLocation('/');
     } catch (error: any) {
