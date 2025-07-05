@@ -1,18 +1,14 @@
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/vercel-postgres';
+import { sql } from '@vercel/postgres';
 import * as schema from '../shared/schema.js';
 
 // Lazy database connection for Vercel serverless compatibility
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export function createDatabaseConnection() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is not set');
-  }
-  
   try {
-    const sql = neon(databaseUrl);
+    // Vercel Postgres automatically uses environment variables
+    // No need to manually pass DATABASE_URL
     return drizzle(sql, { schema });
   } catch (error) {
     console.error('Failed to create database connection:', error);
