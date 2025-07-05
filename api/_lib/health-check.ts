@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { createDatabaseConnection } from './db';
+import { createDatabaseConnection } from './db.js';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';

@@ -10,10 +10,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasStorage: !!storage 
     });
   } catch (error) {
+    const err = error as Error;
     return res.status(500).json({ 
       success: false, 
-      error: error.message,
-      stack: error.stack 
+      error: err.message,
+      stack: err.stack 
     });
   }
 }
