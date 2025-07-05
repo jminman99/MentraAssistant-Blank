@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth';
-import { getCouncilParticipants } from '../_lib/storage';
+import { requireAuth } from '../_lib/auth.js';
+import { getCouncilParticipants } from '../_lib/storage.js';
 
 export default requireAuth(async (req, res) => {
   if (req.method !== 'GET') {

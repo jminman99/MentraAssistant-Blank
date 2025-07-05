@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../_lib/storage';
+import { storage } from '../_lib/storage.js';
 
 // Extract user from request - simplified for now
 async function getUser(req: VercelRequest): Promise<any> {
