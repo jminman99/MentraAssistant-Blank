@@ -77,15 +77,27 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
-    // Get Clerk auth context from the request
-    const { userId } = getAuth(req);
-
-    if (!userId) {
+    // Extract and verify Clerk JWT token
+    const token = getSessionToken(req);
+    if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
+    // Verify the token with Clerk and get user ID
+    let clerkUser;
+    try {
+      clerkUser = await clerkClient.verifyToken(token);
+    } catch (verifyError) {
+      console.error("Token verification failed:", verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
+    }
+
+    if (!clerkUser?.sub) {
+      return res.status(401).json({ success: false, error: "Invalid user token" });
+    }
+
     // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(userId);
+    const user = await storage.getUserByClerkId(clerkUser.sub);
     if (!user) {
       return res.status(404).json({ 
         success: false, 

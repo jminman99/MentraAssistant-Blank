@@ -488,7 +488,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertAiMentorSchema = createInsertSchema(aiMentors).omit({
