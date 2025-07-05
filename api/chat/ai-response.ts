@@ -1,24 +1,28 @@
 import OpenAI from "openai";
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import { storage } from "../_lib/storage";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "OpenAI API key not configured" });
+      return NextResponse.json({
+        success: false,
+        error: "OpenAI API key not configured"
+      }, { status: 500 });
+    }
+
+    const body = await req.json();
+    const { message, aiMentorId } = body;
+
+    if (!message || !aiMentorId) {
+      return NextResponse.json({
+        success: false,
+        error: "Message and AI mentor ID are required"
+      }, { status: 400 });
     }
 
     const openai = new OpenAI({ apiKey });
-    const { message, aiMentorId } = req.body;
-
-    if (!message || !aiMentorId) {
-      return res.status(400).json({ error: "Message and AI mentor ID are required" });
-    }
 
     // Simple completion for now
     const completion = await openai.chat.completions.create({
@@ -39,9 +43,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const response = completion.choices[0]?.message?.content || "I'm here to help you.";
 
-    return res.status(200).json({ response });
+    return NextResponse.json({
+      success: true,
+      data: { response }
+    });
   } catch (error) {
     console.error("AI response error:", error);
-    return res.status(500).json({ error: "Failed to generate response" });
+    return NextResponse.json({
+      success: false,
+      error: "Failed to generate response"
+    }, { status: 500 });
   }
 }

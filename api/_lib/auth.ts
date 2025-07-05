@@ -80,3 +80,26 @@ export function createSessionToken(userId: number): string {
   // In production, add proper signing/encryption
   return `${userId}:${timestamp}:${Buffer.from(`${userId}-${timestamp}`).toString('base64')}`;
 }
+
+export function verifySessionToken(token: string): { userId: number } | null {
+  try {
+    if (!token) return null;
+    
+    const [userId, timestamp] = token.split(':');
+    
+    if (!userId || !timestamp) {
+      return null;
+    }
+
+    // Check if session is not too old (7 days)
+    const sessionAge = Date.now() - parseInt(timestamp);
+    if (sessionAge > 7 * 24 * 60 * 60 * 1000) {
+      return null;
+    }
+
+    return { userId: parseInt(userId) };
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return null;
+  }
+}

@@ -1,22 +1,42 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextRequest, NextResponse } from 'next/server';
 import { storage } from "../_lib/storage";
+import { verifySessionToken } from '../_lib/auth';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
+export async function GET(req: NextRequest) {
   try {
-    // Simple auth check
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: "Unauthorized" });
+    // Get token from Authorization header or cookie
+    const authHeader = req.headers.get("authorization");
+    const headerToken = authHeader?.split(" ")[1];
+    const cookieToken = req.cookies.get('session')?.value;
+    
+    const token = headerToken || cookieToken;
+    
+    if (!token) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required'
+      }, { status: 401 });
+    }
+
+    // Validate the token
+    const payload = verifySessionToken(token);
+    if (!payload) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid token'
+      }, { status: 401 });
     }
 
     const mentors = await storage.getAiMentors();
-    return res.status(200).json({ mentors });
+    return NextResponse.json({
+      success: true,
+      data: { mentors }
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Failed to fetch AI mentors" });
+    console.error('AI mentors fetch error:', error);
+    return NextResponse.json({
+      success: false,
+      error: "Failed to fetch AI mentors"
+    }, { status: 500 });
   }
 }
