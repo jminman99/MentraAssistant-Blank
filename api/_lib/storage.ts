@@ -210,27 +210,22 @@ export class VercelStorage {
   }
 
   // Human Mentor methods
-  async getHumanMentorsByOrganization(organizationId: number): Promise<any[]> {
-    const results = await db
+  async getHumanMentorsByOrganization(orgId: number): Promise<any[]> {
+    const rows = await db
       .select({
         id: humanMentors.id,
-        userId: humanMentors.userId,
         expertise: humanMentors.expertise,
         bio: humanMentors.bio,
-        experience: humanMentors.experience,
-        hourlyRate: humanMentors.hourlyRate,
-        rating: humanMentors.rating,
-        totalSessions: humanMentors.totalSessions,
-        availability: humanMentors.availability,
-        isActive: humanMentors.isActive,
-        organizationId: humanMentors.organizationId,
-        createdAt: humanMentors.createdAt,
-        user: users,
+        user: {
+          firstName: users.firstName,
+          lastName: users.lastName,
+        },
       })
       .from(humanMentors)
-      .innerJoin(users, eq(humanMentors.userId, users.id))
-      .where(eq(humanMentors.organizationId, organizationId));
-    return results;
+      .leftJoin(users, eq(humanMentors.userId, users.id))
+      .where(eq(humanMentors.organizationId, orgId));
+
+    return rows;
   }
 
   // Council methods
