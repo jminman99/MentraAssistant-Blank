@@ -33,8 +33,9 @@ function CouncilSchedulingContent() {
   const queryClient = useQueryClient();
   
   // Fetch available mentors for council sessions
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ['/api/human-mentors'],
+    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
   });
   const mentors = Array.isArray(data?.data) ? data.data : [];
 

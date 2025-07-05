@@ -162,10 +162,13 @@ export default function CouncilScheduling() {
   });
 
   // Fetch available mentors for council sessions (only if authenticated)
-  const { data: mentors, isLoading, error } = useQuery<HumanMentor[]>({
+  const { data, isLoading, error } = useQuery<HumanMentor[]>({
     queryKey: ['/api/human-mentors'],
+    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
     enabled: !!user && !authLoading, // Only fetch when user is authenticated
   });
+
+  const mentors = Array.isArray(data?.data) ? data.data : [];
 
   // Redirect to login if not authenticated
   if (!authLoading && !user) {

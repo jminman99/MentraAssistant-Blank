@@ -10,6 +10,7 @@ export default function Mentors() {
   const [, setLocation] = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ['/api/human-mentors'],
+    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
   });
   const mentors = Array.isArray(data?.data) ? data.data : [];
 

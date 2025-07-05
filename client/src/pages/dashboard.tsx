@@ -28,44 +28,9 @@ export default function Dashboard() {
   };
 
   // ✅ ADDED: safely fetch mentors
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["/api/human-mentors"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/human-mentors", {
-          credentials: "include",
-        });
-        
-        console.log("Human mentors fetch response:", {
-          status: res.status,
-          ok: res.ok,
-          headers: Object.fromEntries(res.headers.entries())
-        });
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Failed to fetch mentors:", {
-            status: res.status,
-            statusText: res.statusText,
-            body: errorText
-          });
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        
-        const data = await res.json();
-        console.log("Human mentors data received:", data);
-        return data;
-      } catch (error) {
-        console.error("Human mentors query error:", error);
-        throw error;
-      }
-    },
-    retry: false,
+    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
   });
 
   const humanMentors = Array.isArray(data?.data) ? data.data : [];
