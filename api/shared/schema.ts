@@ -17,7 +17,6 @@ export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
   email: varchar("email", { length: 200 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 50 }).notNull(),

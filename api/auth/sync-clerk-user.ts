@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { clerkUserId, email, firstName, lastName, username } = req.body;
+    const { clerkUserId, email, firstName, lastName } = req.body;
 
     if (!clerkUserId || !email) {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
@@ -20,7 +20,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Create new user in your database
       user = await storage.createUser({
         email,
-        username: username || email.split('@')[0],
         firstName: firstName || '',
         lastName: lastName || '',
         clerkUserId,
