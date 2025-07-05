@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 50 }).notNull(),
   lastName: varchar("last_name", { length: 50 }).notNull(),
   profileImage: text("profile_image"),
+  clerkUserId: varchar("clerk_user_id", { length: 100 }).unique(), // Added for Clerk integration
   role: userRoleEnum("role").notNull().default("user"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").notNull().default("ai-only"),
   messagesUsed: integer("messages_used").notNull().default(0),

@@ -2,10 +2,11 @@ import React from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import Login from "./pages/login.tsx";
 import Dashboard from "./pages/dashboard.tsx";
 import TestPage from "./pages/test.tsx";
-import { useAuth } from "./lib/auth";
+import SignInPage from "./pages/sign-in.tsx";
+import SignUpPage from "./pages/sign-up.tsx";
+import { AuthProvider, useAuth } from "./lib/clerk-auth";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function Router() {
@@ -23,14 +24,15 @@ function Router() {
   return (
     <Switch>
       <Route path="/test" component={TestPage} />
-      <Route path="/login" component={Login} />
+      <Route path="/sign-in" component={SignInPage} />
+      <Route path="/sign-up" component={SignUpPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
         {() => {
           if (user) {
             return <Dashboard />;
           } else {
-            setLocation("/login");
+            setLocation("/sign-in");
             return null;
           }
         }}
@@ -42,9 +44,11 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <Router />
-      </QueryClientProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <Router />
+        </QueryClientProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
