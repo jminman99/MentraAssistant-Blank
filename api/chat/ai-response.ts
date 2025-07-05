@@ -7,8 +7,16 @@ import OpenAI from 'openai';
 function getOpenAIClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
   
+  console.log('Environment check:', {
+    hasApiKey: !!apiKey,
+    keyLength: apiKey ? apiKey.length : 0,
+    envKeys: Object.keys(process.env).filter(key => key.includes('OPENAI')),
+    allEnvKeys: Object.keys(process.env).length
+  });
+  
   if (!apiKey) {
     console.error('OPENAI_API_KEY environment variable is not set');
+    console.error('Available environment variables:', Object.keys(process.env));
     throw new Error('OpenAI API key is not configured');
   }
   
