@@ -22,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/test" component={TestPage} />
       <Route path="/login" component={Login} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/">
         {user ? <Dashboard /> : <Login />}
       </Route>
