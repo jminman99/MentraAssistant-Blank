@@ -16,4 +16,4 @@ export default requireAuth(async (req, res) => {
     console.error('Error fetching human mentors:', error);
     res.status(500).json({ message: 'Failed to fetch human mentors' });
   }
-}
+});

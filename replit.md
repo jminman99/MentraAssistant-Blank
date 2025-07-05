@@ -140,7 +140,15 @@ client/
 
 ## Changelog
 
-- July 05, 2025. Initial setup
+- July 05, 2025: Working on serverless migration
+  - ✅ Deleted server/index.ts and entire Express.js backend
+  - ✅ Removed esbuild from build pipeline
+  - ✅ Uninstalled Express, tsx, and Express-specific middleware
+  - ✅ Cleaned up repository by removing unused files and directories
+  - 🔄 Converting to frontend-only development with Vite
+  - 🔄 API routes ready for Vercel deployment but need proper dev setup
+
+- July 05, 2025: Initial setup
 
 ## User Preferences
 
