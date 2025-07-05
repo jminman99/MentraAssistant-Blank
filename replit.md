@@ -460,6 +460,9 @@ client/
   - ✅ Made firstName/lastName optional to match database constraints
   - ✅ Fixed organization foreign key with proper CASCADE behavior
   - ✅ Removed obsolete messaging fields in favor of actual database structure
+  - ✅ Updated chat_messages table schema with conversationContext JSONB field
+  - ✅ Aligned field order to match PostgreSQL: role, content, conversationContext
+  - ✅ Updated frontend ChatMessage interface with optional conversationContext field
   - ✅ Schema now perfectly aligned with production database
 
 - July 05, 2025: Initial setup

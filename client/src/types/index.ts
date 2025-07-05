@@ -27,10 +27,11 @@ export interface AiMentor {
 
 export interface ChatMessage {
   id: number;
-  content: string;
-  role: 'user' | 'assistant';
   userId: number;
   aiMentorId: number;
+  role: 'user' | 'assistant';
+  content: string;
+  conversationContext?: any;
   createdAt: Date;
 }
 

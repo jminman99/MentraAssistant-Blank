@@ -84,8 +84,9 @@ export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   aiMentorId: integer("ai_mentor_id").notNull().references(() => aiMentors.id, { onDelete: 'cascade' }),
-  content: text("content").notNull(),
   role: chatRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  conversationContext: jsonb("conversation_context").$type<any>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
