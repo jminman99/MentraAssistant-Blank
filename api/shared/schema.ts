@@ -17,20 +17,23 @@ export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: varchar("email", { length: 200 }).notNull().unique(),
-  firstName: varchar("first_name", { length: 50 }).notNull(),
-  lastName: varchar("last_name", { length: 50 }).notNull(),
-  profileImage: text("profile_image"),
-  clerkUserId: varchar("clerk_user_id", { length: 100 }).unique(), // Added for Clerk integration
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  firstName: varchar("first_name", { length: 50 }),
+  lastName: varchar("last_name", { length: 50 }),
   role: userRoleEnum("role").notNull().default("user"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").notNull().default("ai-only"),
-  messagesUsed: integer("messages_used").notNull().default(0),
-  messagesLimit: integer("messages_limit").notNull().default(100),
-  sessionsUsed: integer("sessions_used").notNull().default(0),
-  sessionsLimit: integer("sessions_limit").notNull().default(0),
-  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'cascade' }),
+  profilePictureUrl: text("profile_picture_url"),
+  bio: text("bio"),
+  phoneNumber: varchar("phone_number", { length: 20 }),
+  location: varchar("location", { length: 100 }),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
+  individualSessionsUsed: integer("individual_sessions_used").notNull().default(0),
+  councilSessionsUsed: integer("council_sessions_used").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  clerkUserId: varchar("clerk_user_id", { length: 100 }).unique(), // Added for Clerk integration
 });
 
 export const organizations = pgTable("organizations", {
