@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth.js';
-import { getCouncilParticipants } from '../_lib/storage.js';
+import { requireAuth } from '../_lib/auth';
+import { storage } from '../_lib/storage';
 
 export default requireAuth(async (req, res) => {
   if (req.method !== 'GET') {
@@ -9,7 +9,7 @@ export default requireAuth(async (req, res) => {
 
   try {
     // All users now have access to council sessions
-    const registrations = await getCouncilParticipants(req.user.id);
+    const registrations = await storage.getCouncilParticipants(req.user.id);
     res.json(registrations);
   } catch (error) {
     console.error('Error fetching council registrations:', error);
