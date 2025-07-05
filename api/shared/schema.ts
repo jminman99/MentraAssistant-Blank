@@ -1,71 +1,83 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal, varchar, time } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal, varchar, time, uuid, pgEnum } from "drizzle-orm/pg-core";
 import { relations, sql, eq, gte, lte, ne } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Enums for fixed values
+export const userRoleEnum = pgEnum("user_role", ["user", "admin", "super_admin"]);
+export const subscriptionPlanEnum = pgEnum("subscription_plan", ["ai-only", "individual", "council", "unlimited"]);
+export const organizationTypeEnum = pgEnum("organization_type", ["church", "business", "city", "nonprofit"]);
+export const sessionTypeEnum = pgEnum("session_type", ["individual", "council"]);
+export const sessionStatusEnum = pgEnum("session_status", ["scheduled", "confirmed", "completed", "cancelled", "no_show"]);
+export const meetingTypeEnum = pgEnum("meeting_type", ["video", "in_person", "calendly"]);
+export const availabilityResponseEnum = pgEnum("availability_response", ["pending", "available", "unavailable", "tentative"]);
+export const mentorApplicationStatusEnum = pgEnum("mentor_application_status", ["pending", "interview_scheduled", "approved", "rejected"]);
+export const coordinationStatusEnum = pgEnum("coordination_status", ["pending", "coordinating", "confirmed", "failed"]);
+export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  email: varchar("email", { length: 200 }).notNull().unique(),
   password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
+  firstName: varchar("first_name", { length: 50 }).notNull(),
+  lastName: varchar("last_name", { length: 50 }).notNull(),
   profileImage: text("profile_image"),
-  role: varchar("role", { length: 20 }).notNull().default("user"), // 'user', 'admin', 'super_admin'
-  subscriptionPlan: varchar("subscription_plan", { length: 20 }).notNull().default("ai-only"),
+  role: userRoleEnum("role").notNull().default("user"),
+  subscriptionPlan: subscriptionPlanEnum("subscription_plan").notNull().default("ai-only"),
   messagesUsed: integer("messages_used").notNull().default(0),
   messagesLimit: integer("messages_limit").notNull().default(100),
   sessionsUsed: integer("sessions_used").notNull().default(0),
   sessionsLimit: integer("sessions_limit").notNull().default(0),
-  organizationId: integer("organization_id"),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
   description: text("description").default(""),
-  type: varchar("type", { length: 20 }).notNull().default("business"), // 'church', 'business', 'city'
+  type: organizationTypeEnum("type").notNull().default("business"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const aiMentors = pgTable("ai_mentors", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
   personality: text("personality").notNull(),
   expertise: text("expertise").notNull(),
   avatar: text("avatar").notNull(),
   backstory: text("backstory").notNull(),
-  organizationId: integer("organization_id").notNull(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const humanMentors = pgTable("human_mentors", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   expertise: text("expertise").notNull(),
   bio: text("bio").notNull(),
   experience: text("experience").notNull(),
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }).notNull(),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalSessions: integer("total_sessions").notNull().default(0),
-  availability: jsonb("availability").notNull(), // JSON object with availability schedule
+  availability: jsonb("availability").$type<any>().default({}),
   isActive: boolean("is_active").notNull().default(true),
-  organizationId: integer("organization_id").notNull(),
+  organizationId: integer("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   
   // Calendly Integration
-  calendlyUrl: text("calendly_url"), // e.g., "https://calendly.com/john-mentor"
-  calendlyApiKey: text("calendly_api_key"), // Encrypted Calendly API key
-  calendlyEventTypes: jsonb("calendly_event_types"), // Store available event types
+  calendlyUrl: text("calendly_url"),
+  calendlyApiKey: text("calendly_api_key"),
+  calendlyEventTypes: jsonb("calendly_event_types").$type<any[]>().default([]),
   useCalendly: boolean("use_calendly").default(false),
   
   // Native Scheduling Settings
-  defaultSessionDuration: integer("default_session_duration").default(30), // minutes
-  bufferTime: integer("buffer_time").default(15), // minutes between sessions
-  advanceBookingDays: integer("advance_booking_days").default(30), // how far ahead can be booked
+  defaultSessionDuration: integer("default_session_duration").default(30),
+  bufferTime: integer("buffer_time").default(15),
+  advanceBookingDays: integer("advance_booking_days").default(30),
   timezone: varchar("timezone", { length: 50 }).default("America/New_York"),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -73,26 +85,26 @@ export const humanMentors = pgTable("human_mentors", {
 
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  aiMentorId: integer("ai_mentor_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  aiMentorId: integer("ai_mentor_id").notNull().references(() => aiMentors.id, { onDelete: 'cascade' }),
   content: text("content").notNull(),
-  role: varchar("role", { length: 10 }).notNull(), // 'user' or 'assistant'
+  role: chatRoleEnum("role").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const mentoringSessions = pgTable("mentoring_sessions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  humanMentorId: integer("human_mentor_id"),
-  type: varchar("type", { length: 20 }).notNull(), // 'individual', 'council'
-  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'completed', 'cancelled'
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  humanMentorId: integer("human_mentor_id").references(() => humanMentors.id, { onDelete: 'set null' }),
+  type: sessionTypeEnum("type").notNull(),
+  status: sessionStatusEnum("status").notNull().default("scheduled"),
   scheduledAt: timestamp("scheduled_at").notNull(),
-  duration: integer("duration").notNull(), // minutes
+  duration: integer("duration").notNull(),
   topic: text("topic"),
   notes: text("notes"),
-  rating: integer("rating"), // 1-5 stars
+  rating: integer("rating"),
   feedback: text("feedback"),
-  jitsiRoomId: text("jitsi_room_id"), // Unique Jitsi Meet room identifier
+  jitsiRoomId: text("jitsi_room_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -179,10 +191,10 @@ export const mentorApplications = pgTable("mentor_applications", {
   yearsExperience: integer("years_experience"),
   
   // Semantic Content for AI Training - Flexible JSON structure
-  lifeStories: jsonb("life_stories"), // [{ topic: "career", story: "...", lesson: "...", keywords: [...] }]
-  challenges: jsonb("challenges"), // [{ challenge: "addiction", solution: "...", wisdom: "...", outcome: "..." }]
-  quotes: jsonb("quotes"), // [{ quote: "...", context: "...", topic: "..." }]
-  principles: jsonb("principles"), // [{ principle: "...", explanation: "...", application: "..." }]
+  lifeStories: jsonb("life_stories").$type<any[]>().default([]),
+  challenges: jsonb("challenges").$type<any[]>().default([]),
+  quotes: jsonb("quotes").$type<any[]>().default([]),
+  principles: jsonb("principles").$type<any[]>().default([]),
   
   // Topic-specific wisdom capture
   careerWisdom: text("career_wisdom"),
@@ -195,11 +207,11 @@ export const mentorApplications = pgTable("mentor_applications", {
   purposeAndBelonging: text("purpose_and_belonging"),
   
   // Application workflow
-  organizationId: integer("organization_id").references(() => organizations.id),
-  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending', 'interview_scheduled', 'approved', 'rejected'
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
+  status: mentorApplicationStatusEnum("status").notNull().default("pending"),
   adminNotes: text("admin_notes"),
   interviewDate: timestamp("interview_date"),
-  approvedBy: integer("approved_by"),
+  approvedBy: integer("approved_by").references(() => users.id, { onDelete: 'set null' }),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -208,19 +220,19 @@ export const mentorApplications = pgTable("mentor_applications", {
 // Session Bookings - Enhanced mentoring sessions with scheduling
 export const sessionBookings = pgTable("session_bookings", {
   id: serial("id").primaryKey(),
-  menteeId: integer("mentee_id").notNull().references(() => users.id),
-  humanMentorId: integer("human_mentor_id").references(() => humanMentors.id), // Primary mentor for individual sessions, null for council
-  sessionType: varchar("session_type", { length: 20 }).notNull(), // 'individual', 'council'
-  duration: integer("duration").notNull().default(30), // minutes - 30 for individual, 60 for council
+  menteeId: integer("mentee_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  humanMentorId: integer("human_mentor_id").references(() => humanMentors.id, { onDelete: 'set null' }),
+  sessionType: sessionTypeEnum("session_type").notNull(),
+  duration: integer("duration").notNull().default(30),
   scheduledDate: timestamp("scheduled_date").notNull(),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
   
   // Meeting details
-  meetingType: varchar("meeting_type", { length: 20 }).notNull(), // 'video', 'in_person', 'calendly'
-  location: text("location"), // For in-person meetings
-  videoLink: text("video_link"), // For video meetings (Zoom, Teams, etc.)
-  calendlyEventId: text("calendly_event_id"), // Calendly event ID if booked via Calendly
-  calendlyEventUrl: text("calendly_event_url"), // Calendly join link
+  meetingType: meetingTypeEnum("meeting_type").notNull(),
+  location: text("location"),
+  videoLink: text("video_link"),
+  calendlyEventId: text("calendly_event_id"),
+  calendlyEventUrl: text("calendly_event_url"),
   
   // Preparation and goals
   sessionGoals: text("session_goals"),
@@ -228,11 +240,11 @@ export const sessionBookings = pgTable("session_bookings", {
   menteeQuestions: text("mentee_questions"),
   
   // Status and outcomes
-  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
+  status: sessionStatusEnum("status").notNull().default("scheduled"),
   sessionNotes: text("session_notes"),
   followUpActions: text("follow_up_actions"),
-  mentorRating: integer("mentor_rating"), // 1-5 stars
-  menteeRating: integer("mentee_rating"), // 1-5 stars
+  mentorRating: integer("mentor_rating"),
+  menteeRating: integer("mentee_rating"),
   feedback: text("feedback"),
   
   // Reminders and notifications
@@ -249,23 +261,23 @@ export const councilSessions = pgTable("council_sessions", {
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description"),
   scheduledDate: timestamp("scheduled_date").notNull(),
-  duration: integer("duration").notNull().default(60), // Council sessions are always 60 minutes
+  duration: integer("duration").notNull().default(60),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
-  maxMentees: integer("max_mentees").notNull().default(5), // Maximum mentees per council session
+  maxMentees: integer("max_mentees").notNull().default(5),
   currentMentees: integer("current_mentees").notNull().default(0),
-  meetingType: varchar("meeting_type", { length: 20 }).notNull().default("video"),
+  meetingType: meetingTypeEnum("meeting_type").notNull().default("video"),
   videoLink: text("video_link"),
   location: text("location"),
-  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled', 'active', 'completed', 'cancelled'
-  organizationId: integer("organization_id").references(() => organizations.id),
+  status: sessionStatusEnum("status").notNull().default("scheduled"),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
   // Enhanced calendar coordination fields
-  proposedTimeSlots: jsonb("proposed_time_slots"), // Array of proposed times for mentor coordination
-  mentorResponseDeadline: timestamp("mentor_response_deadline"), // Deadline for mentors to confirm availability
+  proposedTimeSlots: jsonb("proposed_time_slots").$type<any[]>().default([]),
+  mentorResponseDeadline: timestamp("mentor_response_deadline"),
   finalTimeConfirmed: boolean("final_time_confirmed").notNull().default(false),
-  coordinatorNotes: text("coordinator_notes"), // Admin notes for coordination
-  mentorMinimum: integer("mentor_minimum").notNull().default(3), // Minimum mentors required
-  mentorMaximum: integer("mentor_maximum").notNull().default(5), // Maximum mentors allowed
-  coordinationStatus: varchar("coordination_status", { length: 30 }).notNull().default("pending"), // 'pending', 'coordinating', 'confirmed', 'failed'
+  coordinatorNotes: text("coordinator_notes"),
+  mentorMinimum: integer("mentor_minimum").notNull().default(3),
+  mentorMaximum: integer("mentor_maximum").notNull().default(5),
+  coordinationStatus: coordinationStatusEnum("coordination_status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -273,16 +285,16 @@ export const councilSessions = pgTable("council_sessions", {
 // Council Session Mentors (3-5 mentors per council session)
 export const councilMentors = pgTable("council_mentors", {
   id: serial("id").primaryKey(),
-  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id),
-  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
-  role: varchar("role", { length: 20 }).notNull().default("mentor"), // 'lead_mentor', 'mentor'
+  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id, { onDelete: 'cascade' }),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id, { onDelete: 'cascade' }),
+  role: varchar("role", { length: 20 }).notNull().default("mentor"),
   confirmed: boolean("confirmed").default(false),
   // Enhanced availability tracking
-  availabilityResponse: varchar("availability_response", { length: 20 }).default("pending"), // 'pending', 'available', 'unavailable', 'tentative'
+  availabilityResponse: availabilityResponseEnum("availability_response").default("pending"),
   responseDate: timestamp("response_date"),
-  availableTimeSlots: jsonb("available_time_slots"), // Mentor's available time slots for this session
-  conflictNotes: text("conflict_notes"), // Notes about scheduling conflicts
-  alternativeProposals: jsonb("alternative_proposals"), // Alternative times proposed by mentor
+  availableTimeSlots: jsonb("available_time_slots").$type<any[]>().default([]),
+  conflictNotes: text("conflict_notes"),
+  alternativeProposals: jsonb("alternative_proposals").$type<any[]>().default([]),
   notificationSent: boolean("notification_sent").default(false),
   lastReminderSent: timestamp("last_reminder_sent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -291,8 +303,8 @@ export const councilMentors = pgTable("council_mentors", {
 // Council Session Participants (mentees who join council sessions)
 export const councilParticipants = pgTable("council_participants", {
   id: serial("id").primaryKey(),
-  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id),
-  menteeId: integer("mentee_id").notNull().references(() => users.id),
+  councilSessionId: integer("council_session_id").notNull().references(() => councilSessions.id, { onDelete: 'cascade' }),
+  menteeId: integer("mentee_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   sessionGoals: text("session_goals"),
   questions: text("questions"),
   registrationDate: timestamp("registration_date").defaultNow(),
@@ -302,10 +314,10 @@ export const councilParticipants = pgTable("council_participants", {
 // Mentor Availability Slots (for native scheduling)
 export const mentorAvailability = pgTable("mentor_availability", {
   id: serial("id").primaryKey(),
-  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
-  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 1 = Monday, etc.
-  startTime: varchar("start_time", { length: 8 }).notNull(), // e.g., "09:00:00"
-  endTime: varchar("end_time", { length: 8 }).notNull(), // e.g., "17:00:00"
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id, { onDelete: 'cascade' }),
+  dayOfWeek: integer("day_of_week").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -315,12 +327,12 @@ export const mentorAvailability = pgTable("mentor_availability", {
 // Mentor Unavailability (for blocking specific times)
 export const mentorUnavailability = pgTable("mentor_unavailability", {
   id: serial("id").primaryKey(),
-  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id),
+  humanMentorId: integer("human_mentor_id").notNull().references(() => humanMentors.id, { onDelete: 'cascade' }),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   reason: text("reason"),
   isRecurring: boolean("is_recurring").default(false),
-  recurringPattern: varchar("recurring_pattern", { length: 50 }), // 'weekly', 'monthly', etc.
+  recurringPattern: varchar("recurring_pattern", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
