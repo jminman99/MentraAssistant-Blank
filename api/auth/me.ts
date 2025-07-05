@@ -3,6 +3,9 @@ import { storage } from "../_lib/storage.js";
 import { getSessionToken, verifySessionToken } from '../_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log("HEADERS:", req.headers);
+  console.log("COOKIES:", req.headers.cookie);
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
