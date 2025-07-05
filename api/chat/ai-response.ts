@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
-import { storage } from "../_lib/storage.js";
+import { storage } from "../_lib/storage";
 
 export async function POST(req: NextRequest) {
   try {
