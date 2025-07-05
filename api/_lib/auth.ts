@@ -1,71 +1,43 @@
 import { storage } from './storage';
 import bcrypt from 'bcryptjs';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { NextRequest } from 'next/server';
 
 // Simple JWT-like session handling for Vercel
-export interface AuthenticatedRequest extends VercelRequest {
+export interface AuthenticatedRequest extends NextRequest {
   user?: any;
 }
 
-export async function authenticateUser(req: AuthenticatedRequest): Promise<boolean> {
+export async function authenticateUser(req: NextRequest): Promise<{ user: any } | null> {
   try {
-    // Check for session cookie or Authorization header
-    const sessionToken = req.cookies?.session || req.headers.authorization?.replace('Bearer ', '');
+    // Check for session token in cookies or Authorization header
+    const cookieStore = req.cookies;
+    const sessionToken = cookieStore.get('session')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!sessionToken) {
-      return false;
+      return null;
     }
 
-    // For simplicity, we'll use a basic token format: userId:timestamp:hash
-    // In production, use proper JWT or session management
-    const [userId, timestamp] = sessionToken.split(':');
-    
-    if (!userId || !timestamp) {
-      return false;
+    // Verify the session token
+    const tokenData = verifySessionToken(sessionToken);
+    if (!tokenData) {
+      return null;
     }
 
-    // Check if session is not too old (24 hours)
-    const sessionAge = Date.now() - parseInt(timestamp);
-    if (sessionAge > 24 * 60 * 60 * 1000) {
-      return false;
-    }
-
-    const user = await storage.getUser(parseInt(userId));
+    // Get user from database
+    const user = await storage.getUser(tokenData.userId);
     if (!user) {
-      return false;
+      return null;
     }
 
-    req.user = user;
-    return true;
+    return { user };
   } catch (error) {
     console.error('Authentication error:', error);
-    return false;
+    return null;
   }
 }
 
-export function requireAuth(handler: (req: AuthenticatedRequest, res: VercelResponse) => Promise<any>) {
-  return async (req: AuthenticatedRequest, res: VercelResponse) => {
-    const isAuthenticated = await authenticateUser(req);
-    
-    if (!isAuthenticated) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    return handler(req, res);
-  };
-}
-
-export function requireAdmin(handler: (req: AuthenticatedRequest, res: VercelResponse) => Promise<any>) {
-  return async (req: AuthenticatedRequest, res: VercelResponse) => {
-    const isAuthenticated = await authenticateUser(req);
-    
-    if (!isAuthenticated || req.user?.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    return handler(req, res);
-  };
-}
+// Note: requireAuth and requireAdmin middleware functions removed
+// Modern serverless functions handle authentication directly in each endpoint
 
 export async function validatePassword(password: string, hash: string): Promise<boolean> {
   return await bcrypt.compare(password, hash);
