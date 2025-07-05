@@ -19,11 +19,11 @@ This guide helps you migrate data between two different Neon databases. This is 
 Create a `.env.migration` file with both database URLs:
 
 ```bash
-# Source database (current data)
-DATABASE_URL=postgres://user:pass@ep-source-123.neon.tech/neondb?sslmode=require
+# Source database (current data that needs to be migrated)
+SOURCE_DB_URL=postgres://user:pass@ep-source-123.neon.tech/neondb?sslmode=require
 
-# Target database (Vercel connected)
-POSTGRES_URL=postgres://user:pass@ep-target-456.neon.tech/neondb?sslmode=require
+# Target database (Vercel connected destination)
+POSTGRES_URL=postgres://neondb_owner:npg_1bRHNzqM7wAr@ep-summer-waterfall-admyvfv2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
 ```
 
 ### Step 2: Install Dependencies

@@ -11,10 +11,10 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import * as schema from './api/shared/schema.js';
 
-// Source database (your current data)
-const sourceUrl = process.env.DATABASE_URL || process.env.SOURCE_DB_URL;
-// Target database (Vercel's connected Neon database)
-const targetUrl = process.env.POSTGRES_URL || process.env.TARGET_DB_URL;
+// Source database (your current data with existing content)
+const sourceUrl = process.env.SOURCE_DB_URL || process.env.DATABASE_URL;
+// Target database (Vercel's connected Neon database - destination)
+const targetUrl = process.env.POSTGRES_URL || "postgres://neondb_owner:npg_1bRHNzqM7wAr@ep-summer-waterfall-admyvfv2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require";
 
 if (!sourceUrl) {
   console.error('❌ Source database URL not found. Set DATABASE_URL or SOURCE_DB_URL');
