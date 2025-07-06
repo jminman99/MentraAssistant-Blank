@@ -22,26 +22,21 @@ export function ChatInterfaceVercel() {
   const [debugMentors, setDebugMentors] = useState<any>(null);
   
   useEffect(() => {
-    const loadMentors = async () => {
-      try {
-        const res = await fetch("/api/ai-mentors", {
-          credentials: 'include'
-        });
-        const json = await res.json();
-
-        console.log("Full response:", json);
-        console.log("Array.isArray(json.data):", Array.isArray(json.data));
-        console.log("Mentors length:", json.data?.length);
-
-        setDebugMentors(json);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        setDebugMentors({ error: error.message });
-      }
-    };
-
     if (user) {
-      loadMentors();
+      fetch("/api/ai-mentors", {
+        credentials: 'include'
+      })
+        .then(res => res.json())
+        .then(json => {
+          console.log("Full response:", json);
+          console.log("Array.isArray(json.data):", Array.isArray(json.data));
+          console.log("Length:", json.data?.length);
+          setDebugMentors(json);
+        })
+        .catch(error => {
+          console.error("Fetch error:", error);
+          setDebugMentors({ error: error.message });
+        });
     }
   }, [user]);
 
