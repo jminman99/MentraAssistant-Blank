@@ -36,7 +36,13 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
-    const mentors = await storage.getAiMentors();
+    // Get user data to fetch organization ID
+    const user = await storage.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    const mentors = await storage.getAiMentors(user.organizationId || undefined);
     // Ensure mentors is always an array, never undefined
     const safeMentors = Array.isArray(mentors) ? mentors : [];
     
