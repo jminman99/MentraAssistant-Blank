@@ -288,7 +288,7 @@ export function ChatInterface() {
     }
   }, [messageInput, selectedMentorId, user, startStream, toast, queryClient]);
 
-  const selectedMentor = aiMentors.find(m => m.id === selectedMentorId);
+  const selectedMentor = Array.isArray(aiMentors) ? aiMentors.find(m => m.id === selectedMentorId) : undefined;
 
   if (!user) {
     return (

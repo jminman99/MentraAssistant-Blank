@@ -124,7 +124,7 @@ export function ChatInterfaceVercel() {
     }
   };
 
-  const selectedMentor = aiMentors.find(m => m.id === selectedMentorId);
+  const selectedMentor = Array.isArray(aiMentors) ? aiMentors.find(m => m.id === selectedMentorId) : undefined;
 
   if (!user) {
     return (
