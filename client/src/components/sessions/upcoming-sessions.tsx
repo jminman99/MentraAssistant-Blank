@@ -20,7 +20,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // FIXED: Cancel council session mutation with proper endpoint
   const { mutate: cancelCouncilSession } = useMutation({
     mutationFn: async (participantId: number) => {
-      console.log(`[DEBUG] Cancelling participant ${participantId}`);
+      // console.log(`[DEBUG] Cancelling participant ${participantId}`);
       
       const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
         method: 'PATCH',
@@ -32,11 +32,11 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         throw new Error(result.message || 'Failed to cancel session');
       }
       
-      console.log(`[DEBUG] Cancel response:`, result);
+      // console.log(`[DEBUG] Cancel response:`, result);
       return result;
     },
     onSuccess: async (data) => {
-      console.log(`[DEBUG] Session cancelled successfully:`, data);
+      // console.log(`[DEBUG] Session cancelled successfully:`, data);
       
       toast({
         title: "Session Cancelled",
@@ -45,10 +45,10 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       
       // FIXED: Use correct query key and await invalidation
       await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      console.log(`[DEBUG] Cache invalidated, cancelled session should be hidden`);
+      // console.log(`[DEBUG] Cache invalidated, cancelled session should be hidden`);
     },
     onError: (error: any) => {
-      console.log(`[DEBUG] Cancel error:`, error);
+      // console.log(`[DEBUG] Cancel error:`, error);
       
       toast({
         title: "Cancellation Failed", 
@@ -67,8 +67,8 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // Filter out cancelled sessions
   const councilSessions = rawCouncilSessions.filter((session: any) => session.status !== 'cancelled');
   
-  console.log('[DEBUG] Raw council sessions:', rawCouncilSessions);
-  console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
+  // console.log('[DEBUG] Raw council sessions:', rawCouncilSessions);
+  // console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
 
   const isLoading = sessionsLoading || councilLoading;
 
@@ -83,15 +83,15 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         'Individual Session'
     })),
     ...councilSessions.map((session: any) => {
-      console.log('[DEBUG] Processing council session for upcoming:', session);
-      console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
-      console.log('[DEBUG] Session status:', session.status);
+      // console.log('[DEBUG] Processing council session for upcoming:', session);
+      // console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
+      // console.log('[DEBUG] Session status:', session.status);
       const sessionDate = session.scheduledDate ? parseISO(session.scheduledDate) : null;
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      console.log('[DEBUG] Session date:', sessionDate);
-      console.log('[DEBUG] Start of today:', startOfToday);
-      console.log('[DEBUG] Is today or future?', sessionDate ? sessionDate >= startOfToday : false);
+      // console.log('[DEBUG] Session date:', sessionDate);
+      // console.log('[DEBUG] Start of today:', startOfToday);
+      // console.log('[DEBUG] Is today or future?', sessionDate ? sessionDate >= startOfToday : false);
       
       return {
         id: session.id, // This is the participant ID from storage
@@ -110,7 +110,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     })
   ];
   
-  console.log('[DEBUG] All sessions combined:', allSessions);
+  // console.log('[DEBUG] All sessions combined:', allSessions);
 
   const upcomingSessions = allSessions
     .filter(session => {
@@ -123,7 +123,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const isTodayOrFuture = sessionDate ? sessionDate >= startOfToday : false;
       
-      console.log('[DEBUG] Filtering session:', {
+      // console.log('[DEBUG] Filtering session:', {
         id: session.id,
         type: session.type,
         status: session.status,
@@ -140,9 +140,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
     
-  console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
-  console.log('[DEBUG] Total sessions found:', allSessions.length);
-  console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
+  // console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
+  // console.log('[DEBUG] Total sessions found:', allSessions.length);
+  // console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
 
   if (isLoading) {
     return (
@@ -231,7 +231,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                       <AlertDialogAction 
                         onClick={() => {
                           const participantId = (session as any).participantId || session.id;
-                          console.log(`[DEBUG] Cancelling session with participantId: ${participantId}, sessionId: ${(session as any).sessionId}`);
+                          // console.log(`[DEBUG] Cancelling session with participantId: ${participantId}, sessionId: ${(session as any).sessionId}`);
                           cancelCouncilSession(participantId);
                         }}
                         className="bg-red-600 hover:bg-red-700"

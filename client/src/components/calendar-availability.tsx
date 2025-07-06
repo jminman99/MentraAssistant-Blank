@@ -46,7 +46,7 @@ export default function CalendarAvailability({
   
   const detectedCouncilMode = useMemo(() => {
     const result = isCouncilMode || sessionDuration === 60 || mentorIds.length > 1;
-    console.log('[DEBUG] detectedCouncilMode calculation:', {
+    // console.log('[DEBUG] detectedCouncilMode calculation:', {
       isCouncilMode,
       sessionDuration,
       mentorIdsLength: mentorIds.length,
@@ -55,7 +55,7 @@ export default function CalendarAvailability({
     return result;
   }, [isCouncilMode, sessionDuration, mentorIds]);
   
-  console.log('[DEBUG] CalendarAvailability props:', { 
+  // console.log('[DEBUG] CalendarAvailability props:', { 
     mentorIds,
     isCouncilMode: detectedCouncilMode,
     sessionDuration
@@ -92,7 +92,7 @@ export default function CalendarAvailability({
   
   const timeSlots = useMemo(() => {
     const duration = detectedCouncilMode ? 60 : 30;
-    console.log('[DEBUG] Using session duration for slots:', duration);
+    // console.log('[DEBUG] Using session duration for slots:', duration);
     return generateTimeSlots(duration);
   }, [detectedCouncilMode]);
 
