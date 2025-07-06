@@ -72,32 +72,32 @@ export default function CalendarAvailability({
     const startHour = 9; // 9 AM
     const endHour = 17; // 5 PM
     
-    // console.log('[DEBUG] generateTimeSlots called with duration:', duration);
+    // // console.log('[DEBUG] generateTimeSlots called with duration:', duration);
     
     // Always check duration explicitly to ensure correct slot generation
     if (duration === 30) {
       // 30-minute intervals for individual sessions
       for (let hour = startHour; hour < endHour; hour++) {
-        // console.log('[DEBUG] Adding 30-min slots for hour:', hour);
+        // // console.log('[DEBUG] Adding 30-min slots for hour:', hour);
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
         slots.push(`${hour.toString().padStart(2, '0')}:30`);
       }
     } else {
       // 60-minute intervals for council sessions (duration !== 30)
       for (let hour = startHour; hour < endHour; hour++) {
-        // console.log('[DEBUG] Adding 60-min slot for hour:', hour);
+        // // console.log('[DEBUG] Adding 60-min slot for hour:', hour);
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
       }
     }
     
-    // console.log('[DEBUG] Final slots array:', slots);
+    // // console.log('[DEBUG] Final slots array:', slots);
     return slots;
   };
   
   const timeSlots = useMemo(() => {
     const duration = detectedCouncilMode ? 60 : 30;
-    // console.log('[DEBUG] Using session duration for slots:', duration);
-    // console.log('[DEBUG] Final duration decision:', duration, {
+    // // console.log('[DEBUG] Using session duration for slots:', duration);
+    // // console.log('[DEBUG] Final duration decision:', duration, {
       detectedCouncilMode,
       isCouncilMode,
       sessionDuration,
@@ -105,7 +105,7 @@ export default function CalendarAvailability({
       selectedMentorIdsCount: selectedMentorIds.length
     });
     const slots = generateTimeSlots(duration);
-    // console.log('[DEBUG] Generated slots:', slots);
+    // // console.log('[DEBUG] Generated slots:', slots);
     return slots;
   }, [detectedCouncilMode]);
 

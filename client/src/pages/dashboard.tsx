@@ -19,6 +19,14 @@ import { WelcomeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/hooks/use-toast";
+import { addDays } from "date-fns";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarAvailability } from "@/components/calendar-availability";
 
 // Council booking form schema
 const councilBookingSchema = z.object({
