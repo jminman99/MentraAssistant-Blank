@@ -137,6 +137,18 @@ export function ChatInterfaceVercel() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+      {/* DEBUG: AI Mentors Data Test */}
+      <div className="p-4 bg-yellow-50 border-b">
+        <h3 className="font-bold text-red-600">🔍 DEBUG - AI Mentors Data:</h3>
+        <pre className="text-xs bg-white p-2 rounded mt-2 overflow-auto max-h-40">
+          {JSON.stringify(aiMentors, null, 2)}
+        </pre>
+        <p className="text-sm mt-2">
+          <strong>Array.isArray(aiMentors):</strong> {String(Array.isArray(aiMentors))} | 
+          <strong> Length:</strong> {Array.isArray(aiMentors) ? aiMentors.length : 'N/A'}
+        </p>
+      </div>
+      
       {/* Chat Header */}
       <div className="border-b border-slate-200 p-4">
         <div className="flex items-center justify-between mb-4">
