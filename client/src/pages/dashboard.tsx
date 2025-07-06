@@ -46,11 +46,15 @@ export default function Dashboard() {
 
       <h2>Human Mentors:</h2>
       {mentors.length === 0 && <p>No mentors found.</p>}
-      {mentors.map((m) => (
-        <div key={m.id} style={{ marginBottom: "1rem" }}>
-          <strong>{m.user?.firstName} {m.user?.lastName}</strong>
-          <p>{m.expertise || "No expertise listed"}</p>
-          <p>{m.bio || "No bio available"}</p>
+      {mentors.map((mentor) => (
+        <div key={mentor.id} style={{ marginBottom: "1rem" }}>
+          <strong>{mentor.user?.firstName} {mentor.user?.lastName}</strong>
+          <p>
+            {mentor.expertiseAreas?.length
+              ? mentor.expertiseAreas.join(", ")
+              : "No expertise listed"}
+          </p>
+          <p>{mentor.bio || "No bio available"}</p>
         </div>
       ))}
     </div>
