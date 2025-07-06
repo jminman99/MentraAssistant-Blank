@@ -108,15 +108,12 @@ export class DevAuthService {
   }
 
   async login(email: string) {
-    console.log('[DEV] Mock login attempt:', { email });
-    
     // Simple validation for development
     if (email) {
       await mockApiCall(null, 800); // Simulate API call
       this.isAuthenticated = true;
       this.currentUser = MOCK_USER;
       
-      console.log('[DEV] Mock login successful');
       return { success: true, data: MOCK_USER };
     } else {
       throw new Error('Email required');
@@ -136,7 +133,6 @@ export class DevAuthService {
     await mockApiCall(null, 300);
     this.isAuthenticated = false;
     this.currentUser = null;
-    console.log('[DEV] Mock logout successful');
   }
 
   isLoggedIn(): boolean {
@@ -144,4 +140,4 @@ export class DevAuthService {
   }
 }
 
-console.log('[DEV] Mock authentication service loaded for development');
+// Mock authentication service loaded for development

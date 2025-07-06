@@ -17,21 +17,13 @@ export function useAuth() {
     queryKey: ['/api/auth/me'],
     queryFn: async () => {
       try {
-        console.log("useAuth - Fetching current user with credentials");
         const res = await fetch('/api/auth/me', {
           credentials: "include",
         });
         
-        console.log("useAuth - Response status:", res.status);
-        console.log("useAuth - Response ok:", res.ok);
-        
         if (!res.ok) {
-          const errorText = await res.text();
-          console.log("useAuth - Error response body:", errorText);
-          
           // In development, fallback to mock authentication
           if (DEV_MODE) {
-            console.log("[AUTH] API failed, using development mock authentication");
             const mockResult = await devAuth.getCurrentUser();
             return mockResult;
           }
@@ -40,21 +32,16 @@ export function useAuth() {
         }
         
         const data = await res.json();
-        console.log("useAuth - Success response:", data);
         
         // Ensure we always return a consistent structure
         if (data && typeof data === 'object') {
           return data;
         } else {
-          console.warn("useAuth - Unexpected response format:", data);
           return null;
         }
       } catch (error) {
-        console.error("useAuth - Fetch error:", error);
-        
         // In development, fallback to mock authentication
         if (DEV_MODE) {
-          console.log("[AUTH] Network error, falling back to mock authentication");
           const mockResult = await devAuth.getCurrentUser();
           return mockResult;
         }
