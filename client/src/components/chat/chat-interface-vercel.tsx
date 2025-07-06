@@ -18,32 +18,13 @@ export function ChatInterfaceVercel() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Debug: Direct fetch test
-  const [debugMentors, setDebugMentors] = useState<any>(null);
-  
-  useEffect(() => {
-    if (user) {
-      fetch("/api/ai-mentors", {
-        credentials: 'include'
-      })
-        .then(res => res.json())
-        .then(json => {
-          console.log("Full response:", json);
-          console.log("Array.isArray(json.data):", Array.isArray(json.data));
-          console.log("Length:", json.data?.length);
-          setDebugMentors(json);
-        })
-        .catch(error => {
-          console.error("Fetch error:", error);
-          setDebugMentors({ error: error.message });
-        });
-    }
-  }, [user]);
+
 
   // Fetch AI mentors
   const { data: aiMentors = [] } = useQuery<AiMentor[]>({
     queryKey: ['/api/ai-mentors'],
     queryFn: () => vercelApiClient.getAiMentors(),
+    select: (res) => res?.data || [],
     enabled: !!user,
   });
 
@@ -159,22 +140,7 @@ export function ChatInterfaceVercel() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      {/* DEBUG: AI Mentors Data Test */}
-      <div className="p-4 bg-yellow-50 border-b">
-        <h3 className="font-bold text-red-600">🔍 DEBUG - Direct Fetch Test:</h3>
-        <pre className="text-xs bg-white p-2 rounded mt-2 overflow-auto max-h-40">
-          {JSON.stringify(debugMentors, null, 2)}
-        </pre>
-        
-        <h4 className="font-bold text-blue-600 mt-4">🔍 DEBUG - TanStack Query Data:</h4>
-        <pre className="text-xs bg-white p-2 rounded mt-2 overflow-auto max-h-40">
-          {JSON.stringify(aiMentors, null, 2)}
-        </pre>
-        <p className="text-sm mt-2">
-          <strong>Array.isArray(aiMentors):</strong> {String(Array.isArray(aiMentors))} | 
-          <strong> Length:</strong> {Array.isArray(aiMentors) ? aiMentors.length : 'N/A'}
-        </p>
-      </div>
+
       
       {/* Chat Header */}
       <div className="border-b border-slate-200 p-4">
