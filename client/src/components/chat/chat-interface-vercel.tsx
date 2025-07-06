@@ -18,6 +18,33 @@ export function ChatInterfaceVercel() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Debug: Direct fetch test
+  const [debugMentors, setDebugMentors] = useState<any>(null);
+  
+  useEffect(() => {
+    const loadMentors = async () => {
+      try {
+        const res = await fetch("/api/ai-mentors", {
+          credentials: 'include'
+        });
+        const json = await res.json();
+
+        console.log("Full response:", json);
+        console.log("Array.isArray(json.data):", Array.isArray(json.data));
+        console.log("Mentors length:", json.data?.length);
+
+        setDebugMentors(json);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setDebugMentors({ error: error.message });
+      }
+    };
+
+    if (user) {
+      loadMentors();
+    }
+  }, [user]);
+
   // Fetch AI mentors
   const { data: aiMentors = [] } = useQuery<AiMentor[]>({
     queryKey: ['/api/ai-mentors'],
@@ -139,7 +166,12 @@ export function ChatInterfaceVercel() {
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
       {/* DEBUG: AI Mentors Data Test */}
       <div className="p-4 bg-yellow-50 border-b">
-        <h3 className="font-bold text-red-600">🔍 DEBUG - AI Mentors Data:</h3>
+        <h3 className="font-bold text-red-600">🔍 DEBUG - Direct Fetch Test:</h3>
+        <pre className="text-xs bg-white p-2 rounded mt-2 overflow-auto max-h-40">
+          {JSON.stringify(debugMentors, null, 2)}
+        </pre>
+        
+        <h4 className="font-bold text-blue-600 mt-4">🔍 DEBUG - TanStack Query Data:</h4>
         <pre className="text-xs bg-white p-2 rounded mt-2 overflow-auto max-h-40">
           {JSON.stringify(aiMentors, null, 2)}
         </pre>
