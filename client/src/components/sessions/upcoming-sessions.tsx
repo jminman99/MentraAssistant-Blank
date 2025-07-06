@@ -123,18 +123,6 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const isTodayOrFuture = sessionDate ? sessionDate >= startOfToday : false;
       
-      // console.log('[DEBUG] Filtering session:', {
-        id: session.id,
-        type: session.type,
-        status: session.status,
-        scheduledAt: session.scheduledAt,
-        isValidStatus,
-        hasScheduledAt,
-        isTodayOrFuture,
-        sessionDate,
-        startOfToday
-      });
-      
       return isValidStatus && hasScheduledAt && isTodayOrFuture;
     })
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
