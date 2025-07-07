@@ -2,7 +2,8 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
-import { getSessionToken, verifySessionToken } from '../_lib/auth.js';
+import { getSessionToken } from '../_lib/auth.js';
+import { verifyToken } from '@clerk/backend';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -19,7 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const payload = verifySessionToken(token);
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY
+    });
+
     if (!payload) {
       return res.status(401).json({
         success: false,
