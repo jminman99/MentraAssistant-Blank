@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const openai = new OpenAI({ apiKey });
 
     // Get conversation history for context
-    const previousMessages = await storage.getChatMessages(payload.userId, aiMentorId, 10);
+    const previousMessages = await storage.getChatMessages(payload.sub, aiMentorId, 10);
     
     // Build conversation messages with OpenAI-compatible format
     const messages: ChatCompletionMessageParam[] = [
@@ -84,15 +84,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const aiResponse = completion.choices[0]?.message?.content || "I'm here to help you.";
 
-    // Save the AI response to chat history
     await storage.createChatMessage({
-      userId: payload.userId,
+      userId: payload.sub,
       aiMentorId,
       content: aiResponse,
       role: 'assistant'
     });
 
-    return res.status(401).json({
+    return res.status(200).json({
       success: true,
       data: { reply: aiResponse }
     });
