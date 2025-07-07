@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AiMentorSelector } from "@/components/mentors/ai-mentor-selector";
 import { MessageCircle, Send } from "lucide-react";
 import { AiMentor, ChatMessage } from "@/types";
@@ -16,7 +17,13 @@ export function ChatInterfaceVercel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { getToken } = useClerkAuth();
   const { toast } = useToast();
+
+  // Initialize API client with Clerk token provider
+  useEffect(() => {
+    vercelApiClient.setTokenProvider(getToken);
+  }, [getToken]);
 
 
 

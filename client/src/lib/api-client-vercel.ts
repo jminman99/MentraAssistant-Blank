@@ -1,19 +1,35 @@
 // API client for Vercel deployment - replaces WebSocket/SSE with HTTP polling
 import { queryClient } from "./queryClient";
+import { useAuth } from '@clerk/clerk-react';
 
 export class VercelApiClient {
   private baseUrl: string;
+  private getToken: (() => Promise<string | null>) | null = null;
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl;
   }
 
+  setTokenProvider(getToken: () => Promise<string | null>) {
+    this.getToken = getToken;
+  }
+
+  private async getAuthHeaders() {
+    const token = this.getToken ? await this.getToken() : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   async sendChatMessage(content: string, aiMentorId: number) {
     try {
+      const authHeaders = await this.getAuthHeaders();
+      
       // 1. Send user message
       const userResponse = await fetch(`${this.baseUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
         credentials: 'include',
         body: JSON.stringify({ content, aiMentorId }),
       });
@@ -38,9 +54,12 @@ export class VercelApiClient {
       // 2. Generate AI response
       const aiResponse = await fetch(`${this.baseUrl}/api/chat/ai-response`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
         credentials: 'include',
-        body: JSON.stringify({ content, aiMentorId }),
+        body: JSON.stringify({ message: content, aiMentorId }),
       });
 
       if (!aiResponse.ok) {
@@ -82,7 +101,10 @@ export class VercelApiClient {
   }
 
   async getChatMessages(aiMentorId: number) {
+    const authHeaders = await this.getAuthHeaders();
+    
     const response = await fetch(`${this.baseUrl}/api/chat?aiMentorId=${aiMentorId}`, {
+      headers: authHeaders,
       credentials: 'include',
     });
 
@@ -94,7 +116,10 @@ export class VercelApiClient {
   }
 
   async getAiMentors() {
+    const authHeaders = await this.getAuthHeaders();
+    
     const response = await fetch(`${this.baseUrl}/api/ai-mentors`, {
+      headers: authHeaders,
       credentials: 'include',
     });
 
