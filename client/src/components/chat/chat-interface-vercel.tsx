@@ -32,6 +32,7 @@ export function ChatInterfaceVercel() {
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['/api/chat', selectedMentorId],
     queryFn: () => vercelApiClient.getChatMessages(selectedMentorId!),
+    select: (res) => res?.data || [],
     enabled: !!selectedMentorId && !!user,
   });
 
