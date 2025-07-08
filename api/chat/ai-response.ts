@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res.status(401).json({
+      return res.status(500).json({
         success: false,
         error: "OpenAI API key not configured"
       });
@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { message, aiMentorId } = body;
 
     if (!message || !aiMentorId) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         error: "Message and AI mentor ID are required"
       });
@@ -97,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error("AI response error:", error);
-    return res.status(401).json({
+    return res.status(500).json({
       success: false,
       error: "Failed to generate response"
     });

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
 import App from "./App";
 import "./index.css";
+import { ClerkTokenProvider } from "./components/ClerkTokenProvider";
 
 import {
   QueryClient,
@@ -19,7 +20,9 @@ if (PUBLISHABLE_KEY) {
     <React.StrictMode>
       <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
         <QueryClientProvider client={queryClient}>
-          <App />
+          <ClerkTokenProvider>
+            <App />
+          </ClerkTokenProvider>
         </QueryClientProvider>
       </ClerkProvider>
     </React.StrictMode>

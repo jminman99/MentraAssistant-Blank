@@ -9,7 +9,6 @@ import { MessageCircle, Send } from "lucide-react";
 import { AiMentor, ChatMessage } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { vercelApiClient } from "@/lib/api-client-vercel";
-
 export function ChatInterfaceVercel() {
   const [selectedMentorId, setSelectedMentorId] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState("");
@@ -20,27 +19,49 @@ export function ChatInterfaceVercel() {
   const { getToken } = useClerkAuth();
   const { toast } = useToast();
 
-  // Initialize API client with Clerk token provider
-  useEffect(() => {
-    vercelApiClient.setTokenProvider(getToken);
-  }, [getToken]);
+  // Token provider is now handled globally in ClerkTokenProvider component
 
 
 
-  // Fetch AI mentors
-  const { data: aiMentors = [] } = useQuery<AiMentor[]>({
+  // Fetch AI mentors with defensive data extraction
+  const { 
+    data: aiMentors = [], 
+    isLoading: isLoadingMentors,
+    error: mentorsError 
+  } = useQuery<AiMentor[]>({
     queryKey: ['/api/ai-mentors'],
     queryFn: () => vercelApiClient.getAiMentors(),
-    select: (res) => res?.data || [],
+    select: (res) => {
+      // Defensive data extraction - handle multiple response formats
+      if (Array.isArray(res)) return res;
+      if (res?.data && Array.isArray(res.data)) return res.data;
+      if (res?.success && Array.isArray(res.data)) return res.data;
+      console.warn('Unexpected AI mentors response format:', res);
+      return [];
+    },
     enabled: !!user,
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Fetch chat messages
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
+  // Fetch chat messages with defensive data extraction
+  const { 
+    data: messages = [], 
+    isLoading: isLoadingMessages 
+  } = useQuery<ChatMessage[]>({
     queryKey: ['/api/chat', selectedMentorId],
     queryFn: () => vercelApiClient.getChatMessages(selectedMentorId!),
-    select: (res) => res?.data || [],
+    select: (res) => {
+      // Defensive data extraction - handle multiple response formats
+      if (Array.isArray(res)) return res;
+      if (res?.data && Array.isArray(res.data)) return res.data;
+      if (res?.success && Array.isArray(res.data)) return res.data;
+      console.warn('Unexpected chat messages response format:', res);
+      return [];
+    },
     enabled: !!selectedMentorId && !!user,
+    retry: 1,
+    staleTime: 30 * 1000, // Cache for 30 seconds
   });
 
   // Send message mutation
@@ -109,9 +130,9 @@ export function ChatInterfaceVercel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-select first mentor
+  // Auto-select first mentor with safety check
   useEffect(() => {
-    if (aiMentors.length > 0 && !selectedMentorId) {
+    if (Array.isArray(aiMentors) && aiMentors.length > 0 && !selectedMentorId) {
       setSelectedMentorId(aiMentors[0].id);
     }
   }, [aiMentors, selectedMentorId]);
@@ -147,10 +168,47 @@ export function ChatInterfaceVercel() {
     );
   }
 
+  // Handle loading states
+  if (isLoadingMentors) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading AI mentors...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error states
+  if (mentorsError) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">AI Mentors</h2>
+          <p className="text-red-600 mb-4">Failed to load mentors. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle empty mentors state
+  if (!Array.isArray(aiMentors) || aiMentors.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">AI Mentors</h2>
+          <p className="text-slate-600">No AI mentors are currently available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-
-      
       {/* Chat Header */}
       <div className="border-b border-slate-200 p-4">
         <div className="flex items-center justify-between mb-4">
