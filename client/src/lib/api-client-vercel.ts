@@ -15,10 +15,20 @@ export class VercelApiClient {
   }
 
   private async getAuthHeaders() {
-    // Always fetch a fresh token to avoid expiration issues
-    const token = this.getToken ? await this.getToken() : null;
-    console.log("Auth token being sent:", token ? "Token present" : "No token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    if (!this.getToken) {
+      console.warn("No token provider configured");
+      return {};
+    }
+    
+    try {
+      // Always fetch a fresh token to avoid expiration issues
+      const token = await this.getToken();
+      console.log("Auth token being sent:", token ? "Token present" : "No token");
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch (error) {
+      console.error("Failed to get auth token:", error);
+      return {};
+    }
   }
 
   async sendChatMessage(content: string, aiMentorId: number) {

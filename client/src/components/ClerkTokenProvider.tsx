@@ -12,7 +12,16 @@ export function ClerkTokenProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (isLoaded && getToken) {
       // Wire up Clerk's getToken to the API client
-      vercelApiClient.setTokenProvider(getToken);
+      vercelApiClient.setTokenProvider(async () => {
+        try {
+          const token = await getToken();
+          console.log('🔑 Fresh token fetched:', token ? 'Token obtained' : 'No token');
+          return token;
+        } catch (error) {
+          console.error('❌ Token fetch failed:', error);
+          return null;
+        }
+      });
       console.log('✅ Clerk token provider connected to API client');
     }
   }, [getToken, isLoaded]);

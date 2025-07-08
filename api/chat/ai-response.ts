@@ -10,26 +10,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
   try {
+    console.log('🚀 AI response endpoint called');
+    
     // Authentication check
     const token = getSessionToken(req);
+    console.log('🔍 Token extraction:', token ? 'Token found' : 'No token found');
     
     if (!token) {
+      console.log('❌ Authentication failed: No token provided');
       return res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
     }
 
+    console.log('🔐 Verifying token with Clerk...');
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY
     });
 
     if (!payload) {
+      console.log('❌ Token verification failed');
       return res.status(401).json({
         success: false,
         error: 'Token expired or invalid - please refresh and try again'
       });
     }
+
+    console.log('✅ Authentication successful, user ID:', payload.sub);
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -75,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Add current user message
     messages.push({ role: "user", content: message });
 
+    console.log('🤖 Calling OpenAI API...');
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: messages,
@@ -83,7 +92,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const aiResponse = completion.choices[0]?.message?.content || "I'm here to help you.";
+    console.log('✅ OpenAI response received, length:', aiResponse.length);
 
+    console.log('💾 Saving AI response to database...');
     await storage.createChatMessage({
       userId: payload.sub,
       aiMentorId,
@@ -91,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       role: 'assistant'
     });
 
+    console.log('✅ AI response saved successfully');
     return res.status(200).json({
       success: true,
       data: { reply: aiResponse }
