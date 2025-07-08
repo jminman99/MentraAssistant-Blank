@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!payload) {
       return res.status(401).json({
         success: false,
-        error: 'Unauthorized'
+        error: 'Token expired or invalid - please refresh and try again'
       });
     }
 

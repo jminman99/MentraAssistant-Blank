@@ -15,7 +15,9 @@ export class VercelApiClient {
   }
 
   private async getAuthHeaders() {
+    // Always fetch a fresh token to avoid expiration issues
     const token = this.getToken ? await this.getToken() : null;
+    console.log("Auth token being sent:", token ? "Token present" : "No token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
