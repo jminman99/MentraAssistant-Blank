@@ -122,7 +122,8 @@ export function ChatInterfaceVercel() {
     const content = messageInput.trim();
     setMessageInput("");
 
-    await sendMessageMutation.mutateAsync({
+    // Use .mutate() instead of .mutateAsync() to let onError handle failures
+    sendMessageMutation.mutate({
       content,
       aiMentorId: selectedMentorId,
     });
