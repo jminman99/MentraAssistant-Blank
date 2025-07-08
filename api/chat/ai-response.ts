@@ -73,17 +73,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get conversation history for context using database user ID
     const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
     
-    // Get mentor info to use database personality prompt
-    const mentor = await storage.getAiMentor(aiMentorId);
+    // Get mentor info to retrieve custom prompt from database
+    const aiMentor = await storage.getAiMentor(aiMentorId);
     
-    // Use mentor's personality prompt from database, with fallback
-    const systemPrompt = mentor?.personalityPrompt || 
-      "You are a wise and supportive mentor. Provide thoughtful, encouraging advice.";
-    
+    if (!aiMentor) {
+      console.error(`AI Mentor with ID ${aiMentorId} not found`);
+      return res.status(404).json({
+        success: false,
+        error: 'AI Mentor not found'
+      });
+    }
+
+    // Use the mentor's personality prompt from database
+    console.log('🤖 Using AI Mentor:', {
+      id: aiMentor.id,
+      name: aiMentor.name,
+      hasPrompt: !!aiMentor.personalityPrompt
+    });
+
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
-        content: systemPrompt
+        content: aiMentor.personalityPrompt || "You are a wise and supportive mentor. Provide thoughtful, encouraging advice."
       }
     ];
 
