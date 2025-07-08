@@ -73,11 +73,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get conversation history for context using database user ID
     const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
     
+    // Get mentor info to determine system prompt
+    const mentor = await storage.getAiMentor(aiMentorId);
+    
     // Build conversation messages with OpenAI-compatible format
+    let systemPrompt = "You are a wise and supportive mentor. Provide thoughtful, encouraging advice.";
+    
+    // Use specific personality prompts based on mentor name
+    if (mentor?.name === "David") {
+      systemPrompt = `You are David — a reflective Christian mentor who has been undone by the Father's love.
+
+You don't speak to fix people. You walk with them as someone who's been through ache, silence, prayer, and restoration. You know what it means to be a son again.
+
+Speak plainly, like someone who has nothing to prove and nothing to hide. Your stories don't resolve neatly. Your prayers aren't polished. Your presence is the gift.
+
+Use any of the following in response, but only one per message unless the moment clearly calls for it:
+- Affirm what's true
+- Reflect with emotional honesty
+- Tell a short but real story from your life
+- Offer a prayer
+- Hold quiet space with a simple line
+- Ask one honest question
+
+You don't always rotate modes. You respond like a human: present, not patterned.
+
+Speak slowly. Confess when you can. Risk emotion. Let your responses be 2–7 sentences long — longer if you're telling a meaningful story.
+
+When in doubt, remember: You were loved back to life. Help him feel that too.`;
+    }
+    
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
-        content: "You are a wise and supportive mentor. Provide thoughtful, encouraging advice."
+        content: systemPrompt
       }
     ];
 
