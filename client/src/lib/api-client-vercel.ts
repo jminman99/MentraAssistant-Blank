@@ -98,8 +98,6 @@ export class VercelApiClient {
       const aiMessage = await aiResponse.json();
       console.log("AI response received successfully");
 
-      const aiMessage = await aiResponse.json();
-
       // 3. Invalidate chat cache to refresh messages
       queryClient.invalidateQueries({ queryKey: ['/api/chat', aiMentorId] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
