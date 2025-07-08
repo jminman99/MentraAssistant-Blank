@@ -13,7 +13,7 @@ interface UpcomingSessionsProps {
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   
-  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<MentoringSession[]>({
+  const { data: sessions = [], isLoading: sessionsLoading = false } = useQuery<MentoringSession[]>({
     queryKey: ['/api/session-bookings'],
   });
 
@@ -59,7 +59,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   });
 
   // FIXED: Fetch council sessions with debug logging and filter out cancelled
-  const { data: rawCouncilSessions = [], isLoading: councilLoading } = useQuery({
+  const { data: rawCouncilSessions = [], isLoading: councilLoading = false } = useQuery({
     queryKey: ['/api/council-bookings'],
     staleTime: 0, // Always refetch to ensure fresh data
   });
@@ -70,7 +70,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // console.log('[DEBUG] Raw council sessions:', rawCouncilSessions);
   // console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
 
-  const isLoading = sessionsLoading || councilLoading;
+  const isLoading = Boolean(sessionsLoading || councilLoading);
 
   // Combine and format both session types
   const allSessions = [

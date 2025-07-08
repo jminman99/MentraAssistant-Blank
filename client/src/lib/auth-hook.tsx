@@ -72,7 +72,7 @@ function useClerkAuthentication() {
 
   return {
     user: backendUser?.data || clerkUser,
-    isLoading: !isLoaded || isBackendLoading,
+    isLoading: Boolean(!isLoaded || isBackendLoading),
     isAuthenticated: Boolean(isSignedIn) && !!clerkUser,
     login: {
       mutateAsync: loginMutation.mutateAsync,
@@ -93,7 +93,7 @@ function useClerkAuthentication() {
 function useDevAuthentication() {
   return {
     user: null,
-    isLoading: false,
+    isLoading: Boolean(false),
     isAuthenticated: false,
     login: {
       mutateAsync: async () => {
