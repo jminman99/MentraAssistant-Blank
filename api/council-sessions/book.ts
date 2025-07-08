@@ -1,15 +1,23 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from "../_lib/storage.js";
-import { verifySessionToken, getSessionToken } from "../_lib/auth.js";
+import { getSessionToken } from "../_lib/auth.js";
+import { verifyToken } from '@clerk/backend';
 
 async function getUser(req: VercelRequest) {
   const token = getSessionToken(req);
   if (!token) return null;
 
-  const payload = verifySessionToken(token);
-  if (!payload) return null;
+  try {
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY!
+    });
+    if (!payload) return null;
 
-  return await storage.getUser(payload.userId);
+    return await storage.getUserByClerkId(payload.sub);
+  } catch (error) {
+    console.error("Token verification failed in council sessions:", error);
+    return null;
+  }
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {

@@ -37,7 +37,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    console.log('✅ Authentication successful, user ID:', payload.sub);
+    console.log('✅ Authentication successful, Clerk user ID:', payload.sub);
+
+    // Convert Clerk ID to database user ID
+    const user = await storage.getUserByClerkId(payload.sub);
+    if (!user) {
+      console.log('❌ User not found in database for Clerk ID:', payload.sub);
+      return res.status(401).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+    console.log('✅ Database user found, ID:', user.id);
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -59,8 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const openai = new OpenAI({ apiKey });
 
-    // Get conversation history for context
-    const previousMessages = await storage.getChatMessages(payload.sub, aiMentorId, 10);
+    // Get conversation history for context using database user ID
+    const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
     
     // Build conversation messages with OpenAI-compatible format
     const messages: ChatCompletionMessageParam[] = [
@@ -96,7 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('💾 Saving AI response to database...');
     await storage.createChatMessage({
-      userId: payload.sub,
+      userId: user.id,
       aiMentorId,
       content: aiResponse,
       role: 'assistant'
