@@ -34,7 +34,22 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
+      
+      // Check if this is a token expiration error
+      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
+        return res.status(401).json({
+          success: false,
+          error: "Token expired",
+          message: "Session expired. Please sign in again.",
+          code: "TOKEN_EXPIRED"
+        });
+      }
+      
+      return res.status(401).json({ 
+        success: false, 
+        error: "Invalid token",
+        message: "Authentication token is invalid"
+      });
     }
 
     // Get user from our database using Clerk ID
@@ -99,7 +114,22 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
+      
+      // Check if this is a token expiration error
+      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
+        return res.status(401).json({
+          success: false,
+          error: "Token expired",
+          message: "Session expired. Please sign in again.",
+          code: "TOKEN_EXPIRED"
+        });
+      }
+      
+      return res.status(401).json({ 
+        success: false, 
+        error: "Invalid token",
+        message: "Authentication token is invalid"
+      });
     }
 
     // Get user from our database using Clerk ID

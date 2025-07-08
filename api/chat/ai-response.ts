@@ -25,9 +25,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     console.log('🔐 Verifying token with Clerk...');
-    const payload = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY
-    });
+    let payload;
+    try {
+      payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY
+      });
+    } catch (verifyError) {
+      console.error('Token verification failed:', verifyError);
+      
+      // Check if this is a token expiration error
+      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
+        return res.status(401).json({
+          success: false,
+          error: "Token expired",
+          message: "Session expired. Please sign in again.",
+          code: "TOKEN_EXPIRED"
+        });
+      }
+      
+      return res.status(401).json({
+        success: false,
+        error: 'Token expired or invalid - please refresh and try again'
+      });
+    }
 
     if (!payload) {
       console.log('❌ Token verification failed');

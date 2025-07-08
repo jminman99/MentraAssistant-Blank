@@ -17,7 +17,11 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
                   req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
     
     if (!token) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
+      return res.status(401).json({ 
+        success: false, 
+        error: "Not authenticated",
+        message: "No authentication token provided"
+      });
     }
 
     // Verify the token with Clerk and get user ID
@@ -31,7 +35,22 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", clerkUserId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
+      
+      // Check if this is a token expiration error
+      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "Token expired",
+          message: "Session expired. Please sign in again.",
+          code: "TOKEN_EXPIRED"
+        });
+      }
+      
+      return res.status(401).json({ 
+        success: false, 
+        error: "Invalid token",
+        message: "Authentication token is invalid"
+      });
     }
 
     // Get user from our database using Clerk ID
@@ -67,9 +86,21 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
+    
+    // Check if this is a token-related error
+    if (error.message?.includes('expired') || error.message?.includes('JWT is expired')) {
+      return res.status(401).json({
+        success: false,
+        error: "Token expired",
+        message: "Session expired. Please sign in again.",
+        code: "TOKEN_EXPIRED"
+      });
+    }
+    
     return res.status(500).json({
       success: false,
-      error: error?.message || "Failed to fetch human mentors"
+      error: error?.message || "Failed to fetch human mentors",
+      message: "An unexpected error occurred"
     });
   }
 }
