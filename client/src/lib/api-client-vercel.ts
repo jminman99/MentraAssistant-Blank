@@ -23,14 +23,15 @@ export class VercelApiClient {
 
   async sendChatMessage(content: string, aiMentorId: number) {
     try {
-      const authHeaders = await this.getAuthHeaders();
+      // 1. Send user message with fresh token
+      const userAuthHeaders = await this.getAuthHeaders();
+      console.log("Sending user message with auth headers:", userAuthHeaders);
       
-      // 1. Send user message
       const userResponse = await fetch(`${this.baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...authHeaders
+          ...userAuthHeaders
         },
         credentials: 'include',
         body: JSON.stringify({ content, aiMentorId }),
@@ -39,6 +40,8 @@ export class VercelApiClient {
       if (!userResponse.ok) {
         const errorData = await userResponse.json().catch(() => ({}));
         const errorMessage = errorData.error || errorData.message || 'Failed to send message';
+        
+        console.error("User message failed:", userResponse.status, errorMessage);
         
         if (userResponse.status === 401) {
           throw new Error('Please log in to continue chatting');
@@ -52,13 +55,17 @@ export class VercelApiClient {
       }
 
       const userMessage = await userResponse.json();
+      console.log("User message sent successfully");
 
-      // 2. Generate AI response
+      // 2. Generate AI response with fresh token
+      const aiAuthHeaders = await this.getAuthHeaders();
+      console.log("Sending AI request with auth headers:", aiAuthHeaders);
+      
       const aiResponse = await fetch(`${this.baseUrl}/api/chat/ai-response`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...authHeaders
+          ...aiAuthHeaders
         },
         credentials: 'include',
         body: JSON.stringify({ message: content, aiMentorId }),
@@ -66,6 +73,8 @@ export class VercelApiClient {
 
       if (!aiResponse.ok) {
         const errorData = await aiResponse.json().catch(() => ({}));
+        
+        console.error("AI response failed:", aiResponse.status, errorData);
         
         // Handle specific AI service errors
         if (errorData.code === 'AI_SERVICE_UNAVAILABLE') {
@@ -77,7 +86,7 @@ export class VercelApiClient {
         } else if (errorData.code === 'MENTOR_NOT_FOUND') {
           throw new Error('Selected mentor is not available. Please try a different mentor.');
         } else if (aiResponse.status === 401) {
-          throw new Error('Please log in to continue chatting');
+          throw new Error('Authentication failed - please refresh and try again');
         } else if (aiResponse.status >= 500) {
           throw new Error('AI service error - please try again in a moment');
         } else {
@@ -85,6 +94,9 @@ export class VercelApiClient {
           throw new Error(errorMessage);
         }
       }
+
+      const aiMessage = await aiResponse.json();
+      console.log("AI response received successfully");
 
       const aiMessage = await aiResponse.json();
 
