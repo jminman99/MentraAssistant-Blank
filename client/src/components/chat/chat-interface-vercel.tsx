@@ -13,6 +13,7 @@ export function ChatInterfaceVercel() {
   const [selectedMentorId, setSelectedMentorId] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -46,7 +47,7 @@ export function ChatInterfaceVercel() {
 
   // Fetch chat messages with defensive data extraction
   const { 
-    data: messages = [], 
+    data: serverMessages = [], 
     isLoading: isLoadingMessages 
   } = useQuery<ChatMessage[]>({
     queryKey: ['/api/chat', selectedMentorId],
@@ -64,24 +65,67 @@ export function ChatInterfaceVercel() {
     staleTime: 30 * 1000, // Cache for 30 seconds
   });
 
-  // Send message mutation
+  // Combine server messages with optimistic messages
+  const messages = [...serverMessages, ...optimisticMessages];
+
+  // Send message mutation with optimistic updates
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { content: string; aiMentorId: number }) => {
       return vercelApiClient.sendChatMessage(data.content, data.aiMentorId);
     },
-    onMutate: async () => {
-      setIsTyping(true);
-    },
-    onSuccess: () => {
+    onMutate: async (variables) => {
+      // Clear input immediately for better UX
       setMessageInput("");
+      
+      // Create optimistic user message
+      const tempId = Date.now();
+      const optimisticUserMessage: ChatMessage = {
+        id: tempId,
+        content: variables.content,
+        role: 'user',
+        createdAt: new Date().toISOString(),
+        userId: user?.id || 0,
+        aiMentorId: variables.aiMentorId,
+      };
+
+      // Add optimistic user message immediately
+      setOptimisticMessages(prev => [...prev, optimisticUserMessage]);
+      setIsTyping(true);
+
+      return { tempId };
+    },
+    onSuccess: (data) => {
       setIsTyping(false);
+      
+      // Add AI response to optimistic messages
+      if (data?.aiMessage?.data?.reply) {
+        const aiMessage: ChatMessage = {
+          id: Date.now() + 1,
+          content: data.aiMessage.data.reply,
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+          userId: user?.id || 0,
+          aiMentorId: selectedMentorId || 0,
+        };
+        
+        setOptimisticMessages(prev => [...prev, aiMessage]);
+      }
+
+      // Refresh server data in background
+      queryClient.invalidateQueries({ queryKey: ['/api/chat', selectedMentorId] });
+      
       toast({
-        title: "Message sent",
-        description: "Your mentor is responding...",
+        title: "Response received",
+        description: "Your mentor has responded",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       setIsTyping(false);
+      
+      // Remove the optimistic user message on error
+      if (context?.tempId) {
+        setOptimisticMessages(prev => prev.filter(msg => msg.id !== context.tempId));
+      }
       
       let title = "Message Failed";
       let description = "Please try again";
@@ -137,13 +181,24 @@ export function ChatInterfaceVercel() {
     }
   }, [aiMentors, selectedMentorId]);
 
+  // Clear optimistic messages when changing mentors
+  useEffect(() => {
+    setOptimisticMessages([]);
+  }, [selectedMentorId]);
+
+  // Clear optimistic messages when server data is updated
+  useEffect(() => {
+    if (serverMessages.length > 0) {
+      setOptimisticMessages([]);
+    }
+  }, [serverMessages]);
+
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedMentorId || sendMessageMutation.isPending) return;
 
     const content = messageInput.trim();
-    setMessageInput("");
 
-    // Use .mutate() instead of .mutateAsync() to let onError handle failures
+    // Use optimistic UI - mutation handles input clearing and optimistic updates
     sendMessageMutation.mutate({
       content,
       aiMentorId: selectedMentorId,
