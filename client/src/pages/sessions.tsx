@@ -49,7 +49,7 @@ export default function Sessions() {
   };
 
   // Fetch user's session bookings
-  const { data: sessions = [], isLoading } = useQuery<SessionBooking[]>({
+  const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['/api/session-bookings'],
   });
 
