@@ -58,7 +58,6 @@ export const aiMentors = pgTable("ai_mentors", {
   personalityTraits: jsonb("personality_traits").$type<any>().default({}),
   expertiseAreas: text("expertise_areas").array(),
   conversationStyle: varchar("conversation_style", { length: 50 }),
-  temperature: real("temperature").default(0.7),
   organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'cascade' }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

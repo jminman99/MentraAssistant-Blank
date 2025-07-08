@@ -111,19 +111,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Add current user message
     messages.push({ role: "user", content: message });
 
-    // Use mentor-specific temperature setting
-    const temperature = aiMentor.temperature !== null && aiMentor.temperature !== undefined
-      ? Number(aiMentor.temperature)
-      : 0.7;
-
-    console.log(`🤖 Using temperature: ${temperature} for mentor: ${aiMentor.name}`);
     console.log('🤖 Calling OpenAI API...');
-    
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: messages,
       max_tokens: 1500,
-      temperature: temperature,
+      temperature: 0.7,
     });
 
     const aiResponse = completion.choices[0]?.message?.content || "I'm here to help you.";
