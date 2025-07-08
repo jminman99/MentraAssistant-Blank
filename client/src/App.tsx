@@ -5,6 +5,7 @@ import TestPage from "./pages/test.tsx";
 import SignInPage from "./pages/sign-in.tsx";
 import SignUpPage from "./pages/sign-up.tsx";
 import DevSignInPage from "./pages/dev-sign-in.tsx";
+import PlanUsagePage from "./pages/plan-usage.tsx";
 import { useAuth } from "./lib/auth-hook";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/sign-in" component={SignInComponent} />
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/plan-usage" component={PlanUsagePage} />
       <Route path="/">
         {() => {
           if (user) {

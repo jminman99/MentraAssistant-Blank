@@ -22,10 +22,11 @@ export default function Navigation() {
 
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/mentors', icon: MessageCircle, label: 'Wise Guides' },
-    { path: '/individual-booking', icon: Users, label: 'Experienced Guides' },
-    { path: '/sessions', icon: Calendar, label: 'Sessions' },
-    ...(user?.subscriptionPlan === 'council' ? [{ path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council' }] : []),
+    { path: '/mentors', icon: MessageCircle, label: 'AI Guides' },
+    { path: '/individual-booking', icon: Users, label: 'Human Mentors' },
+    { path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council Scheduling' },
+    { path: '/sessions', icon: Calendar, label: 'My Sessions' },
+    { path: '/plan-usage', icon: Settings, label: 'Plan & Usage' },
   ];
 
   // Add mentor-specific navigation for experienced guides
