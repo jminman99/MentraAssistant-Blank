@@ -45,7 +45,7 @@ const councilBookingSchema = z.object({
 type CouncilBookingData = z.infer<typeof councilBookingSchema>;
 
 // Council Scheduling Component - Fully Integrated into Dashboard
-function CouncilSchedulingContent() {
+function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: string) => void }) {
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -686,7 +686,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {selectedTab === "council" && <CouncilSchedulingContent />}
+            {selectedTab === "council" && <CouncilSchedulingContent setSelectedTab={setSelectedTab} />}
           </div>
 
           {/* Sidebar - show quick access on larger screens */}
