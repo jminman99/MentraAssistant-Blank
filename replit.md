@@ -539,6 +539,9 @@ client/
   - ✅ CRITICAL FIX: Resolved date handling issue causing "Invalid time value" errors in database
   - ✅ Updated storage layer to properly combine date and time into scheduledDate timestamp
   - ✅ Enhanced frontend date validation and YYYY-MM-DD format compliance
+  - ✅ CRITICAL FIX: Resolved database schema mismatch causing "timezone column does not exist" errors
+  - ✅ Replaced Drizzle ORM inserts with raw SQL matching actual database structure
+  - ✅ Verified database field names: scheduled_date, max_mentees, current_mentees, etc.
   - ✅ Complete council session booking flow now functional end-to-end
   - ⚠️ DEPLOYMENT REQUIREMENT: API endpoints require Vercel dev server for full functionality
 
