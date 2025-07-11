@@ -62,7 +62,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get aiMentorId from query parameters
-    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const url = new URL(req.url || '', `${protocol}://${req.headers.host}`);
     const aiMentorId = url.searchParams.get("aiMentorId");
     
     if (!aiMentorId) {

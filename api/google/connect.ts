@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Build Google OAuth URL
     const googleOAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleOAuthUrl.searchParams.set('client_id', process.env.GOOGLE_CLIENT_ID!);
-    googleOAuthUrl.searchParams.set('redirect_uri', `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000'}/api/google/callback`);
+    googleOAuthUrl.searchParams.set('redirect_uri', `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://localhost:5000'}/api/google/callback`);
     googleOAuthUrl.searchParams.set('response_type', 'code');
     googleOAuthUrl.searchParams.set('scope', [
       'https://www.googleapis.com/auth/calendar.events',

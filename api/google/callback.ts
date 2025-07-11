@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        redirect_uri: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000'}/api/google/callback`,
+        redirect_uri: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://localhost:5000'}/api/google/callback`,
         grant_type: 'authorization_code',
       }),
     });
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Redirect back to human mentors page with success parameter
-    const redirectUrl = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000'}/individual-booking?googleConnected=true`;
+    const redirectUrl = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://localhost:5000'}/individual-booking?googleConnected=true`;
     return res.redirect(redirectUrl);
 
   } catch (error) {
