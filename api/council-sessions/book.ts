@@ -74,17 +74,31 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     
     console.log("💾 Creating council session with data:", sessionData);
 
-    const session = await storage.createCouncilBooking(sessionData);
+    try {
+      const session = await storage.createCouncilBooking(sessionData);
+      console.log("✅ Council session created successfully:", session);
+      
+      return res.status(201).json({
+        success: true,
+        data: session
+      });
+    } catch (storageError: any) {
+      console.error("💥 Storage error details:", storageError);
+      console.error("💥 Storage error stack:", storageError.stack);
+      
+      return res.status(500).json({
+        success: false,
+        error: `Storage error: ${storageError.message}`
+      });
+    }
 
-    return res.status(201).json({
-      success: true,
-      data: session
-    });
   } catch (error: any) {
-    console.error('Council session booking error:', error);
+    console.error('🚨 Council session booking error:', error);
+    console.error('🚨 Error stack:', error.stack);
+    console.error('🚨 Request body was:', req.body);
     return res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: `Server error: ${error.message}`
     });
   }
 }

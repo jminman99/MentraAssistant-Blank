@@ -269,6 +269,8 @@ export class VercelStorage {
   }
 
   async createCouncilBooking(data: any): Promise<any> {
+    console.log("🔍 Storage: createCouncilBooking called with:", data);
+    
     // Combine date and time for scheduledDate
     let scheduledDate;
     try {
@@ -293,7 +295,10 @@ export class VercelStorage {
       throw new Error('Invalid date format provided');
     }
 
+    console.log("📅 Storage: Final scheduledDate:", scheduledDate);
+    
     // Create council session
+    console.log("💽 Storage: Inserting into councilSessions table...");
     const [session] = await db.insert(councilSessions).values({
       title: `Council Session for ${data.userEmail || 'User'}`,
       description: data.sessionGoals || 'Council mentoring session',
@@ -305,8 +310,11 @@ export class VercelStorage {
       status: 'confirmed',
       organizationId: data.organizationId || 1,
     }).returning();
+    
+    console.log("✅ Storage: Council session created:", session);
 
     // Create participant
+    console.log("👤 Storage: Creating participant for userId:", data.userId);
     await db.insert(councilParticipants).values({
       councilSessionId: session.id,
       menteeId: data.userId,
@@ -314,9 +322,12 @@ export class VercelStorage {
       questions: data.questions,
       status: 'registered',
     });
+    console.log("✅ Storage: Participant created");
 
     // Add mentors to session
+    console.log("👥 Storage: Adding mentors:", data.selectedMentorIds);
     for (const mentorId of data.selectedMentorIds) {
+      console.log(`📎 Storage: Adding mentor ${mentorId} to session ${session.id}`);
       await db.insert(councilMentors).values({
         councilSessionId: session.id,
         humanMentorId: mentorId,
@@ -324,6 +335,7 @@ export class VercelStorage {
         confirmed: true,
       });
     }
+    console.log("✅ Storage: All mentors added");
 
     return session;
   }
