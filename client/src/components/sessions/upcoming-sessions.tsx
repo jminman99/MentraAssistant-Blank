@@ -29,16 +29,23 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         // Check if response is HTML (development server issue)
         const text = await response.text();
         if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ API returned HTML instead of JSON - likely development server issue");
-          return [];
+          console.warn("⚠️ API returned HTML instead of JSON - development server issue");
+          // Mark this as a development issue, not a real API error
+          const devError = new Error("Development server not serving API routes properly");
+          devError.message += " (HTML response)";
+          throw devError;
         }
         
         const result = JSON.parse(text);
         console.log("✅ Individual sessions API response:", result);
         return Array.isArray(result?.data) ? result.data : [];
       } catch (error) {
-        console.warn("⚠️ Individual sessions fetch failed, using empty array:", error);
-        return []; // Return empty array instead of throwing
+        if (error.message?.includes('HTML')) {
+          console.warn("⚠️ Development server issue - returning empty array");
+          return [];
+        }
+        console.error("❌ Real API error for individual sessions:", error);
+        throw error; // Let real server errors bubble up
       }
     },
     staleTime: 0,
@@ -97,16 +104,23 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         // Check if response is HTML (development server issue)
         const text = await response.text();
         if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ Council API returned HTML instead of JSON - likely development server issue");
-          return [];
+          console.warn("⚠️ Council API returned HTML instead of JSON - development server issue");
+          // Mark this as a development issue, not a real API error
+          const devError = new Error("Development server not serving API routes properly");
+          devError.message += " (HTML response)";
+          throw devError;
         }
         
         const result = JSON.parse(text);
         console.log("✅ Council sessions API response:", result);
         return Array.isArray(result?.data) ? result.data : [];
       } catch (error) {
-        console.warn("⚠️ Council sessions fetch failed, using empty array:", error);
-        return []; // Return empty array instead of throwing
+        if (error.message?.includes('HTML')) {
+          console.warn("⚠️ Development server issue - returning empty array");
+          return [];
+        }
+        console.error("❌ Real API error for council sessions:", error);
+        throw error; // Let real server errors bubble up
       }
     },
     staleTime: 0, // Always refetch to ensure fresh data
@@ -143,6 +157,25 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     return (
       <div className="text-center py-8">
         <div className="text-slate-600">Loading sessions...</div>
+      </div>
+    );
+  }
+
+  // Show API error state if we have real server errors (not just development issues)
+  const hasRealApiError = (sessionsError && !sessionsError.message?.includes('HTML')) || 
+                          (councilError && !councilError.message?.includes('HTML'));
+  
+  if (hasRealApiError) {
+    return (
+      <div className="text-center py-8">
+        <Calendar className="h-12 w-12 text-red-300 mx-auto mb-3" />
+        <div className="text-red-500 font-medium">Unable to load sessions</div>
+        <div className="text-sm text-red-400 mt-1">
+          Server error - please try refreshing the page
+        </div>
+        <div className="text-xs text-red-300 mt-2">
+          {sessionsError?.message || councilError?.message}
+        </div>
       </div>
     );
   }
