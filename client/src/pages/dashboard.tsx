@@ -76,11 +76,16 @@ function CouncilSchedulingContent() {
     mutationFn: async (data: CouncilBookingData) => {
       console.log("📝 Booking council session:", data);
       
+      // Ensure we have a valid date and time
+      if (!data.preferredDate || !data.preferredTime) {
+        throw new Error("Please select a date and time for your session");
+      }
+
       const requestBody = {
         selectedMentorIds: data.selectedMentorIds,
         sessionGoals: data.sessionGoals,
         questions: data.questions,
-        preferredDate: data.preferredDate.toISOString(),
+        preferredDate: data.preferredDate.toISOString().split('T')[0], // YYYY-MM-DD format
         preferredTimeSlot: data.preferredTime,
       };
 

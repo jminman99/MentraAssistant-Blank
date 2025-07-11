@@ -269,11 +269,35 @@ export class VercelStorage {
   }
 
   async createCouncilBooking(data: any): Promise<any> {
+    // Combine date and time for scheduledDate
+    let scheduledDate;
+    try {
+      if (data.sessionDate) {
+        // If sessionDate is provided (from API)
+        scheduledDate = data.sessionDate;
+      } else if (data.preferredDate && data.sessionTime) {
+        // Combine date and time strings
+        const dateStr = typeof data.preferredDate === 'string' ? data.preferredDate : data.preferredDate.toISOString().split('T')[0];
+        const timeStr = data.sessionTime || '10:00';
+        scheduledDate = new Date(`${dateStr}T${timeStr}:00`);
+      } else {
+        throw new Error('Missing date or time information');
+      }
+      
+      // Validate the final date
+      if (isNaN(scheduledDate.getTime())) {
+        throw new Error('Invalid date/time combination');
+      }
+    } catch (error) {
+      console.error('Date processing error in storage:', error);
+      throw new Error('Invalid date format provided');
+    }
+
     // Create council session
     const [session] = await db.insert(councilSessions).values({
       title: `Council Session for ${data.userEmail || 'User'}`,
       description: data.sessionGoals || 'Council mentoring session',
-      scheduledDate: new Date(data.preferredDate),
+      scheduledDate,
       duration: 60,
       maxMentees: 1,
       currentMentees: 1,

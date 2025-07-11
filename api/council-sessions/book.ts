@@ -45,11 +45,26 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Create the council session booking
+    // Create the council session booking with proper date handling
+    let sessionDate;
+    try {
+      sessionDate = new Date(preferredDate);
+      // Validate the date
+      if (isNaN(sessionDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
+    } catch (dateError) {
+      console.error("Date parsing error:", dateError, "Original date:", preferredDate);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid date format provided"
+      });
+    }
+
     const sessionData = {
       userId: user.id,
-      mentorIds: selectedMentorIds,
-      sessionDate: new Date(preferredDate),
+      selectedMentorIds,
+      preferredDate,
       sessionTime: preferredTimeSlot,
       sessionGoals,
       questions: questions || null,
