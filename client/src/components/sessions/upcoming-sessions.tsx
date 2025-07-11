@@ -13,6 +13,8 @@ interface UpcomingSessionsProps {
 }
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
+  console.log("🔍 UpcomingSessions component rendering");
+  
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
@@ -66,12 +68,19 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const { data: rawCouncilSessions = [], isLoading: councilLoading = false, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/council-bookings');
-      const result = await response.json();
-      console.log("Council sessions API response:", result);
-      return Array.isArray(result?.data) ? result.data : [];
+      try {
+        console.log("🌐 Fetching council sessions...");
+        const response = await apiRequest('GET', '/api/council-bookings');
+        const result = await response.json();
+        console.log("✅ Council sessions API response:", result);
+        return Array.isArray(result?.data) ? result.data : [];
+      } catch (error) {
+        console.error("❌ Council sessions fetch failed:", error);
+        throw error;
+      }
     },
     staleTime: 0, // Always refetch to ensure fresh data
+    retry: false, // Don't retry failed requests
   });
   
   // Filter out cancelled sessions
@@ -83,14 +92,31 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const isLoading = Boolean(sessionsLoading || councilLoading);
   const hasError = sessionsError || councilError;
 
+  console.log("📊 Sessions component state:", {
+    isLoading,
+    hasError,
+    rawCouncilSessions: rawCouncilSessions?.length || 0,
+    councilError: councilError?.message
+  });
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-slate-600">Loading sessions...</div>
+      </div>
+    );
+  }
+
   // Handle errors gracefully
   if (hasError) {
+    console.error("❌ Sessions error:", hasError);
     return (
       <div className="text-center py-8">
         <Calendar className="h-12 w-12 text-red-300 mx-auto mb-3" />
         <div className="text-red-500 font-medium">Unable to load sessions</div>
         <div className="text-sm text-red-400 mt-1">
-          Please try refreshing the page
+          Error: {councilError?.message || "Please try refreshing the page"}
         </div>
       </div>
     );
