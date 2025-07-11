@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
-import { UpcomingSessions } from "@/components/sessions/upcoming-sessions";
+import { SimpleSessions } from "@/components/sessions/simple-sessions";
 import { WelcomeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HumanMentor } from "@/types";
@@ -659,19 +659,7 @@ export default function Dashboard() {
             )}
 
             {selectedTab === "sessions" && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    My Sessions
-                  </h2>
-                  <Link href="/sessions">
-                    <Button variant="outline" size="sm">
-                      View All Sessions
-                    </Button>
-                  </Link>
-                </div>
-                <UpcomingSessions />
-              </div>
+              <SimpleSessions />
             )}
 
             {selectedTab === "plan" && (
