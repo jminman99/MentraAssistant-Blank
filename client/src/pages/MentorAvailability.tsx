@@ -38,6 +38,7 @@ export default function MentorAvailability() {
 
   const { data: availability = [], isLoading } = useQuery({
     queryKey: ['/api/mentor-availability'],
+    queryFn: () => apiRequest('/api/mentor-availability'),
   });
 
   const form = useForm<z.infer<typeof availabilitySchema>>({

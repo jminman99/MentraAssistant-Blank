@@ -38,10 +38,12 @@ export function SemanticConfigurationPanel() {
 
   const { data: semanticConfigs, isLoading: configsLoading } = useQuery<SemanticConfiguration[]>({
     queryKey: ["/api/semantic-configurations"],
+    queryFn: () => apiRequest("/api/semantic-configurations"),
   });
 
   const { data: personalities, isLoading: personalitiesLoading } = useQuery<MentorPersonality[]>({
     queryKey: ["/api/mentor-personalities"],
+    queryFn: () => apiRequest("/api/mentor-personalities"),
   });
 
   const createConfigMutation = useMutation({

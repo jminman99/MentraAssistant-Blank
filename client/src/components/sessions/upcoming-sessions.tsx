@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Video, Users, Trash2 } from "lucide-react";
+import { Calendar, Clock, Video, Users, Trash2, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { MentoringSession } from "@/types";
-import { format, parseISO, isFuture } from "date-fns";
+import { format, parseISO, isFuture, isValid } from "date-fns";
+import { useLocation } from "wouter";
 
 interface UpcomingSessionsProps {
   compact?: boolean;
@@ -12,9 +13,11 @@ interface UpcomingSessionsProps {
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
-  const { data: sessions = [], isLoading: sessionsLoading = false } = useQuery<MentoringSession[]>({
+  const { data: sessions = [], isLoading: sessionsLoading = false, error: sessionsError } = useQuery<MentoringSession[]>({
     queryKey: ['/api/session-bookings'],
+    queryFn: () => apiRequest('/api/session-bookings'),
   });
 
   // FIXED: Cancel council session mutation with proper endpoint
@@ -59,8 +62,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   });
 
   // FIXED: Fetch council sessions with debug logging and filter out cancelled
-  const { data: rawCouncilSessions = [], isLoading: councilLoading = false } = useQuery({
+  const { data: rawCouncilSessions = [], isLoading: councilLoading = false, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
+    queryFn: () => apiRequest('/api/council-bookings'),
     staleTime: 0, // Always refetch to ensure fresh data
   });
   
@@ -71,6 +75,20 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
 
   const isLoading = Boolean(sessionsLoading || councilLoading);
+  const hasError = sessionsError || councilError;
+
+  // Handle errors gracefully
+  if (hasError) {
+    return (
+      <div className="text-center py-8">
+        <Calendar className="h-12 w-12 text-red-300 mx-auto mb-3" />
+        <div className="text-red-500 font-medium">Unable to load sessions</div>
+        <div className="text-sm text-red-400 mt-1">
+          Please try refreshing the page
+        </div>
+      </div>
+    );
+  }
 
   // Combine and format both session types
   const allSessions = [
@@ -86,7 +104,15 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       // console.log('[DEBUG] Processing council session for upcoming:', session);
       // console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
       // console.log('[DEBUG] Session status:', session.status);
-      const sessionDate = session.scheduledDate ? parseISO(session.scheduledDate) : null;
+      const sessionDate = session.scheduledDate ? (() => {
+        try {
+          const parsed = parseISO(session.scheduledDate);
+          return isValid(parsed) ? parsed : null;
+        } catch (error) {
+          console.warn('Invalid date format:', session.scheduledDate, error);
+          return null;
+        }
+      })() : null;
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       // console.log('[DEBUG] Session date:', sessionDate);
@@ -118,7 +144,15 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       const hasScheduledAt = !!session.scheduledAt;
       
       // Show sessions from today onwards (including past sessions from today)
-      const sessionDate = hasScheduledAt ? parseISO(session.scheduledAt) : null;
+      const sessionDate = hasScheduledAt ? (() => {
+        try {
+          const parsed = parseISO(session.scheduledAt);
+          return isValid(parsed) ? parsed : null;
+        } catch (error) {
+          console.warn('Invalid date format:', session.scheduledAt, error);
+          return null;
+        }
+      })() : null;
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const isTodayOrFuture = sessionDate ? sessionDate >= startOfToday : false;
@@ -180,11 +214,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
               <div className="flex items-center space-x-3 mt-1">
                 <div className="flex items-center text-xs text-slate-500">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {format(parseISO(session.scheduledAt), 'MMM d')}
+                  {(() => {
+                    try {
+                      const parsed = parseISO(session.scheduledAt);
+                      return isValid(parsed) ? format(parsed, 'MMM d') : 'Invalid Date';
+                    } catch (error) {
+                      console.warn('Date formatting error:', session.scheduledAt, error);
+                      return 'Invalid Date';
+                    }
+                  })()}
                 </div>
                 <div className="flex items-center text-xs text-slate-500">
                   <Clock className="h-3 w-3 mr-1" />
-                  {format(parseISO(session.scheduledAt), 'h:mm a')}
+                  {(() => {
+                    try {
+                      const parsed = parseISO(session.scheduledAt);
+                      return isValid(parsed) ? format(parsed, 'h:mm a') : 'Invalid Time';
+                    } catch (error) {
+                      console.warn('Time formatting error:', session.scheduledAt, error);
+                      return 'Invalid Time';
+                    }
+                  })()}
                 </div>
                 <div className="flex items-center text-xs text-slate-500">
                   {session.type === 'council' ? (
@@ -236,7 +286,18 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       ))}
       
       {!compact && upcomingSessions.length > 0 && (
-        <Button variant="outline" className="w-full mt-4">
+        <Button 
+          variant="outline" 
+          className="w-full mt-4"
+          onClick={() => {
+            const nextSession = upcomingSessions[0];
+            if (nextSession) {
+              // Navigate to session details or join directly
+              setLocation(`/session/${nextSession.sessionId || nextSession.id}`);
+            }
+          }}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
           Join Next Session
         </Button>
       )}
