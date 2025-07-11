@@ -24,7 +24,7 @@ export default function Navigation() {
     { path: '/dashboard', icon: Home, label: 'Home' },
     { path: '/mentors', icon: MessageCircle, label: 'AI Guides' },
     { path: '/individual-booking', icon: Users, label: 'Human Mentors' },
-    { path: '/council-scheduling-new', icon: CalendarIcon, label: 'Council Scheduling' },
+    { path: '/dashboard', icon: CalendarIcon, label: 'Council Scheduling' },
     { path: '/sessions', icon: Calendar, label: 'My Sessions' },
     { path: '/plan-usage', icon: Settings, label: 'Plan & Usage' },
   ];

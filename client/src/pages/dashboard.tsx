@@ -54,7 +54,7 @@ function CouncilSchedulingContent() {
   const queryClient = useQueryClient();
 
   // Fetch available mentors for council sessions
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["/api/human-mentors"],
     queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
   });
@@ -688,7 +688,7 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Guides</span>
             </button>
           </Link>
-          <Link href="/council-scheduling-new">
+          <Link href="/dashboard">
             <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
               <Crown className="h-5 w-5" />
               <span className="text-xs font-medium">Council</span>
