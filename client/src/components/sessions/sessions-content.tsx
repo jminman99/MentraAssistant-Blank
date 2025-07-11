@@ -147,7 +147,15 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   const canCancelSession = (session: SessionBooking) => {
     const sessionDate = parseISO(session.scheduledDate);
     const cancelDeadline = subHours(sessionDate, 24); // 24 hours before as per PRD
-    return isAfter(now, cancelDeadline) === false && (session.status === 'scheduled' || session.status === 'confirmed');
+    
+    // DEBUG: Always show cancel button for testing
+    console.log(`[DEBUG] Session ${session.id}: status=${session.status}, scheduledDate=${session.scheduledDate}, canCancel=${isAfter(now, cancelDeadline) === false}`);
+    
+    // Temporarily allow cancellation regardless of deadline for testing
+    return (session.status === 'scheduled' || session.status === 'confirmed');
+    
+    // Original logic (commented out for testing):
+    // return isAfter(now, cancelDeadline) === false && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
   const canJoinSession = (session: SessionBooking) => {
