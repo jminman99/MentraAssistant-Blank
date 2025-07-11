@@ -716,16 +716,15 @@ export default function Dashboard() {
                   <Crown className="h-4 w-4 mr-2" />
                   Council Sessions
                 </Button>
-                <Link href="/sessions" className="block">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start h-10"
-                  >
-                    <Star className="h-4 w-4 mr-2" />
-                    My Sessions
-                  </Button>
-                </Link>
+                <Button
+                  variant={selectedTab === "sessions" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTab("sessions")}
+                  className="w-full justify-start h-10"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  My Sessions
+                </Button>
                 <Button
                   variant={selectedTab === "plan" ? "default" : "outline"}
                   size="sm"
@@ -762,12 +761,17 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Council</span>
             </button>
           </Link>
-          <Link href="/sessions">
-            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
-              <Star className="h-5 w-5 text-slate-700" />
-              <span className="text-xs font-medium">Sessions</span>
-            </button>
-          </Link>
+          <button 
+            onClick={() => setSelectedTab("sessions")}
+            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
+              selectedTab === "sessions"
+                ? "text-primary bg-blue-50"
+                : "text-slate-600"
+            }`}
+          >
+            <Star className="h-5 w-5 text-slate-700" />
+            <span className="text-xs font-medium">Sessions</span>
+          </button>
           <button
             onClick={() => setSelectedTab("plan")}
             className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
