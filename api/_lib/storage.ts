@@ -372,15 +372,57 @@ export class VercelStorage {
   }
 
   // Individual Session Booking methods
-  async getMentoringSessions(userId: number): Promise<SessionBooking[]> {
+  async getMentoringSessions(userId: number): Promise<any[]> {
     try {
-      const sessions = await db
-        .select()
-        .from(sessionBookings)
-        .where(eq(sessionBookings.menteeId, userId))
-        .orderBy(desc(sessionBookings.scheduledDate));
+      console.log('Fetching individual sessions for user:', userId);
       
-      return sessions;
+      const sessions = await db.execute(sql`
+        SELECT 
+          sb.id,
+          sb.scheduled_date as "scheduledDate",
+          sb.duration,
+          sb.status,
+          sb.meeting_type as "meetingType",
+          sb.video_link as "videoLink",
+          sb.session_goals as "sessionGoals",
+          hm.id as "mentorId",
+          u.first_name as "mentorFirstName",
+          u.last_name as "mentorLastName",
+          u.profile_picture_url as "mentorProfileImage",
+          hm.expertise_areas as "mentorExpertise",
+          '4.8' as "mentorRating"
+        FROM session_bookings sb
+        LEFT JOIN human_mentors hm ON sb.human_mentor_id = hm.id
+        LEFT JOIN users u ON hm.user_id = u.id
+        WHERE sb.mentee_id = ${userId}
+        ORDER BY sb.scheduled_date DESC
+      `);
+      
+      // Transform to match SessionBooking interface
+      const transformedSessions = sessions.rows.map((session: any) => ({
+        id: session.id,
+        scheduledDate: session.scheduledDate,
+        duration: session.duration || 30,
+        status: session.status,
+        meetingType: session.meetingType || 'video',
+        videoLink: session.videoLink,
+        sessionGoals: session.sessionGoals,
+        humanMentor: {
+          id: session.mentorId || 0,
+          user: {
+            firstName: session.mentorFirstName || 'Mentor',
+            lastName: session.mentorLastName || 'Session',
+            profileImage: session.mentorProfileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces'
+          },
+          expertise: Array.isArray(session.mentorExpertise) 
+            ? session.mentorExpertise.join(', ') 
+            : (session.mentorExpertise || 'General Mentoring'),
+          rating: session.mentorRating || '4.8'
+        }
+      }));
+      
+      console.log(`Found ${transformedSessions.length} individual sessions for user ${userId}`);
+      return transformedSessions;
     } catch (error) {
       console.error('Error fetching individual sessions:', error);
       return [];

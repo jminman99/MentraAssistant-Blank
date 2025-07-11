@@ -40,18 +40,34 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Get council participants (other users in the same organization who can be in councils)
-    const participants = await storage.getCouncilParticipants(user.id);
-    // Ensure participants is always an array, never undefined
-    const safeParticipants = Array.isArray(participants) ? participants : [];
+    console.log('Fetching council sessions for user:', user.id);
+    const rawSessions = await storage.getCouncilParticipants(user.id);
     
-    if (!participants) {
-      console.warn('Council participants query returned null/undefined, using empty array');
-    }
-
+    // Transform council sessions to match expected SessionBooking interface
+    const sessions = rawSessions.map(session => ({
+      id: `council-${session.sessionId}`,
+      scheduledDate: session.scheduledDate, // Already properly formatted from SQL
+      duration: session.duration || 60,
+      status: session.sessionStatus || session.status,
+      meetingType: 'video',
+      sessionGoals: session.sessionGoals,
+      humanMentor: {
+        id: 0,
+        user: {
+          firstName: 'Council',
+          lastName: 'Session',
+          profileImage: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=faces'
+        },
+        expertise: `${session.mentorCount} mentors`,
+        rating: '5.0'
+      }
+    }));
+    
+    console.log('Transformed council sessions:', sessions);
+    
     return res.status(200).json({
       success: true,
-      data: safeParticipants
+      data: sessions
     });
   } catch (error: any) {
     console.error('Council bookings GET error:', error);
