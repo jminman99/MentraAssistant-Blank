@@ -558,6 +558,8 @@ client/
   - ✅ Improved error handling to distinguish development server limitations from real API errors
   - ✅ Updated cancel mutation to use proper HTTP methods (PATCH for council, DELETE for individual)
   - ✅ Complete cancellation infrastructure ready with Clerk authentication and cache invalidation
+  - ✅ Enhanced error handling to detect 405 Method Not Allowed errors from development server
+  - ✅ Improved user feedback explaining Vite dev server limitations vs production functionality
 
 - July 05, 2025: Initial setup
 
