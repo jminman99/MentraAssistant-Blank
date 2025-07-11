@@ -1,18 +1,11 @@
-import React from 'react';
-import { Calendar } from "lucide-react";
-
 export function SimpleSessions() {
-  console.log("🔍 SimpleSessions component rendering");
+  console.log("🔍 SimpleSessions component rendering - BASIC TEST");
   
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="text-center py-8">
-        <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-        <div className="text-slate-500 font-medium">Sessions</div>
-        <div className="text-sm text-slate-400 mt-1">
-          Your mentoring sessions will appear here
-        </div>
-      </div>
+    <div style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #ccc' }}>
+      <h2>Sessions Tab</h2>
+      <p>This is the Sessions tab. It should work.</p>
+      <p>If you can see this, the component is loading properly.</p>
     </div>
   );
 }
