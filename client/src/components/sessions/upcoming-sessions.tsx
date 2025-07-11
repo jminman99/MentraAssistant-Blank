@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { MentoringSession } from "@/types";
 import { format, parseISO, isFuture, isValid } from "date-fns";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 interface UpcomingSessionsProps {
   compact?: boolean;
@@ -15,10 +16,10 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  const { data: sessions = [], isLoading: sessionsLoading = false, error: sessionsError } = useQuery<MentoringSession[]>({
-    queryKey: ['/api/session-bookings'],
-    queryFn: () => apiRequest('/api/session-bookings'),
-  });
+  // Individual mentoring sessions are not implemented yet - this app only has council sessions
+  const sessions: any[] = [];
+  const sessionsLoading = false;
+  const sessionsError = null;
 
   // FIXED: Cancel council session mutation with proper endpoint
   const { mutate: cancelCouncilSession } = useMutation({
@@ -64,7 +65,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // FIXED: Fetch council sessions with debug logging and filter out cancelled
   const { data: rawCouncilSessions = [], isLoading: councilLoading = false, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
-    queryFn: () => apiRequest('/api/council-bookings'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/council-bookings');
+      const result = await response.json();
+      console.log("Council sessions API response:", result);
+      return Array.isArray(result?.data) ? result.data : [];
+    },
     staleTime: 0, // Always refetch to ensure fresh data
   });
   
@@ -90,16 +96,8 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     );
   }
 
-  // Combine and format both session types
+  // Only council sessions are implemented - no individual sessions yet
   const allSessions = [
-    ...sessions.map(session => ({
-      ...session,
-      type: 'individual' as const,
-      scheduledAt: session.scheduledDate, // Fix field mapping
-      title: session.humanMentor ? 
-        `${session.humanMentor.user.firstName} ${session.humanMentor.user.lastName}` : 
-        'Individual Session'
-    })),
     ...councilSessions.map((session: any) => {
       // console.log('[DEBUG] Processing council session for upcoming:', session);
       // console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
