@@ -18,10 +18,24 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  // Individual mentoring sessions are not implemented yet - this app only has council sessions
-  const sessions: any[] = [];
-  const sessionsLoading = false;
-  const sessionsError = null;
+  // Fetch individual mentoring sessions
+  const { data: individualSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
+    queryKey: ['/api/session-bookings'],
+    queryFn: async () => {
+      try {
+        console.log("🌐 Fetching individual sessions...");
+        const response = await apiRequest('GET', '/api/session-bookings');
+        const result = await response.json();
+        console.log("✅ Individual sessions API response:", result);
+        return Array.isArray(result?.data) ? result.data : [];
+      } catch (error) {
+        console.error("❌ Individual sessions fetch failed:", error);
+        throw error;
+      }
+    },
+    staleTime: 0,
+    retry: false,
+  });
 
   // FIXED: Cancel council session mutation with proper endpoint
   const { mutate: cancelCouncilSession } = useMutation({
@@ -83,11 +97,18 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     retry: false, // Don't retry failed requests
   });
   
-  // Filter out cancelled sessions
-  const councilSessions = rawCouncilSessions.filter((session: any) => session.status !== 'cancelled');
+  // Filter out cancelled sessions and add type
+  const councilSessions = rawCouncilSessions
+    .filter((session: any) => session.status !== 'cancelled')
+    .map((session: any) => ({ ...session, type: 'council' }));
+
+  // Filter individual sessions and add type
+  const sessions = individualSessions
+    .filter((session: any) => session.status !== 'cancelled')
+    .map((session: any) => ({ ...session, type: 'individual' }));
   
-  // console.log('[DEBUG] Raw council sessions:', rawCouncilSessions);
-  // console.log('[DEBUG] Filtered council sessions (non-cancelled):', councilSessions);
+  console.log('[DEBUG] Individual sessions:', sessions.length);
+  console.log('[DEBUG] Council sessions:', councilSessions.length);
 
   const isLoading = Boolean(sessionsLoading || councilLoading);
   const hasError = sessionsError || councilError;
@@ -95,8 +116,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   console.log("📊 Sessions component state:", {
     isLoading,
     hasError,
-    rawCouncilSessions: rawCouncilSessions?.length || 0,
-    councilError: councilError?.message
+    individualSessions: sessions.length,
+    councilSessions: councilSessions.length,
+    errors: {
+      sessionsError: sessionsError?.message,
+      councilError: councilError?.message
+    }
   });
 
   // Show loading state
@@ -122,8 +147,22 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     );
   }
 
-  // Only council sessions are implemented - no individual sessions yet
+  // Combine individual and council sessions
   const allSessions = [
+    // Individual sessions
+    ...sessions.map((session: any) => ({
+      id: session.id,
+      sessionId: session.id,
+      participantId: session.id,
+      type: 'individual' as const,
+      scheduledAt: session.scheduledDate,
+      status: session.status,
+      title: 'Individual Session',
+      duration: session.duration || 30,
+      sessionGoals: session.sessionGoals,
+      mentorName: session.humanMentorName || 'Mentor',
+    })),
+    // Council sessions  
     ...councilSessions.map((session: any) => {
       // console.log('[DEBUG] Processing council session for upcoming:', session);
       // console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);

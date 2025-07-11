@@ -371,6 +371,63 @@ export class VercelStorage {
     }
   }
 
+  // Individual Session Booking methods
+  async getMentoringSessions(userId: number): Promise<SessionBooking[]> {
+    try {
+      const sessions = await db
+        .select()
+        .from(sessionBookings)
+        .where(eq(sessionBookings.menteeId, userId))
+        .orderBy(desc(sessionBookings.scheduledDate));
+      
+      return sessions;
+    } catch (error) {
+      console.error('Error fetching individual sessions:', error);
+      return [];
+    }
+  }
+
+  async createSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
+    try {
+      const [session] = await db.insert(sessionBookings).values(data).returning();
+      console.log(`✅ Created individual session booking for user ${data.menteeId}`);
+      return session;
+    } catch (error) {
+      console.error('Error creating session booking:', error);
+      throw error;
+    }
+  }
+
+  async updateSessionBooking(id: number, data: Partial<InsertSessionBooking>): Promise<SessionBooking | null> {
+    try {
+      const [session] = await db
+        .update(sessionBookings)
+        .set(data)
+        .where(eq(sessionBookings.id, id))
+        .returning();
+      
+      return session || null;
+    } catch (error) {
+      console.error('Error updating session booking:', error);
+      throw error;
+    }
+  }
+
+  async cancelSessionBooking(id: number): Promise<SessionBooking | null> {
+    try {
+      const [session] = await db
+        .update(sessionBookings)
+        .set({ status: 'cancelled' })
+        .where(eq(sessionBookings.id, id))
+        .returning();
+      
+      return session || null;
+    } catch (error) {
+      console.error('Error cancelling session booking:', error);
+      throw error;
+    }
+  }
+
   // Additional methods can be added as needed for specific API routes
 }
 
@@ -389,5 +446,9 @@ export const {
   getHumanMentorsByOrganization,
   getCouncilParticipants,
   createCouncilBooking,
-  cancelCouncilSession
+  cancelCouncilSession,
+  getMentoringSessions,
+  createSessionBooking,
+  updateSessionBooking,
+  cancelSessionBooking
 } = storage;
