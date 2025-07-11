@@ -11,29 +11,30 @@ import { Calendar, Clock, Video, User, X, ExternalLink, Star, Users, MessageSqua
 import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
-
-interface SessionBooking {
-  id: string | number;
-  scheduledDate: string;
-  duration: number;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'confirmed';
-  meetingType: string;
-  videoLink?: string;
-  sessionGoals?: string;
-  humanMentor: {
-    id: number;
-    user: {
-      firstName: string;
-      lastName: string;
-      profileImage?: string;
-    };
-    expertise: string;
-    rating: string;
-  };
-}
+import { ApiResponse, SessionBooking, DevServerError } from "@/types";
+import { parseApiJson } from "@/lib/utils";
 
 interface SessionsContentProps {
   compact?: boolean;
+}
+
+async function fetchSessionBookings(url: string): Promise<SessionBooking[]> {
+  try {
+    const response = await apiRequest('GET', url);
+    const text = await response.text();
+    const result = parseApiJson(text) as ApiResponse<SessionBooking[]>;
+    if (!result.success) {
+      throw new Error(result.error || "Unknown API error");
+    }
+    return result.data || [];
+  } catch (error) {
+    if (error.name === "DevServerError") {
+      console.warn(`⚠️ Dev server issue fetching ${url} - returning empty array`);
+      return [];
+    }
+    console.error(`❌ Real API error fetching ${url}:`, error);
+    throw error;
+  }
 }
 
 export function SessionsContent({ compact = false }: SessionsContentProps) {
@@ -42,63 +43,17 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("upcoming");
 
-  // Fetch user's session bookings with error handling
+  // Fetch user's session bookings with improved error handling
   const { data: sessionsData = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
-    queryFn: async () => {
-      try {
-        console.log("🌐 Fetching individual sessions...");
-        const response = await apiRequest('GET', '/api/session-bookings');
-        
-        // Check if response is HTML (development server issue)
-        const text = await response.text();
-        if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ API returned HTML instead of JSON - development server issue");
-          return [];
-        }
-        
-        const result = JSON.parse(text);
-        console.log("✅ Individual sessions API response:", result);
-        return Array.isArray(result?.data) ? result.data : [];
-      } catch (error) {
-        if (error.message?.includes('HTML')) {
-          console.warn("⚠️ Development server issue - returning empty array");
-          return [];
-        }
-        console.error("❌ Real API error for individual sessions:", error);
-        return [];
-      }
-    },
+    queryFn: () => fetchSessionBookings('/api/session-bookings'),
   });
 
-  // Fetch council sessions for council users with error handling
+  // Fetch council sessions for council users with improved error handling
   const { data: councilData = [], isLoading: councilLoading, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
     enabled: user?.subscriptionPlan === 'council',
-    queryFn: async () => {
-      try {
-        console.log("🌐 Fetching council sessions...");
-        const response = await apiRequest('GET', '/api/council-bookings');
-        
-        // Check if response is HTML (development server issue)
-        const text = await response.text();
-        if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ Council API returned HTML instead of JSON - development server issue");
-          return [];
-        }
-        
-        const result = JSON.parse(text);
-        console.log("✅ Council sessions API response:", result);
-        return Array.isArray(result?.data) ? result.data : [];
-      } catch (error) {
-        if (error.message?.includes('HTML')) {
-          console.warn("⚠️ Development server issue - returning empty array");
-          return [];
-        }
-        console.error("❌ Real API error for council sessions:", error);
-        return [];
-      }
-    },
+    queryFn: () => fetchSessionBookings('/api/council-bookings'),
   });
 
   // Cancel session mutation
@@ -302,9 +257,9 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     );
   }
 
-  // Show API error state if we have real server errors (not just development issues)
-  const hasRealApiError = (sessionsError && !sessionsError.message?.includes('HTML')) || 
-                          (councilError && !councilError.message?.includes('HTML'));
+  // Show API error state if we have real server errors (not dev server issues)
+  const hasRealApiError = (sessionsError && sessionsError.name !== 'DevServerError') || 
+                          (councilError && councilError.name !== 'DevServerError');
   
   if (hasRealApiError) {
     return (

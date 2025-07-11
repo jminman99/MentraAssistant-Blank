@@ -65,6 +65,40 @@ export interface ChatMessage {
   createdAt: Date;
 }
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface SessionBooking {
+  id: string | number;
+  scheduledDate: string;
+  duration: number;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'confirmed';
+  meetingType: string;
+  videoLink?: string;
+  sessionGoals?: string;
+  humanMentor: {
+    id: number;
+    user: {
+      firstName: string;
+      lastName: string;
+      profileImage?: string;
+    };
+    expertise: string;
+    rating: string;
+  };
+}
+
+export class DevServerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DevServerError";
+  }
+}
+
 export interface MentoringSession {
   id: number;
   userId: number;
