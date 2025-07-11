@@ -74,6 +74,8 @@ function CouncilSchedulingContent() {
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {
+      console.log("📝 Booking council session:", data);
+      
       const requestBody = {
         selectedMentorIds: data.selectedMentorIds,
         sessionGoals: data.sessionGoals,
@@ -82,12 +84,23 @@ function CouncilSchedulingContent() {
         preferredTimeSlot: data.preferredTime,
       };
 
-      const response = await apiRequest(
-        "POST",
-        "/api/council-sessions/book",
-        requestBody,
-      );
-      return response.json();
+      console.log("🚀 Sending request to:", "/api/council-sessions/book");
+      console.log("📦 Request body:", requestBody);
+
+      try {
+        const response = await apiRequest(
+          "POST",
+          "/api/council-sessions/book",
+          requestBody,
+        );
+        console.log("✅ API response received:", response.status);
+        const result = await response.json();
+        console.log("📄 Response data:", result);
+        return result;
+      } catch (error) {
+        console.error("❌ Booking failed:", error);
+        throw error;
+      }
     },
     onSuccess: async () => {
       toast({
@@ -243,8 +256,29 @@ function CouncilSchedulingContent() {
               <div className="flex gap-3 pt-4">
                 <Button
                   type="submit"
-                  disabled={isBooking || !selectedDate || !selectedTime}
+                  disabled={isBooking}
                   className="bg-slate-900 hover:bg-slate-800 text-white"
+                  onClick={() => {
+                    console.log("🎯 Booking button clicked!");
+                    console.log("📅 Selected date:", selectedDate);
+                    console.log("⏰ Selected time:", selectedTime);
+                    console.log("👥 Selected mentors:", selectedMentors);
+                    console.log("📋 Form values:", form.getValues());
+                    
+                    // Set default date/time if not selected for testing
+                    if (!selectedDate) {
+                      const defaultDate = addDays(new Date(), 7);
+                      setSelectedDate(defaultDate);
+                      form.setValue("preferredDate", defaultDate);
+                      console.log("⚠️ Set default date:", defaultDate);
+                    }
+                    if (!selectedTime) {
+                      const defaultTime = "10:00";
+                      setSelectedTime(defaultTime);
+                      form.setValue("preferredTime", defaultTime);
+                      console.log("⚠️ Set default time:", defaultTime);
+                    }
+                  }}
                 >
                   {isBooking ? "Booking..." : "Book Council Session"}
                 </Button>

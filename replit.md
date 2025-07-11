@@ -537,7 +537,11 @@ client/
   - ✅ Consolidated to single unified dashboard.tsx with integrated council scheduling functionality
   - ✅ Updated navigation links to use unified dashboard route, eliminating confusion
   - ✅ Application now loads without ReferenceError crashes - ready for deployment testing
-  - ⚠️ Development Note: API endpoints require Vercel dev server instead of npm run dev for proper functionality
+  - ✅ Fixed council session booking API parameter mismatch (selectedMentorIds, preferredDate, preferredTimeSlot)
+  - ✅ Added comprehensive debugging logs to track booking flow from frontend to backend
+  - ✅ Temporarily disabled date/time validation to test API connectivity
+  - ⚠️ CRITICAL: Development environment issue - API endpoints require Vercel dev server, not Vite alone
+  - ⚠️ Booking button functional but API requests fail due to missing serverless function runtime
 
 - July 05, 2025: Initial setup
 

@@ -27,16 +27,18 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
-    const { mentorIds, date, time, sessionGoals } = req.body;
+    const { selectedMentorIds, preferredDate, preferredTimeSlot, sessionGoals, questions } = req.body;
+    
+    console.log("📥 Received council booking request:", req.body);
 
-    if (!mentorIds || !Array.isArray(mentorIds) || mentorIds.length < 3) {
+    if (!selectedMentorIds || !Array.isArray(selectedMentorIds) || selectedMentorIds.length < 3) {
       return res.status(400).json({
         success: false,
         error: "At least 3 mentors required for council session"
       });
     }
 
-    if (!date || !time || !sessionGoals) {
+    if (!preferredDate || !preferredTimeSlot || !sessionGoals) {
       return res.status(400).json({
         success: false,
         error: "Date, time, and session goals are required"
@@ -46,13 +48,16 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     // Create the council session booking
     const sessionData = {
       userId: user.id,
-      mentorIds,
-      sessionDate: new Date(date),
-      sessionTime: time,
+      mentorIds: selectedMentorIds,
+      sessionDate: new Date(preferredDate),
+      sessionTime: preferredTimeSlot,
       sessionGoals,
+      questions: questions || null,
       status: 'pending' as const,
       organizationId: user.organizationId || 1
     };
+    
+    console.log("💾 Creating council session with data:", sessionData);
 
     const session = await storage.createCouncilBooking(sessionData);
 
