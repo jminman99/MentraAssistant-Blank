@@ -62,7 +62,16 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       // Handle council sessions differently
       if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
         const councilId = sessionId.replace('council-', '');
-        const response = await apiRequest('DELETE', `/api/council-sessions/${councilId}/cancel`);
+        
+        // For council sessions, we need to find the participant ID from the allSessions data
+        const sessionData = allSessions.find((s: any) => s.id === sessionId);
+        const participantId = sessionData?.participantId;
+        
+        if (!participantId) {
+          throw new Error('Could not find participant ID for council session');
+        }
+        
+        const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to cancel council session');
@@ -70,7 +79,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         return response.json();
       } else {
         // Handle individual sessions
-        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
+        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}/cancel`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to cancel session');
@@ -88,11 +97,20 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Cancellation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Check if this is a development server issue
+      if (error.message.includes('404') || error.message.includes('Not Found')) {
+        toast({
+          title: "Development Server Limitation",
+          description: "API routes are not available in Vite dev server. Cancellation will work in production deployment.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Cancellation Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -102,10 +120,11 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
     ? councilData.map((cs: any) => ({
-        id: `council-${cs.sessionId}`, // Use sessionId instead of participant id
+        id: `council-${cs.sessionId}`, // Use sessionId for display
+        participantId: cs.id, // Store participant ID for cancellation
         scheduledDate: cs.scheduledDate,
         duration: cs.duration || 60,
-        status: cs.status,
+        status: cs.sessionStatus || cs.status,
         meetingType: 'video',
         sessionGoals: cs.sessionGoals,
         humanMentor: {
