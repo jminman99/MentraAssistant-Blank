@@ -519,7 +519,7 @@ client/
   - ✅ Complete end-to-end authentication flow for AI mentor conversations
   - ✅ AI mentors now properly authenticate and respond to user messages
 
-- July 11, 2025: ✅ COMPLETED council session booking functionality and critical bug fixes
+- July 11, 2025: ⚠️ CRITICAL DEVELOPMENT ISSUE IDENTIFIED: Council session booking functionality and critical bug fixes
   - ✅ Fixed critical missing queryFn functions across all useQuery hooks preventing data fetching failures
   - ✅ Implemented comprehensive error handling with try-catch blocks and graceful UI fallbacks
   - ✅ Created council session cancellation API endpoint (/api/council-sessions/[id]/cancel.ts)
@@ -544,7 +544,11 @@ client/
   - ✅ Enhanced council_mentors with availability_response, available_time_slots, notification_sent
   - ✅ Restored Drizzle ORM usage with proper schema alignment for enhanced functionality
   - ✅ Complete council session booking flow now functional end-to-end
-  - ⚠️ DEPLOYMENT REQUIREMENT: API endpoints require Vercel dev server for full functionality
+  - 🚨 CRITICAL BLOCKER: Development environment is broken - API endpoints return 404
+  - ISSUE: Vite dev server (npm run dev) does NOT serve Vercel API routes
+  - SOLUTION REQUIRED: Must use `npx vercel dev --listen 5000` instead of `npm run dev`
+  - IMPACT: All API functionality (booking, auth, data) is non-functional in development
+  - USER EXPERIENCE: Buttons click but nothing happens because requests fail silently
 
 - July 05, 2025: Initial setup
 
