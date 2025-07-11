@@ -252,7 +252,7 @@ export class VercelStorage {
         cs.id as "sessionId",
         cs.title,
         cs.description,
-        cs.scheduled_at as "scheduledDate",
+        cs.scheduled_date as "scheduledDate",
         cs.duration,
         cs.status as "sessionStatus",
         COALESCE(
@@ -261,9 +261,9 @@ export class VercelStorage {
         ) as "mentorCount"
       FROM council_participants cp
       JOIN council_sessions cs ON cp.council_session_id = cs.id
-      WHERE cp.user_id = ${userId}
+      WHERE cp.mentee_id = ${userId}
       AND cp.status != 'cancelled'
-      ORDER BY cs.scheduled_at DESC
+      ORDER BY cs.scheduled_date DESC
     `);
     return results.rows || [];
   }
@@ -379,7 +379,7 @@ export class VercelStorage {
       const sessions = await db.execute(sql`
         SELECT 
           sb.id,
-          sb.scheduled_at as "scheduledDate",
+          sb.scheduled_date as "scheduledDate",
           sb.duration,
           sb.status,
           sb.meeting_type as "meetingType",
@@ -394,8 +394,8 @@ export class VercelStorage {
         FROM session_bookings sb
         LEFT JOIN human_mentors hm ON sb.human_mentor_id = hm.id
         LEFT JOIN users u ON hm.user_id = u.id
-        WHERE sb.user_id = ${userId}
-        ORDER BY sb.scheduled_at DESC
+        WHERE sb.mentee_id = ${userId}
+        ORDER BY sb.scheduled_date DESC
       `);
       
       // Transform to match SessionBooking interface
