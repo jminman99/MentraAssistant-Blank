@@ -101,26 +101,47 @@ function CouncilSchedulingContent() {
         console.log("✅ API response received:", response.status);
         const result = await response.json();
         console.log("📄 Response data:", result);
+        
+        // Check if the API response indicates success
+        if (result.success === false) {
+          throw new Error(result.error || "Booking failed");
+        }
+        
         return result;
       } catch (error) {
         console.error("❌ Booking failed:", error);
         throw error;
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      console.log("🎉 Booking successful, response data:", data);
+      
       toast({
-        title: "Council Session Booked",
-        description: "Your council session has been scheduled successfully.",
+        title: "Council Session Booked!",
+        description: "Your council session has been scheduled successfully. Check the Sessions tab to view details.",
+        duration: 5000,
       });
+      
+      // Clear the form and close modal
+      setShowBookingForm(false);
+      setSelectedMentors([]);
+      form.reset();
+      
+      // Invalidate relevant queries to refresh data
       await queryClient.invalidateQueries({
         queryKey: ["/api/council-bookings"],
       });
       await queryClient.invalidateQueries({
         queryKey: ["/api/session-bookings"],
       });
-      setShowBookingForm(false);
-      setSelectedMentors([]);
-      form.reset();
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/upcoming-sessions"],
+      });
+      
+      // Auto-switch to sessions tab to show the new booking
+      setTimeout(() => {
+        setSelectedTab("sessions");
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
