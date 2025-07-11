@@ -297,71 +297,50 @@ export class VercelStorage {
 
     console.log("📅 Storage: Final scheduledDate:", scheduledDate);
     
-    // Create council session - using direct SQL to match actual database schema
+    // Create council session using Drizzle ORM (now that schema matches)
     console.log("💽 Storage: Inserting into councilSessions table...");
-    const insertResult = await db.execute(sql`
-      INSERT INTO council_sessions (
-        title,
-        description, 
-        scheduled_date,
-        duration,
-        max_mentees,
-        current_mentees,
-        meeting_type,
-        status,
-        organization_id
-      ) VALUES (
-        ${`Council Session for User`},
-        ${data.sessionGoals || 'Council mentoring session'},
-        ${scheduledDate},
-        ${60},
-        ${1},
-        ${1},
-        ${'video'},
-        ${'confirmed'},
-        ${data.organizationId || 1}
-      ) RETURNING *
-    `);
+    const [session] = await db.insert(councilSessions).values({
+      title: `Council Session for User`,
+      description: data.sessionGoals || 'Council mentoring session',
+      scheduledDate,
+      duration: 60,
+      timezone: 'America/New_York',
+      maxMentees: 1,
+      currentMentees: 1,
+      meetingType: 'video',
+      status: 'confirmed',
+      organizationId: data.organizationId || 1,
+      mentorMinimum: 3,
+      mentorMaximum: 5,
+      coordinationStatus: 'pending',
+      finalTimeConfirmed: false,
+    }).returning();
     
-    const session = insertResult.rows[0];
-    console.log("✅ Storage: Council session created with raw SQL:", session);
+    console.log("✅ Storage: Council session created:", session);
 
-    // Create participant - using direct SQL to avoid schema mismatches
+    // Create participant using Drizzle ORM
     console.log("👤 Storage: Creating participant for userId:", data.userId);
-    await db.execute(sql`
-      INSERT INTO council_participants (
-        council_session_id,
-        mentee_id,
-        session_goals,
-        questions,
-        status
-      ) VALUES (
-        ${session.id},
-        ${data.userId},
-        ${data.sessionGoals},
-        ${data.questions},
-        ${'registered'}
-      )
-    `);
+    await db.insert(councilParticipants).values({
+      councilSessionId: session.id,
+      menteeId: data.userId,
+      sessionGoals: data.sessionGoals,
+      questions: data.questions,
+      status: 'registered',
+    });
     console.log("✅ Storage: Participant created");
 
-    // Add mentors to session - using direct SQL
+    // Add mentors to session using Drizzle ORM
     console.log("👥 Storage: Adding mentors:", data.selectedMentorIds);
     for (const mentorId of data.selectedMentorIds) {
       console.log(`📎 Storage: Adding mentor ${mentorId} to session ${session.id}`);
-      await db.execute(sql`
-        INSERT INTO council_mentors (
-          council_session_id,
-          human_mentor_id,
-          role,
-          confirmed
-        ) VALUES (
-          ${session.id},
-          ${mentorId},
-          ${'mentor'},
-          ${true}
-        )
-      `);
+      await db.insert(councilMentors).values({
+        councilSessionId: session.id,
+        humanMentorId: mentorId,
+        role: 'mentor',
+        confirmed: true,
+        availabilityResponse: 'available',
+        notificationSent: false,
+      });
     }
     console.log("✅ Storage: All mentors added");
 
