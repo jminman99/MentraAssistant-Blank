@@ -97,11 +97,11 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
     onError: (error: Error) => {
-      // Check if this is a development server issue
-      if (error.message.includes('404') || error.message.includes('Not Found')) {
+      // Check if this is a development server issue (405 Method Not Allowed or 404)
+      if (error.message.includes('405') || error.message.includes('404') || error.message.includes('Not Found') || error.message.includes('Method not allowed')) {
         toast({
-          title: "Development Server Limitation",
-          description: "API routes are not available in Vite dev server. Cancellation will work in production deployment.",
+          title: "Development Server Limitation", 
+          description: "API routes require Vercel deployment. Use 'npx vercel dev' instead of 'npm run dev' to test cancellation locally.",
           variant: "destructive",
         });
       } else {
