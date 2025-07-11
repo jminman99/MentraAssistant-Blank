@@ -65,6 +65,39 @@ export interface ChatMessage {
   createdAt: Date;
 }
 
+export interface MentoringSession {
+  id: number;
+  userId: number;
+  humanMentorId?: number;
+  type: 'individual' | 'council';
+  status: string;
+  scheduledAt: string;
+  duration: number;
+  topic?: string;
+  notes?: string;
+  rating?: number;
+  feedback?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SessionBooking {
+  id: number;
+  menteeId: number;
+  humanMentorId?: number;
+  sessionType: 'individual' | 'council';
+  duration: number;
+  scheduledDate: string;
+  timezone: string;
+  meetingType: 'video' | 'in_person' | 'calendly';
+  location?: string;
+  videoLink?: string;
+  sessionGoals?: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // API Response types
 export interface ApiResponse<T = any> {
   success: boolean;

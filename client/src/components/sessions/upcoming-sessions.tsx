@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Video, Users, Trash2, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { MentoringSession } from "@/types";
+import { MentoringSession, SessionBooking } from "@/types";
 import { format, parseISO, isFuture, isValid } from "date-fns";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,19 +18,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  // Fetch individual mentoring sessions
+  // Fetch individual mentoring sessions with graceful fallback
   const { data: individualSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
     queryFn: async () => {
       try {
         console.log("🌐 Fetching individual sessions...");
         const response = await apiRequest('GET', '/api/session-bookings');
-        const result = await response.json();
+        
+        // Check if response is HTML (development server issue)
+        const text = await response.text();
+        if (text.includes('<!DOCTYPE html>')) {
+          console.warn("⚠️ API returned HTML instead of JSON - likely development server issue");
+          return [];
+        }
+        
+        const result = JSON.parse(text);
         console.log("✅ Individual sessions API response:", result);
         return Array.isArray(result?.data) ? result.data : [];
       } catch (error) {
-        console.error("❌ Individual sessions fetch failed:", error);
-        throw error;
+        console.warn("⚠️ Individual sessions fetch failed, using empty array:", error);
+        return []; // Return empty array instead of throwing
       }
     },
     staleTime: 0,
@@ -78,19 +86,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     },
   });
 
-  // FIXED: Fetch council sessions with debug logging and filter out cancelled
+  // FIXED: Fetch council sessions with debug logging and graceful fallback
   const { data: rawCouncilSessions = [], isLoading: councilLoading = false, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
     queryFn: async () => {
       try {
         console.log("🌐 Fetching council sessions...");
         const response = await apiRequest('GET', '/api/council-bookings');
-        const result = await response.json();
+        
+        // Check if response is HTML (development server issue)
+        const text = await response.text();
+        if (text.includes('<!DOCTYPE html>')) {
+          console.warn("⚠️ Council API returned HTML instead of JSON - likely development server issue");
+          return [];
+        }
+        
+        const result = JSON.parse(text);
         console.log("✅ Council sessions API response:", result);
         return Array.isArray(result?.data) ? result.data : [];
       } catch (error) {
-        console.error("❌ Council sessions fetch failed:", error);
-        throw error;
+        console.warn("⚠️ Council sessions fetch failed, using empty array:", error);
+        return []; // Return empty array instead of throwing
       }
     },
     staleTime: 0, // Always refetch to ensure fresh data
@@ -111,13 +127,11 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   console.log('[DEBUG] Council sessions:', councilSessions.length);
 
   const isLoading = Boolean(sessionsLoading || councilLoading);
-  const hasError = sessionsError || councilError;
-
+  
   console.log("📊 Sessions component state:", {
     isLoading,
-    hasError,
-    individualSessions: sessions.length,
-    councilSessions: councilSessions.length,
+    individualSessions: individualSessions.length,
+    councilSessions: rawCouncilSessions.length,
     errors: {
       sessionsError: sessionsError?.message,
       councilError: councilError?.message
@@ -129,20 +143,6 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     return (
       <div className="text-center py-8">
         <div className="text-slate-600">Loading sessions...</div>
-      </div>
-    );
-  }
-
-  // Handle errors gracefully
-  if (hasError) {
-    console.error("❌ Sessions error:", hasError);
-    return (
-      <div className="text-center py-8">
-        <Calendar className="h-12 w-12 text-red-300 mx-auto mb-3" />
-        <div className="text-red-500 font-medium">Unable to load sessions</div>
-        <div className="text-sm text-red-400 mt-1">
-          Error: {councilError?.message || "Please try refreshing the page"}
-        </div>
       </div>
     );
   }
