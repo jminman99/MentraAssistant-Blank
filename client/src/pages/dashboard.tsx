@@ -93,14 +93,29 @@ function CouncilSchedulingContent() {
       console.log("📦 Request body:", requestBody);
 
       try {
+        console.log("🌐 Making request to:", "/api/council-sessions/book");
+        console.log("📦 Request payload:", JSON.stringify(requestBody, null, 2));
+        
         const response = await apiRequest(
           "POST",
           "/api/council-sessions/book",
           requestBody,
         );
-        console.log("✅ API response received:", response.status);
-        const result = await response.json();
-        console.log("📄 Response data:", result);
+        
+        console.log("✅ Raw response status:", response.status);
+        console.log("✅ Response headers:", Object.fromEntries(response.headers.entries()));
+        
+        const responseText = await response.text();
+        console.log("📄 Raw response text:", responseText);
+        
+        let result;
+        try {
+          result = JSON.parse(responseText);
+          console.log("📄 Parsed response:", result);
+        } catch (parseError) {
+          console.error("❌ Failed to parse response as JSON:", parseError);
+          throw new Error(`Server returned non-JSON response: ${responseText}`);
+        }
         
         // Check if the API response indicates success
         if (result.success === false) {
@@ -109,7 +124,12 @@ function CouncilSchedulingContent() {
         
         return result;
       } catch (error) {
-        console.error("❌ Booking failed:", error);
+        console.error("❌ Booking completely failed:", error);
+        console.error("❌ Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         throw error;
       }
     },
