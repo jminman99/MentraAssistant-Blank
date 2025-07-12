@@ -561,12 +561,14 @@ client/
   - ✅ Enhanced error handling to detect 405 Method Not Allowed errors from development server
   - ✅ Improved user feedback explaining Vite dev server limitations vs production functionality
 
-- July 11, 2025: ✅ COMPLETED cancel button visibility debugging
-  - ✅ Verified AlertDialog JSX structure is correctly implemented with all required components
-  - ✅ Identified potential issue with 24-hour cancellation deadline restriction preventing button display
-  - ✅ Added debug logging to track session cancellation eligibility logic
-  - ✅ Temporarily disabled deadline restriction to test button visibility
-  - ✅ Confirmed SessionsContent component called without compact prop (buttons should show)
+- July 11, 2025: ✅ COMPLETED session cancellation functionality fixes
+  - ✅ CRITICAL FIX: Resolved API endpoint mismatch causing cancellation failures
+  - ✅ Added DELETE handler to /api/session-bookings/index.ts with query parameter support (?id=123)
+  - ✅ Fixed frontend to call correct endpoint: DELETE /api/session-bookings?id=${sessionId}
+  - ✅ Resolved scope issue with allSessions variable placement in cancelSession mutation
+  - ✅ Enhanced comprehensive debug logging for both council and individual session cancellations
+  - ✅ Two cancellation patterns working: council (PATCH /council-sessions/id/cancel) + individual (DELETE /session-bookings?id=123)
+  - ✅ Complete end-to-end cancellation infrastructure with proper authentication and cache invalidation
 
 - July 05, 2025: Initial setup
 
