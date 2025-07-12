@@ -111,9 +111,9 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         console.log(`[DEBUG] Cancel success result:`, result);
         return result;
       } else {
-        // Handle individual sessions - use correct endpoint path with query parameter
+        // Handle individual sessions - use path parameter endpoint
         console.log(`[DEBUG] Individual session cancellation for sessionId: ${sessionId}`);
-        const response = await apiRequest('DELETE', `/api/session-bookings?id=${sessionId}`);
+        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
         if (!response.ok) {
           const errorData = await response.json();
           console.error(`[DEBUG] Individual session API error:`, errorData);
