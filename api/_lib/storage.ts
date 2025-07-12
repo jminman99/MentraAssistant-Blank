@@ -465,6 +465,31 @@ export class VercelStorage {
     }
   }
 
+  async cancelCouncilSession(participantId: number): Promise<any> {
+    try {
+      // Update the participant status to 'cancelled'
+      const [updatedParticipant] = await db
+        .update(councilParticipants)
+        .set({ status: 'cancelled' })
+        .where(eq(councilParticipants.id, participantId))
+        .returning();
+
+      if (!updatedParticipant) {
+        throw new Error('Council participant not found');
+      }
+
+      console.log(`✅ Cancelled council participant ${participantId}`);
+      return {
+        success: true,
+        message: 'Council session cancelled successfully',
+        data: updatedParticipant
+      };
+    } catch (error) {
+      console.error('Error cancelling council session:', error);
+      throw error;
+    }
+  }
+
   // Additional methods can be added as needed for specific API routes
 }
 
