@@ -364,8 +364,24 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                       <AlertDialogCancel>Keep Session</AlertDialogCancel>
                       <AlertDialogAction 
                         onClick={() => {
-                          const participantId = (session as any).participantId || session.id;
-                          // console.log(`[DEBUG] Cancelling session with participantId: ${participantId}, sessionId: ${(session as any).sessionId}`);
+                          console.log(`[DEBUG] Council session object:`, session);
+                          console.log(`[DEBUG] session.participantId:`, session.participantId);
+                          console.log(`[DEBUG] session.id:`, session.id);
+                          
+                          // Ensure we always use the numeric participantId
+                          const participantId = session.participantId;
+                          
+                          if (typeof participantId !== 'number' || participantId <= 0) {
+                            console.error(`[DEBUG] Invalid participantId: ${participantId}, type: ${typeof participantId}`);
+                            toast({
+                              title: "Cancellation Failed",
+                              description: "Invalid session data. Please refresh and try again.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          console.log(`[DEBUG] Cancelling council session with participantId: ${participantId}`);
                           cancelCouncilSession(participantId);
                         }}
                         className="bg-red-600 hover:bg-red-700"
