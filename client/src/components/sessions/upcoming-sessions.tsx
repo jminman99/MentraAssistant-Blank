@@ -317,11 +317,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep Session</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={() => {
-                        const sessionId = session.type === 'council' ? session.participantId : session.id;
-                        
-                        if (typeof sessionId !== 'number' || sessionId <= 0) {
+                        if (typeof session.participantId !== 'number' || session.participantId <= 0) {
                           toast({
                             title: "Cancellation Failed",
                             description: "Invalid session data. Please refresh and try again.",
@@ -329,10 +327,10 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                           });
                           return;
                         }
-                        
-                        cancelAnySession({ 
-                          sessionType: session.type === 'council' ? 'council' : 'individual',
-                          id: sessionId 
+
+                        cancelAnySession({
+                          sessionType: session.type,
+                          id: session.participantId,
                         });
                       }}
                       className="bg-red-600 hover:bg-red-700"
