@@ -80,48 +80,30 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   // Cancel session mutation
   const { mutate: cancelSession } = useMutation({
-    mutationFn: async (sessionId: string | number) => {
-      console.log(`[DEBUG] cancelSession called with sessionId: ${sessionId}, type: ${typeof sessionId}`);
+    mutationFn: async (participantId: number) => {
+      console.log(`[DEBUG] cancelSession called with participantId: ${participantId}, type: ${typeof participantId}`);
       
-      // Handle council sessions differently
-      if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
-        const councilIdString = sessionId.replace('council-', '');
-        const participantId = parseInt(councilIdString, 10);
-        
-        // Validate that we got a numeric participant ID
-        if (isNaN(participantId) || participantId <= 0) {
-          console.error(`[DEBUG] Invalid council session ID: ${sessionId}, extracted: ${councilIdString}`);
-          throw new Error(`Invalid council session ID format: ${sessionId}. Expected numeric participant ID.`);
-        }
-        
-        console.log(`[DEBUG] Council session cancellation: sessionId=${sessionId}, extracted participantId=${participantId}`);
-        console.log(`[DEBUG] Making API request: PATCH /api/council-sessions/${participantId}/cancel`);
-        
-        const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
-        console.log(`[DEBUG] API response status:`, response.status);
-        console.log(`[DEBUG] API response:`, response);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error(`[DEBUG] API error:`, errorData);
-          throw new Error(errorData.message || 'Failed to cancel council session');
-        }
-        const result = await response.json();
-        console.log(`[DEBUG] Cancel success result:`, result);
-        return result;
-      } else {
-        // Handle individual sessions - use path parameter endpoint
-        console.log(`[DEBUG] Individual session cancellation for sessionId: ${sessionId}`);
-        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error(`[DEBUG] Individual session API error:`, errorData);
-          throw new Error(errorData.message || 'Failed to cancel session');
-        }
-        const result = await response.json();
-        console.log(`[DEBUG] Individual session cancel success:`, result);
-        return result;
+      // Validate that we got a numeric participant ID
+      if (typeof participantId !== 'number' || isNaN(participantId) || participantId <= 0) {
+        console.error(`[DEBUG] Invalid participant ID: ${participantId}`);
+        throw new Error(`Invalid participant ID: ${participantId}. Expected positive number.`);
       }
+      
+      console.log(`[DEBUG] Council session cancellation: participantId=${participantId}`);
+      console.log(`[DEBUG] Making API request: PATCH /api/council-sessions/${participantId}/cancel`);
+      
+      const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
+      console.log(`[DEBUG] API response status:`, response.status);
+      console.log(`[DEBUG] API response:`, response);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`[DEBUG] API error:`, errorData);
+        throw new Error(errorData.message || 'Failed to cancel council session');
+      }
+      const result = await response.json();
+      console.log(`[DEBUG] Cancel success result:`, result);
+      return result;
     },
     onSuccess: (data) => {
       console.log(`[DEBUG] Cancel mutation success:`, data);
@@ -186,9 +168,9 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     return isAfter(now, joinWindow) && isBefore(now, sessionDate) && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
-  const handleCancelSession = (sessionId: string | number) => {
-    console.log(`[DEBUG] handleCancelSession called with sessionId: ${sessionId}`);
-    cancelSession(sessionId);
+  const handleCancelSession = (participantId: number) => {
+    console.log(`[DEBUG] handleCancelSession called with participantId: ${participantId}`);
+    cancelSession(participantId);
   };
 
   const getStatusBadge = (session: SessionBooking) => {
@@ -283,7 +265,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep Session</AlertDialogCancel>
                     <AlertDialogAction 
-                      onClick={() => handleCancelSession(session.id)}
+                      onClick={() => handleCancelSession(session.participantId)}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       Cancel Session
