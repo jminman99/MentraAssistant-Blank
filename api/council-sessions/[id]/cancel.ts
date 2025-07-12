@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from "../../_lib/storage.js";
-import { getSessionToken } from "../../_lib/auth.js";
+import { storage } from "../../_lib/storage";
+import { getSessionToken } from "../../_lib/auth";
 import { verifyToken } from '@clerk/backend';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
