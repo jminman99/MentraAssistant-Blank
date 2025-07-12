@@ -9,10 +9,10 @@ export async function cancelSession(
   }
 
   const url = sessionType === "individual"
-    ? `/api/session-bookings/${id}`
+    ? `/api/session-bookings/${id}/cancel`
     : `/api/council-sessions/${id}/cancel`;
 
-  const method = sessionType === "individual" ? "DELETE" : "POST";
+  const method = "POST"; // Both endpoints now use POST
 
   const response = await fetch(url, {
     method,

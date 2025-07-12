@@ -1,18 +1,28 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from "../../_lib/storage.js";
-import { getSessionToken } from "../../_lib/auth.js";
 import { verifyToken } from '@clerk/backend';
+import { getSessionToken } from '../../_lib/auth';
+import { storage } from '../../_lib/storage';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'DELETE') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  if (req.method === 'POST') {
+    return handlePost(req, res);
   }
 
+  return res.status(405).json({
+    success: false,
+    error: `Method ${req.method} not allowed`
+  });
+}
+
+async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
-    // Extract and verify Clerk JWT token
+    // Get and verify Clerk token
     const token = getSessionToken(req);
     if (!token) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication token required'
+      });
     }
 
     // Verify the token with Clerk
@@ -21,53 +31,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       payload = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY!
       });
-    } catch (verifyError) {
-      console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
-    }
-
-    if (!payload?.sub) {
-      return res.status(401).json({ success: false, error: "Invalid user token" });
-    }
-
-    // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(payload.sub);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "User not found in database. Please sync your account." 
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid authentication token'
       });
     }
 
-    // Extract session ID from URL path
+    if (!payload || !payload.sub) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token payload'
+      });
+    }
+
+    // Get session ID from URL parameter
     const sessionId = parseInt(req.query.id as string);
-    if (isNaN(sessionId)) {
+    if (!sessionId || sessionId <= 0) {
       return res.status(400).json({
         success: false,
-        error: "Invalid session ID"
+        error: 'Valid session ID required'
       });
     }
 
-    // Cancel the individual session
-    const result = await storage.cancelSessionBooking(sessionId);
-    
-    if (!result) {
+    // Get user from Clerk ID
+    const user = await storage.getUserByClerkId(payload.sub);
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: "Session not found"
+        error: 'User not found'
       });
     }
+
+    // Cancel the session booking
+    const cancelledSession = await storage.cancelSessionBooking(sessionId);
     
+    if (!cancelledSession) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found or already cancelled'
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Session cancelled successfully",
-      data: result
+      data: cancelledSession
     });
-  } catch (error: any) {
+
+  } catch (error) {
     console.error('Individual session cancellation error:', error);
     return res.status(500).json({
       success: false,
-      error: "Internal server error"
+      error: 'Failed to cancel session'
     });
   }
 }
