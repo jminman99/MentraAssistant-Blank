@@ -269,8 +269,6 @@ export class VercelStorage {
   }
 
   async createCouncilBooking(data: any): Promise<any> {
-    console.log("🔍 Storage: createCouncilBooking called with:", data);
-    
     // Combine date and time for scheduledDate
     let scheduledDate;
     try {
@@ -295,8 +293,6 @@ export class VercelStorage {
       throw new Error('Invalid date format provided');
     }
 
-    console.log("📅 Storage: Final scheduledDate:", scheduledDate);
-    
     // Create council session using Drizzle ORM (now that schema matches)
     console.log("💽 Storage: Inserting into councilSessions table...");
     const [session] = await db.insert(councilSessions).values({
