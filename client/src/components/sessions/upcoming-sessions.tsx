@@ -87,32 +87,22 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // Cancel council session mutation
   const { mutate: cancelCouncilSession } = useMutation({
     mutationFn: async (participantId: number) => {
-      console.log(`[DEBUG] Attempting to cancel council session participant ${participantId}`);
-      
-      const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
+      const url = `/api/council-sessions/cancel?id=${participantId}`;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`,
         },
       });
-      
-      console.log(`[DEBUG] Response status: ${response.status}`);
-      
-      // Handle non-JSON error responses (like 404 HTML from Vite dev server)
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        console.error(`[DEBUG] Non-JSON response from ${response.url}`);
-        throw new Error('API endpoint not available in development server. Deploy to Vercel for full functionality.');
-      }
-      
-      const result = await response.json();
-      console.log(`[DEBUG] Response result:`, result);
-      
+
       if (!response.ok) {
-        throw new Error(result.message || 'Failed to cancel session');
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to cancel session');
       }
-      return result;
+
+      return await response.json();
     },
     onSuccess: async (data, participantId) => {
       toast({
