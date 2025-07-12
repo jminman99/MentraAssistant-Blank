@@ -38,10 +38,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // Cancel individual session mutation
   const { mutate: cancelIndividualSession } = useMutation({
     mutationFn: async (id: number) => {
+      console.log(`[DEBUG] Attempting to cancel individual session ${id}`);
+      
       const response = await fetch(`/api/session-bookings/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      console.log(`[DEBUG] Response status: ${response.status}`);
+      
+      // Handle non-JSON error responses (like 404 HTML from Vite dev server)
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        console.error(`[DEBUG] Non-JSON response from ${response.url}`);
+        throw new Error('API endpoint not available in development server. Deploy to Vercel for full functionality.');
+      }
+      
       const result = await response.json();
+      console.log(`[DEBUG] Response result:`, result);
+      
       if (!response.ok) {
         throw new Error(result.message || 'Failed to cancel session');
       }
@@ -69,10 +86,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // Cancel council session mutation
   const { mutate: cancelCouncilSession } = useMutation({
     mutationFn: async (participantId: number) => {
+      console.log(`[DEBUG] Attempting to cancel council session participant ${participantId}`);
+      
       const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      console.log(`[DEBUG] Response status: ${response.status}`);
+      
+      // Handle non-JSON error responses (like 404 HTML from Vite dev server)
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        console.error(`[DEBUG] Non-JSON response from ${response.url}`);
+        throw new Error('API endpoint not available in development server. Deploy to Vercel for full functionality.');
+      }
+      
       const result = await response.json();
+      console.log(`[DEBUG] Response result:`, result);
+      
       if (!response.ok) {
         throw new Error(result.message || 'Failed to cancel session');
       }
