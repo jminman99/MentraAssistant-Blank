@@ -223,69 +223,59 @@ export const mentorApplications = pgTable("mentor_applications", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Session Bookings - Enhanced mentoring sessions with scheduling
+// Session Bookings - Enhanced mentoring sessions with scheduling (matches actual PostgreSQL table)
 export const sessionBookings = pgTable("session_bookings", {
   id: serial("id").primaryKey(),
   menteeId: integer("mentee_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   humanMentorId: integer("human_mentor_id").references(() => humanMentors.id, { onDelete: 'set null' }),
-  sessionType: sessionTypeEnum("session_type").notNull(),
+  sessionType: varchar("session_type", { length: 20 }).notNull(),
   duration: integer("duration").notNull().default(30),
   scheduledDate: timestamp("scheduled_date").notNull(),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
-  
-  // Meeting details
-  meetingType: meetingTypeEnum("meeting_type").notNull(),
+  meetingType: varchar("meeting_type", { length: 20 }).notNull(),
   location: text("location"),
   videoLink: text("video_link"),
   calendlyEventId: text("calendly_event_id"),
   calendlyEventUrl: text("calendly_event_url"),
-  
-  // Preparation and goals
   sessionGoals: text("session_goals"),
   preparationNotes: text("preparation_notes"),
   menteeQuestions: text("mentee_questions"),
-  
-  // Status and outcomes
-  status: sessionStatusEnum("status").notNull().default("scheduled"),
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"),
   sessionNotes: text("session_notes"),
   followUpActions: text("follow_up_actions"),
   mentorRating: integer("mentor_rating"),
   menteeRating: integer("mentee_rating"),
   feedback: text("feedback"),
-  
-  // Reminders and notifications
   reminderSent: boolean("reminder_sent").default(false),
   confirmationSent: boolean("confirmation_sent").default(false),
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
-// Council Sessions - Group sessions with 3-5 mentors
+// Council Sessions - Group sessions with 3-5 mentors  
 export const councilSessions = pgTable("council_sessions", {
   id: serial("id").primaryKey(),
-  title: varchar("title", { length: 200 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  scheduledDate: timestamp("scheduled_date").notNull(),
-  duration: integer("duration").notNull().default(60),
-  timezone: varchar("timezone", { length: 50 }).notNull().default("America/New_York"),
-  maxMentees: integer("max_mentees").notNull().default(5),
-  currentMentees: integer("current_mentees").notNull().default(0),
-  meetingType: meetingTypeEnum("meeting_type").notNull().default("video"),
+  scheduledDate: timestamp("scheduled_date"),
+  duration: integer("duration"),
+  maxMentees: integer("max_mentees"),
+  currentMentees: integer("current_mentees"),
+  meetingType: varchar("meeting_type", { length: 50 }),
+  status: varchar("status", { length: 50 }),
+  organizationId: integer("organization_id"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  timezone: varchar("timezone", { length: 50 }).default("America/New_York"),
   videoLink: text("video_link"),
   location: text("location"),
-  status: sessionStatusEnum("status").notNull().default("scheduled"),
-  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
-  // Enhanced calendar coordination fields
-  proposedTimeSlots: jsonb("proposed_time_slots").$type<any[]>().default([]),
+  proposedTimeSlots: jsonb("proposed_time_slots").default(sql`'[]'::jsonb`),
   mentorResponseDeadline: timestamp("mentor_response_deadline"),
-  finalTimeConfirmed: boolean("final_time_confirmed").notNull().default(false),
+  finalTimeConfirmed: boolean("final_time_confirmed").default(false),
   coordinatorNotes: text("coordinator_notes"),
-  mentorMinimum: integer("mentor_minimum").notNull().default(3),
-  mentorMaximum: integer("mentor_maximum").notNull().default(5),
-  coordinationStatus: coordinationStatusEnum("coordination_status").notNull().default("pending"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  mentorMinimum: integer("mentor_minimum").default(3),
+  mentorMaximum: integer("mentor_maximum").default(5),
+  coordinationStatus: varchar("coordination_status", { length: 20 }).default("pending"),
 });
 
 // Council Session Mentors (3-5 mentors per council session)
