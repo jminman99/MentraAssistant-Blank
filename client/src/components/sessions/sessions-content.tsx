@@ -70,12 +70,12 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         }))
     : sessionsData;
 
-  // Cancel session mutation - handles both council and individual sessions
+  // Cancel session mutation - handles both council and individual sessions using working POST endpoints
   const { mutate: cancelSession } = useMutation({
     mutationFn: async (sessionData: { sessionId: string | number; type?: string }) => {
       const { sessionId, type } = sessionData;
       
-      // Handle council sessions
+      // Handle council sessions using POST endpoint
       if (type === 'council' || (typeof sessionId === 'string' && sessionId.startsWith('council-'))) {
         // Extract participant ID from council session ID
         let participantId: number;
@@ -93,21 +93,26 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
           throw new Error(`Invalid council session data: ${sessionId}`);
         }
         
-        const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
+        // Use the working POST endpoint instead of DELETE
+        const response = await apiRequest('POST', '/api/cancel-council-session', {
+          participantId: participantId
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to cancel council session');
+          throw new Error(errorData.error || 'Failed to cancel council session');
         }
         
         return response.json();
       } else {
-        // Handle individual sessions
-        const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
+        // Handle individual sessions using POST endpoint
+        const response = await apiRequest('POST', '/api/cancel-individual-session', {
+          sessionId: sessionId
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to cancel individual session');
+          throw new Error(errorData.error || 'Failed to cancel individual session');
         }
         
         return response.json();
