@@ -14,9 +14,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleDelete(req: VercelRequest, res: VercelResponse) {
   try {
-    // Dynamic imports to avoid module resolution issues
-    const { storage } = await import('../../_lib/storage.js');
-    const { getSessionToken } = await import('../../_lib/auth.js');
+    // Dynamic imports with correct relative paths from nested directory
+    const { storage } = await import('../../../_lib/storage.js');
+    const { getSessionToken } = await import('../../../_lib/auth.js');
     
     // Get and verify Clerk token
     const token = getSessionToken(req);
