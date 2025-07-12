@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-hook';
 import { 
   Home, 
   MessageCircle, 

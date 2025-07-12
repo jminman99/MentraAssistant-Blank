@@ -59,8 +59,10 @@ function useClerkAuthentication() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await signOut();
+      console.log('🚪 Starting Clerk sign out...');
+      await signOut({ redirectUrl: '/sign-in' });
       queryClient.clear();
+      console.log('✅ Sign out completed');
     },
   });
 

@@ -10,7 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-hook";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";

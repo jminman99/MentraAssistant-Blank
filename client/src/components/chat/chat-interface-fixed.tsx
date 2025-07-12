@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useSSE } from "@/hooks/use-sse";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-hook";
 import { AiMentorSelector } from "@/components/mentors/ai-mentor-selector";
 import { MessageCircle, Send } from "lucide-react";
 import { AiMentor, ChatMessage } from "@/types";

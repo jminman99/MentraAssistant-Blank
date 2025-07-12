@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, Video, User, X, ExternalLink, Star, Users, MessageSquare } from "lucide-react";
 import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-hook";
 import { Link } from "wouter";
 import { ApiResponse, SessionBooking, DevServerError } from "@/types";
 import { parseApiJson } from "@/lib/utils";

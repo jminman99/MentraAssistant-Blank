@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-hook";
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { AiMentorSelector } from "@/components/mentors/ai-mentor-selector";
 import { MessageCircle, Send } from "lucide-react";

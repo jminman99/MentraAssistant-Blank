@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, Check } from 'lucide-react';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-hook';
 
 interface GoogleCalendarButtonProps {
   isConnected?: boolean;
