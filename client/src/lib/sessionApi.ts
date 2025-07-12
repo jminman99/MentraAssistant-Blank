@@ -23,6 +23,11 @@ export async function cancelSession(
     credentials: "include",
   });
 
+  // Check for 405 Method Not Allowed (development server limitation)
+  if (response.status === 405) {
+    throw new Error("Development server limitation: API routes need Vercel deployment. Use 'vercel dev --listen 0.0.0.0:5000' for local testing or deploy to test cancellation.");
+  }
+
   let result;
 
   try {
