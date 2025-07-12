@@ -1,62 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Debug Session Cancellation</title>
+    <title>Session Cancellation Debug</title>
 </head>
 <body>
-    <h1>Session Cancellation Debug</h1>
-    <button onclick="testCouncilCancel()">Test Council Cancel</button>
-    <button onclick="testIndividualCancel()">Test Individual Cancel</button>
+    <h1>Session Cancellation Test</h1>
+    <button onclick="testCouncilCancel()">Test Council Session Cancel</button>
+    <button onclick="testIndividualCancel()">Test Individual Session Cancel</button>
     <div id="results"></div>
 
     <script>
-    async function testCouncilCancel() {
-        try {
-            const response = await fetch('/api/cancel-council-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ participantId: 14 })
-            });
-            
-            const data = await response.text();
-            document.getElementById('results').innerHTML = `
-                <h3>Council Cancel Response:</h3>
-                <p>Status: ${response.status}</p>
-                <p>Response: ${data}</p>
-            `;
-        } catch (error) {
-            document.getElementById('results').innerHTML = `
-                <h3>Council Cancel Error:</h3>
-                <p>${error.message}</p>
-            `;
+        async function testCouncilCancel() {
+            try {
+                const response = await fetch('/api/council-sessions/14/cancel', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'  // Replace with actual token
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('results').innerHTML = 
+                    `<h3>Council Cancel Result:</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    `<h3>Council Cancel Error:</h3><pre>${error.message}</pre>`;
+            }
         }
-    }
 
-    async function testIndividualCancel() {
-        try {
-            const response = await fetch('/api/cancel-individual-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ sessionId: 1 })
-            });
-            
-            const data = await response.text();
-            document.getElementById('results').innerHTML = `
-                <h3>Individual Cancel Response:</h3>
-                <p>Status: ${response.status}</p>
-                <p>Response: ${data}</p>
-            `;
-        } catch (error) {
-            document.getElementById('results').innerHTML = `
-                <h3>Individual Cancel Error:</h3>
-                <p>${error.message}</p>
-            `;
+        async function testIndividualCancel() {
+            try {
+                const response = await fetch('/api/session-bookings/1/cancel', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'  // Replace with actual token
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('results').innerHTML = 
+                    `<h3>Individual Cancel Result:</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    `<h3>Individual Cancel Error:</h3><pre>${error.message}</pre>`;
+            }
         }
-    }
     </script>
 </body>
 </html>
