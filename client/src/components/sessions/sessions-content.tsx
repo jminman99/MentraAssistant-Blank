@@ -73,8 +73,6 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Cancel session mutation - handles both council and individual sessions
   const { mutate: cancelSession } = useMutation({
     mutationFn: async (sessionData: { sessionId: string | number; type?: string }) => {
-      console.log(`[DEBUG] cancelSession called with:`, sessionData);
-      
       const { sessionId, type } = sessionData;
       
       // Handle council sessions
@@ -87,7 +85,6 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
           participantId = parseInt(idString, 10);
           
           if (isNaN(participantId) || participantId <= 0) {
-            console.error(`[DEBUG] Invalid council session ID: ${sessionId}`);
             throw new Error(`Invalid council session ID: ${sessionId}`);
           }
         } else if (typeof sessionId === 'number') {
@@ -96,43 +93,36 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
           throw new Error(`Invalid council session data: ${sessionId}`);
         }
         
-        console.log(`[DEBUG] Council session cancellation: participantId=${participantId}`);
         const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error(`[DEBUG] Council API error:`, errorData);
           throw new Error(errorData.message || 'Failed to cancel council session');
         }
         
         return response.json();
       } else {
         // Handle individual sessions
-        console.log(`[DEBUG] Individual session cancellation: sessionId=${sessionId}`);
         const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}`);
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error(`[DEBUG] Individual API error:`, errorData);
           throw new Error(errorData.message || 'Failed to cancel individual session');
         }
         
         return response.json();
       }
     },
-    onSuccess: (data) => {
-      console.log(`[DEBUG] Cancel mutation success:`, data);
+    onSuccess: () => {
       toast({
         title: "Session Cancelled",
         description: "Your session has been cancelled successfully.",
       });
       
       // Invalidate queries to refresh the data
-      console.log(`[DEBUG] Invalidating cache queries...`);
       queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      console.log(`[DEBUG] Cache invalidation complete`);
     },
     onError: (error: Error) => {
       console.error('Session cancellation failed:', error);
@@ -170,15 +160,12 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   };
 
   const handleCancelSession = (session: any) => {
-    console.log(`[DEBUG] handleCancelSession called with session:`, session);
-    
     // Determine session type and prepare data
     const sessionData = {
       sessionId: session.participantId || session.id,
       type: session.id?.toString().startsWith('council-') ? 'council' : 'individual'
     };
     
-    console.log(`[DEBUG] Prepared session data for cancellation:`, sessionData);
     cancelSession(sessionData);
   };
 
