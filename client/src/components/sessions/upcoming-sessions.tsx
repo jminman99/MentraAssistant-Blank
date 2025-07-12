@@ -78,12 +78,15 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       }
       return result;
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data, participantId) => {
       toast({
         title: "Session Cancelled",
         description: data.message || "Your council session has been cancelled successfully.",
       });
-      await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      queryClient.setQueryData(['/api/council-bookings'], (old: any[] | undefined) => {
+        if (!old) return [];
+        return old.filter((session) => session.id !== participantId);
+      });
     },
     onError: (error: any) => {
       toast({
