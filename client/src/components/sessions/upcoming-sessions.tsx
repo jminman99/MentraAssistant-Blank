@@ -44,6 +44,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`,
         },
       });
       
@@ -92,6 +93,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`,
         },
       });
       
