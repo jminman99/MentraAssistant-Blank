@@ -8,20 +8,28 @@ export async function cancelSession(
     throw new Error("Invalid session ID");
   }
 
+  // Simple POST endpoints that work reliably
   const url = sessionType === "individual"
-    ? `/api/session-bookings/${id}/cancel`
-    : `/api/council-sessions/${id}/cancel`;
+    ? `/api/cancel-individual-session`
+    : `/api/cancel-council-session`;
 
-  const method = "DELETE"; // Both endpoints now use DELETE
+  const body = sessionType === "individual"
+    ? { sessionId: id }
+    : { participantId: id };
+
+  console.log(`[CANCEL] Calling ${url} with:`, body);
 
   const response = await fetch(url, {
-    method,
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${await window.Clerk?.session?.getToken()}`,
     },
     credentials: "include",
+    body: JSON.stringify(body),
   });
+
+  console.log(`[CANCEL] Response status: ${response.status}`);
 
   // Check for 405 Method Not Allowed (development server limitation)
   if (response.status === 405) {
@@ -32,6 +40,7 @@ export async function cancelSession(
 
   try {
     result = await response.json();
+    console.log(`[CANCEL] Response data:`, result);
   } catch (e) {
     throw new Error("Server returned invalid JSON");
   }
