@@ -7,6 +7,7 @@ import { MentoringSession, SessionBooking } from "@/types";
 import { format, parseISO, isFuture, isValid } from "date-fns";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { cancelSession } from "@/lib/sessionApi";
 
 interface UpcomingSessionsProps {
   compact?: boolean;
@@ -35,88 +36,30 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     retry: 2, // Retry failed requests twice
   });
 
-  // Cancel individual session mutation
-  const { mutate: cancelIndividualSession } = useMutation({
-    mutationFn: async (id: number) => {
-      console.log(`[DEBUG] Attempting to cancel individual session ${id}`);
-      
-      const response = await fetch(`/api/session-bookings/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`,
-        },
-      });
-      
-      console.log(`[DEBUG] Response status: ${response.status}`);
-      
-      // Handle non-JSON error responses (like 404 HTML from Vite dev server)
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        console.error(`[DEBUG] Non-JSON response from ${response.url}`);
-        throw new Error('API endpoint not available in development server. Deploy to Vercel for full functionality.');
-      }
-      
-      const result = await response.json();
-      console.log(`[DEBUG] Response result:`, result);
-      
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to cancel session');
-      }
-      return result;
+  // Unified session cancellation mutation
+  const { mutate: cancelAnySession } = useMutation({
+    mutationFn: async (args: { sessionType: "individual" | "council", id: number }) => {
+      return await cancelSession(args.sessionType, args.id);
     },
-    onSuccess: async (_, id) => {
+    onSuccess: async (_, args) => {
       toast({
         title: "Session Cancelled",
         description: "Your session has been cancelled successfully.",
       });
-      queryClient.setQueryData(['/api/session-bookings'], (old: SessionBooking[] | undefined) => {
-        if (!old) return [];
-        return old.filter((session) => session.id !== id);
+
+      // Invalidate the proper cache
+      const cacheKey =
+        args.sessionType === "individual"
+          ? ["/api/session-bookings"]
+          : ["/api/council-bookings"];
+
+      queryClient.invalidateQueries({
+        queryKey: cacheKey,
       });
     },
     onError: (error: any) => {
       toast({
         title: "Cancellation Failed",
-        description: error.message || "Failed to cancel session",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Cancel council session mutation
-  const { mutate: cancelCouncilSession } = useMutation({
-    mutationFn: async (participantId: number) => {
-      const url = `/api/council-sessions/cancel?id=${participantId}`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Failed to cancel session');
-      }
-
-      return await response.json();
-    },
-    onSuccess: async (data, participantId) => {
-      toast({
-        title: "Session Cancelled",
-        description: data.message || "Your council session has been cancelled successfully.",
-      });
-      queryClient.setQueryData(['/api/council-bookings'], (old: any[] | undefined) => {
-        if (!old) return [];
-        return old.filter((session) => session.id !== participantId);
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Cancellation Failed", 
         description: error.message || "Failed to cancel session",
         variant: "destructive",
       });
@@ -376,34 +319,21 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                     <AlertDialogCancel>Keep Session</AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={() => {
-                        if (session.type === 'council') {
-                          const participantId = session.participantId;
-                          
-                          if (typeof participantId !== 'number' || participantId <= 0) {
-                            toast({
-                              title: "Cancellation Failed",
-                              description: "Invalid session data. Please refresh and try again.",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-                          
-                          cancelCouncilSession(participantId);
-                        } else {
-                          // Individual session cancellation
-                          const sessionId = session.id;
-                          
-                          if (typeof sessionId !== 'number' || sessionId <= 0) {
-                            toast({
-                              title: "Cancellation Failed",
-                              description: "Invalid session data. Please refresh and try again.",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-                          
-                          cancelIndividualSession(sessionId);
+                        const sessionId = session.type === 'council' ? session.participantId : session.id;
+                        
+                        if (typeof sessionId !== 'number' || sessionId <= 0) {
+                          toast({
+                            title: "Cancellation Failed",
+                            description: "Invalid session data. Please refresh and try again.",
+                            variant: "destructive",
+                          });
+                          return;
                         }
+                        
+                        cancelAnySession({ 
+                          sessionType: session.type === 'council' ? 'council' : 'individual',
+                          id: sessionId 
+                        });
                       }}
                       className="bg-red-600 hover:bg-red-700"
                     >
