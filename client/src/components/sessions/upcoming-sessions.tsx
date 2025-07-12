@@ -13,7 +13,7 @@ interface UpcomingSessionsProps {
 }
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
-  console.log("🔍 UpcomingSessions component rendering");
+
   
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -35,39 +35,57 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     retry: 2, // Retry failed requests twice
   });
 
-  // FIXED: Cancel council session mutation with proper endpoint
-  const { mutate: cancelCouncilSession } = useMutation({
-    mutationFn: async (participantId: number) => {
-      // console.log(`[DEBUG] Cancelling participant ${participantId}`);
-      
-      const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
-        method: 'PATCH',
+  // Cancel individual session mutation
+  const { mutate: cancelIndividualSession } = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/session-bookings/${id}`, {
+        method: 'DELETE',
       });
-      
       const result = await response.json();
-      
       if (!response.ok) {
         throw new Error(result.message || 'Failed to cancel session');
       }
-      
-      // console.log(`[DEBUG] Cancel response:`, result);
+      return result;
+    },
+    onSuccess: async (_, id) => {
+      toast({
+        title: "Session Cancelled",
+        description: "Your session has been cancelled successfully.",
+      });
+      queryClient.setQueryData(['/api/session-bookings'], (old: SessionBooking[] | undefined) => {
+        if (!old) return [];
+        return old.filter((session) => session.id !== id);
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cancellation Failed",
+        description: error.message || "Failed to cancel session",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Cancel council session mutation
+  const { mutate: cancelCouncilSession } = useMutation({
+    mutationFn: async (participantId: number) => {
+      const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
+        method: 'PATCH',
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to cancel session');
+      }
       return result;
     },
     onSuccess: async (data) => {
-      // console.log(`[DEBUG] Session cancelled successfully:`, data);
-      
       toast({
         title: "Session Cancelled",
         description: data.message || "Your council session has been cancelled successfully.",
       });
-      
-      // FIXED: Use correct query key and await invalidation
       await queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      // console.log(`[DEBUG] Cache invalidated, cancelled session should be hidden`);
     },
     onError: (error: any) => {
-      // console.log(`[DEBUG] Cancel error:`, error);
-      
       toast({
         title: "Cancellation Failed", 
         description: error.message || "Failed to cancel session",
@@ -309,27 +327,27 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
               </div>
             </div>
             
-            {/* Cancel button for council sessions */}
-            {session.type === 'council' && (
-              <div className="mt-3">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Cancel Session
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancel Council Session</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to cancel this council session? This action cannot be undone and you'll be able to book a new session for this month.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Session</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => {
+            {/* Cancel button for both session types */}
+            <div className="mt-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Cancel Session
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel {session.type === 'council' ? 'Council' : 'Individual'} Session</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to cancel this {session.type} session? This action cannot be undone and you'll be able to book a new session for this month.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Session</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => {
+                        if (session.type === 'council') {
                           const participantId = session.participantId;
                           
                           if (typeof participantId !== 'number' || participantId <= 0) {
@@ -342,16 +360,30 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                           }
                           
                           cancelCouncilSession(participantId);
-                        }}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Cancel Session
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
+                        } else {
+                          // Individual session cancellation
+                          const sessionId = session.id;
+                          
+                          if (typeof sessionId !== 'number' || sessionId <= 0) {
+                            toast({
+                              title: "Cancellation Failed",
+                              description: "Invalid session data. Please refresh and try again.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          cancelIndividualSession(sessionId);
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Cancel Session
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </div>
       ))}
