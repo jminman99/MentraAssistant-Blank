@@ -20,6 +20,7 @@ export default function SignInPage() {
         <div className="flex justify-center">
           <SignIn 
             afterSignInUrl="/"
+            signUpUrl="/sign-up"
             appearance={{
               elements: {
                 formButtonPrimary: 'bg-slate-800 hover:bg-slate-900',

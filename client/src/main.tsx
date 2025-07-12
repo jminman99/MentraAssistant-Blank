@@ -18,7 +18,13 @@ const PUBLISHABLE_KEY = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
 if (PUBLISHABLE_KEY) {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <ClerkProvider 
+        publishableKey={PUBLISHABLE_KEY}
+        signInUrl="/sign-in"
+        signUpUrl="/sign-up"
+        afterSignInUrl="/"
+        afterSignUpUrl="/"
+      >
         <QueryClientProvider client={queryClient}>
           <ClerkTokenProvider>
             <App />

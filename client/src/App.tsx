@@ -58,6 +58,7 @@ function Router() {
       <Route path="/test" component={TestPage} />
       <Route path="/sign-in" component={SignInComponent} />
       <Route path="/sign-up" component={SignUpPage} />
+      <Route path="/login" component={() => <Redirect to="/sign-in" />} />
       <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/plan-usage" component={() => <PrivateRoute component={PlanUsagePage} />} />
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />

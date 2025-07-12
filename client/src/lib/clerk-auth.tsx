@@ -67,7 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ClerkProvider publishableKey={clerkPublishableKey}>
+    <ClerkProvider 
+      publishableKey={clerkPublishableKey}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
+    >
       <AuthContextProvider>
         {children}
       </AuthContextProvider>
@@ -126,7 +132,7 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await signOut();
+      await signOut({ redirectUrl: '/sign-in' });
       queryClient.clear();
     },
   });
