@@ -56,6 +56,25 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     queryFn: () => fetchSessionBookings('/api/council-bookings'),
   });
 
+  // Council users only get council sessions, individual users only get individual sessions
+  const allSessions = user?.subscriptionPlan === 'council' 
+    ? councilData.map((cs: any) => ({
+        id: `council-${cs.sessionId}`, // Use sessionId for display
+        participantId: cs.id, // Store participant ID for cancellation
+        scheduledDate: cs.scheduledDate,
+        duration: cs.duration || 60,
+        status: cs.sessionStatus || cs.status,
+        meetingType: 'video',
+        sessionGoals: cs.sessionGoals,
+        humanMentor: {
+          id: 0,
+          user: { firstName: 'Council', lastName: 'Session' },
+          expertise: `${cs.mentorCount} mentors`,
+          rating: '5.0'
+        }
+      }))
+    : sessionsData;
+
   // Cancel session mutation
   const { mutate: cancelSession } = useMutation({
     mutationFn: async (sessionId: string | number) => {
@@ -76,7 +95,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         
         if (!participantId) {
           console.error(`[DEBUG] Could not find participantId for sessionId: ${sessionId}`);
-          throw new Error('Could not find participant ID for council session');
+          throw new Error('Could not cancel this council session. Please try refreshing.');
         }
         
         console.log(`[DEBUG] Making API request to cancel council session with participantId: ${participantId}`);
@@ -92,13 +111,17 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         console.log(`[DEBUG] Cancel success result:`, result);
         return result;
       } else {
-        // Handle individual sessions
+        // Handle individual sessions - use correct endpoint path
+        console.log(`[DEBUG] Individual session cancellation for sessionId: ${sessionId}`);
         const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}/cancel`);
         if (!response.ok) {
           const errorData = await response.json();
+          console.error(`[DEBUG] Individual session API error:`, errorData);
           throw new Error(errorData.message || 'Failed to cancel session');
         }
-        return response.json();
+        const result = await response.json();
+        console.log(`[DEBUG] Individual session cancel success:`, result);
+        return result;
       }
     },
     onSuccess: (data) => {
@@ -135,25 +158,6 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   const isLoading = sessionsLoading || (user?.subscriptionPlan === 'council' && councilLoading);
   const now = new Date();
-  
-  // Council users only get council sessions, individual users only get individual sessions
-  const allSessions = user?.subscriptionPlan === 'council' 
-    ? councilData.map((cs: any) => ({
-        id: `council-${cs.sessionId}`, // Use sessionId for display
-        participantId: cs.id, // Store participant ID for cancellation
-        scheduledDate: cs.scheduledDate,
-        duration: cs.duration || 60,
-        status: cs.sessionStatus || cs.status,
-        meetingType: 'video',
-        sessionGoals: cs.sessionGoals,
-        humanMentor: {
-          id: 0,
-          user: { firstName: 'Council', lastName: 'Session' },
-          expertise: `${cs.mentorCount} mentors`,
-          rating: '5.0'
-        }
-      }))
-    : sessionsData;
   
   const upcomingSessions = allSessions.filter(session => 
     (session.status === 'scheduled' || session.status === 'confirmed') && isAfter(parseISO(session.scheduledDate), now)
