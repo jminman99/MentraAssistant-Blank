@@ -580,6 +580,7 @@ client/
   - ✅ Enhanced error handling with proper validation and user feedback
   - ✅ Maintained Clerk authentication across both endpoints with JWT token verification
   - ✅ Clean cache invalidation for individual and council session lists
+  - ✅ CRITICAL FIX: Removed conflicting /api/council-sessions/cancel.ts (POST) that was causing 405 errors with new DELETE endpoint
   - ✅ Production-ready unified API with RESTful DELETE-based cancellation patterns
 
 - July 05, 2025: Initial setup
