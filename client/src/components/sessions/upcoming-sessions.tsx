@@ -331,10 +331,8 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                       <AlertDialogAction 
                         onClick={() => {
                           console.log(`[DEBUG] Council session object:`, session);
-                          console.log(`[DEBUG] session.participantId:`, session.participantId);
-                          console.log(`[DEBUG] session.id:`, session.id);
                           
-                          // Ensure we always use the numeric participantId
+                          // Use the numeric participantId directly
                           const participantId = session.participantId;
                           
                           if (typeof participantId !== 'number' || participantId <= 0) {
