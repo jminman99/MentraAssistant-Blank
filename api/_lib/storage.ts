@@ -248,7 +248,7 @@ export class VercelStorage {
         cp.id,
         cp.session_goals as "sessionGoals",
         cp.questions,
-        cp.status,
+        cs.status,
         cs.id as "sessionId",
         cs.title,
         cs.description,
