@@ -254,7 +254,6 @@ export class VercelStorage {
         cs.description,
         cs.scheduled_date as "scheduledDate",
         cs.duration,
-        cs.status as "sessionStatus",
         COALESCE(
           (SELECT COUNT(*) FROM council_mentors cm WHERE cm.council_session_id = cs.id),
           3

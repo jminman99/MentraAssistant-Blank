@@ -153,9 +153,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     })),
     // Council sessions  
     ...councilSessions.map((session: any) => {
-      // console.log('[DEBUG] Processing council session for upcoming:', session);
-      // console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
-      // console.log('[DEBUG] Session status:', session.status);
+      console.log('[DEBUG] Processing council session for upcoming:', session);
+      console.log('[DEBUG] Session scheduledDate:', session.scheduledDate);
+      console.log('[DEBUG] Session status:', session.status);
       const sessionDate = session.scheduledDate ? (() => {
         try {
           const parsed = parseISO(session.scheduledDate);
@@ -188,12 +188,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     })
   ];
   
-  // console.log('[DEBUG] All sessions combined:', allSessions);
+  console.log('[DEBUG] All sessions combined:', allSessions);
 
   const upcomingSessions = allSessions
     .filter(session => {
       const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
       const hasScheduledAt = !!session.scheduledAt;
+      console.log(`[DEBUG] Filtering session ${session.id}: status="${session.status}", isValidStatus=${isValidStatus}, hasScheduledAt=${hasScheduledAt}`);
       
       // Show sessions from today onwards (including past sessions from today)
       const sessionDate = hasScheduledAt ? (() => {
@@ -214,9 +215,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
     
-  // console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
-  // console.log('[DEBUG] Total sessions found:', allSessions.length);
-  // console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
+  console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
+  console.log('[DEBUG] Total sessions found:', allSessions.length);
+  console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
 
   if (isLoading) {
     return (
