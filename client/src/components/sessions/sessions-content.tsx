@@ -58,21 +58,14 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
-    ? councilData.map((cs: any) => ({
-        id: `council-${cs.sessionId}`, // Use sessionId for display
-        participantId: cs.id, // Store participant ID for cancellation
-        scheduledDate: cs.scheduledDate,
-        duration: cs.duration || 60,
-        status: cs.sessionStatus || cs.status,
-        meetingType: 'video',
-        sessionGoals: cs.sessionGoals,
-        humanMentor: {
-          id: 0,
-          user: { firstName: 'Council', lastName: 'Session' },
-          expertise: `${cs.mentorCount} mentors`,
-          rating: '5.0'
-        }
-      }))
+    ? councilData.map((cs: any) => {
+        console.log(`[DEBUG] Raw council session from API:`, cs);
+        console.log(`[DEBUG] Council session ID: ${cs.id}, participantId: ${cs.participantId}, sessionId: ${cs.sessionId}`);
+        return {
+          ...cs, // Use the entire object as returned from API
+          // The API already formats id as `council-${sessionId}` and includes participantId
+        };
+      })
     : sessionsData;
 
   // Cancel session mutation

@@ -46,11 +46,14 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     // Transform council sessions to match expected SessionBooking interface
     const sessions = rawSessions.map(session => ({
       id: `council-${session.sessionId}`,
+      participantId: session.id, // Include participant ID for cancellation
+      sessionId: session.sessionId, // Include raw session ID
       scheduledDate: session.scheduledDate, // Already properly formatted from SQL
       duration: session.duration || 60,
       status: session.sessionStatus || session.status,
       meetingType: 'video',
       sessionGoals: session.sessionGoals,
+      mentorCount: session.mentorCount,
       humanMentor: {
         id: 0,
         user: {
