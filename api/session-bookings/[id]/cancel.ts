@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyToken } from '@clerk/backend';
-import { getSessionToken } from '../../_lib/auth';
-import { storage } from '../../_lib/storage';
+import { getSessionToken } from '../../_lib/auth.js';
+import { storage } from '../../_lib/storage.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'DELETE') {
