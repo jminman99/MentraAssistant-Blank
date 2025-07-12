@@ -59,10 +59,11 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
     ? councilData
-        .filter(cs => cs.sessionId != null)
+        .filter(cs => cs.sessionId != null && cs.id != null)
         .map((cs: any) => ({
-          id: `council-${cs.sessionId}`,
-          participantId: cs.id,
+          id: `council-${cs.id}`, // Use participant ID (cs.id) instead of sessionId
+          participantId: cs.id,    // Store numeric participant ID for API calls
+          sessionId: cs.sessionId, // Keep original session ID for reference
           scheduledDate: cs.scheduledDate,
           duration: cs.duration || 60,
           status: cs.sessionStatus || cs.status,
@@ -84,15 +85,20 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       
       // Handle council sessions differently
       if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
-        const councilId = sessionId.replace('council-', '');
-        const participantId = parseInt(councilId, 10);
+        const councilIdString = sessionId.replace('council-', '');
+        const participantId = parseInt(councilIdString, 10);
         
-        if (isNaN(participantId)) {
-          throw new Error(`Invalid council session ID: ${sessionId}`);
+        // Validate that we got a numeric participant ID
+        if (isNaN(participantId) || participantId <= 0) {
+          console.error(`[DEBUG] Invalid council session ID: ${sessionId}, extracted: ${councilIdString}`);
+          throw new Error(`Invalid council session ID format: ${sessionId}. Expected numeric participant ID.`);
         }
         
-        console.log(`[DEBUG] Council session cancellation: sessionId=${sessionId}, participantId=${participantId}`);
+        console.log(`[DEBUG] Council session cancellation: sessionId=${sessionId}, extracted participantId=${participantId}`);
+        console.log(`[DEBUG] Making API request: PATCH /api/council-sessions/${participantId}/cancel`);
+        
         const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
+        console.log(`[DEBUG] API response status:`, response.status);
         console.log(`[DEBUG] API response:`, response);
         
         if (!response.ok) {
