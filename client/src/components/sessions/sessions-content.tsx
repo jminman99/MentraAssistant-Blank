@@ -19,22 +19,14 @@ interface SessionsContentProps {
 }
 
 async function fetchSessionBookings(url: string): Promise<SessionBooking[]> {
-  try {
-    const response = await apiRequest('GET', url);
-    const text = await response.text();
-    const result = parseApiJson(text) as ApiResponse<SessionBooking[]>;
-    if (!result.success) {
-      throw new Error(result.error || "Unknown API error");
-    }
-    return result.data || [];
-  } catch (error) {
-    if (error.name === "DevServerError") {
-      console.warn(`⚠️ Dev server issue fetching ${url} - returning empty array`);
-      return [];
-    }
-    console.error(`❌ Real API error fetching ${url}:`, error);
-    throw error;
+  const response = await apiRequest('GET', url);
+  const result = await response.json() as ApiResponse<SessionBooking[]>;
+  
+  if (!result.success) {
+    throw new Error(result.error || "Failed to fetch sessions");
   }
+  
+  return result.data || [];
 }
 
 export function SessionsContent({ compact = false }: SessionsContentProps) {
@@ -120,20 +112,12 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       console.log(`[DEBUG] Cache invalidation complete`);
     },
     onError: (error: Error) => {
-      // Check if this is a development server issue (405 Method Not Allowed or 404)
-      if (error.message.includes('405') || error.message.includes('404') || error.message.includes('Not Found') || error.message.includes('Method not allowed')) {
-        toast({
-          title: "Development Server Limitation", 
-          description: "API routes require Vercel deployment. Use 'npx vercel dev' instead of 'npm run dev' to test cancellation locally.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Cancellation Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      console.error('Session cancellation failed:', error);
+      toast({
+        title: "Cancellation Failed",
+        description: error.message || "Unable to cancel session. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -150,16 +134,10 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   const canCancelSession = (session: SessionBooking) => {
     const sessionDate = parseISO(session.scheduledDate);
-    const cancelDeadline = subHours(sessionDate, 24); // 24 hours before as per PRD
+    const cancelDeadline = subHours(sessionDate, 24); // 24 hours before session
     
-    // DEBUG: Always show cancel button for testing
-    console.log(`[DEBUG] Session ${session.id}: status=${session.status}, scheduledDate=${session.scheduledDate}, canCancel=${isAfter(now, cancelDeadline) === false}`);
-    
-    // Temporarily allow cancellation regardless of deadline for testing
-    return (session.status === 'scheduled' || session.status === 'confirmed');
-    
-    // Original logic (commented out for testing):
-    // return isAfter(now, cancelDeadline) === false && (session.status === 'scheduled' || session.status === 'confirmed');
+    // Allow cancellation if session is scheduled/confirmed and we're before the 24-hour deadline
+    return isAfter(now, cancelDeadline) === false && (session.status === 'scheduled' || session.status === 'confirmed');
   };
 
   const canJoinSession = (session: SessionBooking) => {

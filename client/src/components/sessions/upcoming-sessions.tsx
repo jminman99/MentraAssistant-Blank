@@ -18,38 +18,21 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  // Fetch individual mentoring sessions with graceful fallback
+  // Fetch individual mentoring sessions
   const { data: individualSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
     queryFn: async () => {
-      try {
-        console.log("🌐 Fetching individual sessions...");
-        const response = await apiRequest('GET', '/api/session-bookings');
-        
-        // Check if response is HTML (development server issue)
-        const text = await response.text();
-        if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ API returned HTML instead of JSON - development server issue");
-          // Mark this as a development issue, not a real API error
-          const devError = new Error("Development server not serving API routes properly");
-          devError.message += " (HTML response)";
-          throw devError;
-        }
-        
-        const result = JSON.parse(text);
-        console.log("✅ Individual sessions API response:", result);
-        return Array.isArray(result?.data) ? result.data : [];
-      } catch (error) {
-        if (error.message?.includes('HTML')) {
-          console.warn("⚠️ Development server issue - returning empty array");
-          return [];
-        }
-        console.error("❌ Real API error for individual sessions:", error);
-        throw error; // Let real server errors bubble up
+      const response = await apiRequest('GET', '/api/session-bookings');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch individual sessions");
       }
+      
+      return Array.isArray(result?.data) ? result.data : [];
     },
-    staleTime: 0,
-    retry: false,
+    staleTime: 30000, // Cache for 30 seconds in production
+    retry: 2, // Retry failed requests twice
   });
 
   // FIXED: Cancel council session mutation with proper endpoint
@@ -93,38 +76,21 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     },
   });
 
-  // FIXED: Fetch council sessions with debug logging and graceful fallback
+  // Fetch council sessions
   const { data: rawCouncilSessions = [], isLoading: councilLoading = false, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
     queryFn: async () => {
-      try {
-        console.log("🌐 Fetching council sessions...");
-        const response = await apiRequest('GET', '/api/council-bookings');
-        
-        // Check if response is HTML (development server issue)
-        const text = await response.text();
-        if (text.includes('<!DOCTYPE html>')) {
-          console.warn("⚠️ Council API returned HTML instead of JSON - development server issue");
-          // Mark this as a development issue, not a real API error
-          const devError = new Error("Development server not serving API routes properly");
-          devError.message += " (HTML response)";
-          throw devError;
-        }
-        
-        const result = JSON.parse(text);
-        console.log("✅ Council sessions API response:", result);
-        return Array.isArray(result?.data) ? result.data : [];
-      } catch (error) {
-        if (error.message?.includes('HTML')) {
-          console.warn("⚠️ Development server issue - returning empty array");
-          return [];
-        }
-        console.error("❌ Real API error for council sessions:", error);
-        throw error; // Let real server errors bubble up
+      const response = await apiRequest('GET', '/api/council-bookings');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch council sessions");
       }
+      
+      return Array.isArray(result?.data) ? result.data : [];
     },
-    staleTime: 0, // Always refetch to ensure fresh data
-    retry: false, // Don't retry failed requests
+    staleTime: 30000, // Cache for 30 seconds in production
+    retry: 2, // Retry failed requests twice
   });
   
   // Filter out cancelled sessions and add type
