@@ -58,14 +58,23 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   // Council users only get council sessions, individual users only get individual sessions
   const allSessions = user?.subscriptionPlan === 'council' 
-    ? councilData.map((cs: any) => {
-        console.log(`[DEBUG] Raw council session from API:`, cs);
-        console.log(`[DEBUG] Council session ID: ${cs.id}, participantId: ${cs.participantId}, sessionId: ${cs.sessionId}`);
-        return {
-          ...cs, // Use the entire object as returned from API
-          // The API already formats id as `council-${sessionId}` and includes participantId
-        };
-      })
+    ? councilData
+        .filter(cs => cs.sessionId != null)
+        .map((cs: any) => ({
+          id: `council-${cs.sessionId}`,
+          participantId: cs.id,
+          scheduledDate: cs.scheduledDate,
+          duration: cs.duration || 60,
+          status: cs.sessionStatus || cs.status,
+          meetingType: 'video',
+          sessionGoals: cs.sessionGoals,
+          humanMentor: {
+            id: 0,
+            user: { firstName: 'Council', lastName: 'Session' },
+            expertise: `${cs.mentorCount} mentors`,
+            rating: '5.0'
+          }
+        }))
     : sessionsData;
 
   // Cancel session mutation
@@ -76,22 +85,13 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
       // Handle council sessions differently
       if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
         const councilId = sessionId.replace('council-', '');
-        console.log(`[DEBUG] Council session detected. Original sessionId: ${sessionId}, extracted councilId: ${councilId}`);
+        const participantId = parseInt(councilId, 10);
         
-        // For council sessions, we need to find the participant ID from the allSessions data
-        const sessionData = allSessions.find((s: any) => s.id === sessionId);
-        console.log(`[DEBUG] Found session data:`, sessionData);
-        console.log(`[DEBUG] All sessions available:`, allSessions);
-        
-        const participantId = sessionData?.participantId;
-        console.log(`[DEBUG] Extracted participantId: ${participantId}`);
-        
-        if (!participantId) {
-          console.error(`[DEBUG] Could not find participantId for sessionId: ${sessionId}`);
-          throw new Error('Could not cancel this council session. Please try refreshing.');
+        if (isNaN(participantId)) {
+          throw new Error(`Invalid council session ID: ${sessionId}`);
         }
         
-        console.log(`[DEBUG] Making API request to cancel council session with participantId: ${participantId}`);
+        console.log(`[DEBUG] Council session cancellation: sessionId=${sessionId}, participantId=${participantId}`);
         const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
         console.log(`[DEBUG] API response:`, response);
         
