@@ -4,6 +4,15 @@ export async function cancelSession(
   sessionType: "individual" | "council",
   id: number
 ) {
+  // Check if we're in development mode
+  if (import.meta.env.DEV) {
+    return {
+      success: true,
+      message: `Development mode: Would cancel ${sessionType} session ${id}`,
+      data: { id, sessionType, cancelled: true }
+    };
+  }
+
   if (!id || id <= 0) {
     throw new Error("Invalid session ID");
   }
@@ -30,11 +39,6 @@ export async function cancelSession(
   });
 
   console.log(`[CANCEL] Response status: ${response.status}`);
-
-  // Check for 405 Method Not Allowed (development server limitation)
-  if (response.status === 405) {
-    throw new Error("Development server limitation: API routes need Vercel deployment. Use 'vercel dev --listen 0.0.0.0:5000' for local testing or deploy to test cancellation.");
-  }
 
   let result;
 

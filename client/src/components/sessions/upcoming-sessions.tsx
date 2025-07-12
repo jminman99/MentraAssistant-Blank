@@ -329,15 +329,6 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                           return;
                         }
 
-                        // Test with mock success for development
-                        if (process.env.NODE_ENV === 'development') {
-                          toast({
-                            title: "Development Mode",
-                            description: `Would cancel ${session.type} session ${session.participantId}. Deploy to production to test actual cancellation.`,
-                          });
-                          return;
-                        }
-                        
                         cancelAnySession({
                           sessionType: session.type,
                           id: session.participantId,

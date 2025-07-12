@@ -582,6 +582,11 @@ client/
   - ⚠️ DEVELOPMENT LIMITATION CONFIRMED: Vite dev server returns 404 for all API routes
   - ✅ Solution ready for production deployment where Vercel will serve API endpoints
   - ✅ Created debug-cancellation.html for production testing of endpoints
+  - ✅ CRITICAL FIX: Updated vercel.json to properly configure API function runtime
+  - ✅ Removed problematic API redirect loop causing 404 errors in production
+  - ✅ Added explicit functions configuration for TypeScript serverless functions
+  - ✅ Added OPTIONS method handling to prevent CORS issues
+  - ✅ Fixed Vercel deployment configuration for proper API route serving
   - ✅ Fixed duplicate status field in council sessions storage query (removed cs.status as "sessionStatus")
   - ✅ Council sessions now return proper session status ("confirmed") instead of participant status ("registered")
   - ✅ Frontend filter correctly identifies council sessions as cancellable with "confirmed" status
