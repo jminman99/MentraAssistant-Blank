@@ -587,6 +587,10 @@ client/
   - ✅ Added explicit functions configuration for TypeScript serverless functions
   - ✅ Added OPTIONS method handling to prevent CORS issues
   - ✅ Fixed Vercel deployment configuration for proper API route serving
+  - ✅ CRITICAL FIX: Updated vercel.json rewrite rule to exclude /api routes from index.html fallback
+  - ✅ Fixed root cause: Vercel was serving index.html for API routes causing 405 Method Not Allowed
+  - ✅ Proper negative lookahead regex: "/((?!api).*)" excludes API routes from frontend fallback
+  - ✅ Removed development mode bypass - API routes now properly configured for production
   - ✅ Fixed duplicate status field in council sessions storage query (removed cs.status as "sessionStatus")
   - ✅ Council sessions now return proper session status ("confirmed") instead of participant status ("registered")
   - ✅ Frontend filter correctly identifies council sessions as cancellable with "confirmed" status

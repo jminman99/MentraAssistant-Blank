@@ -4,14 +4,6 @@ export async function cancelSession(
   sessionType: "individual" | "council",
   id: number
 ) {
-  // Check if we're in development mode
-  if (import.meta.env.DEV) {
-    return {
-      success: true,
-      message: `Development mode: Would cancel ${sessionType} session ${id}`,
-      data: { id, sessionType, cancelled: true }
-    };
-  }
 
   if (!id || id <= 0) {
     throw new Error("Invalid session ID");
