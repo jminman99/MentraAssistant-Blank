@@ -89,7 +89,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     mutationFn: async (participantId: number) => {
       console.log(`[DEBUG] Attempting to cancel council session participant ${participantId}`);
       
-      const response = await fetch(`/api/council-sessions/${participantId}/cancel`, {
+      const response = await fetch(`/api/council-sessions/${participantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
