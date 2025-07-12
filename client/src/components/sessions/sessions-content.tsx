@@ -59,24 +59,38 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Cancel session mutation
   const { mutate: cancelSession } = useMutation({
     mutationFn: async (sessionId: string | number) => {
+      console.log(`[DEBUG] cancelSession called with sessionId: ${sessionId}, type: ${typeof sessionId}`);
+      
       // Handle council sessions differently
       if (typeof sessionId === 'string' && sessionId.startsWith('council-')) {
         const councilId = sessionId.replace('council-', '');
+        console.log(`[DEBUG] Council session detected. Original sessionId: ${sessionId}, extracted councilId: ${councilId}`);
         
         // For council sessions, we need to find the participant ID from the allSessions data
         const sessionData = allSessions.find((s: any) => s.id === sessionId);
+        console.log(`[DEBUG] Found session data:`, sessionData);
+        console.log(`[DEBUG] All sessions available:`, allSessions);
+        
         const participantId = sessionData?.participantId;
+        console.log(`[DEBUG] Extracted participantId: ${participantId}`);
         
         if (!participantId) {
+          console.error(`[DEBUG] Could not find participantId for sessionId: ${sessionId}`);
           throw new Error('Could not find participant ID for council session');
         }
         
+        console.log(`[DEBUG] Making API request to cancel council session with participantId: ${participantId}`);
         const response = await apiRequest('PATCH', `/api/council-sessions/${participantId}/cancel`);
+        console.log(`[DEBUG] API response:`, response);
+        
         if (!response.ok) {
           const errorData = await response.json();
+          console.error(`[DEBUG] API error:`, errorData);
           throw new Error(errorData.message || 'Failed to cancel council session');
         }
-        return response.json();
+        const result = await response.json();
+        console.log(`[DEBUG] Cancel success result:`, result);
+        return result;
       } else {
         // Handle individual sessions
         const response = await apiRequest('DELETE', `/api/session-bookings/${sessionId}/cancel`);
@@ -87,14 +101,19 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         return response.json();
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`[DEBUG] Cancel mutation success:`, data);
       toast({
         title: "Session Cancelled",
         description: "Your session has been cancelled successfully.",
       });
+      
+      // Invalidate queries to refresh the data
+      console.log(`[DEBUG] Invalidating cache queries...`);
       queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      console.log(`[DEBUG] Cache invalidation complete`);
     },
     onError: (error: Error) => {
       // Check if this is a development server issue (405 Method Not Allowed or 404)
@@ -165,6 +184,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   };
 
   const handleCancelSession = (sessionId: string | number) => {
+    console.log(`[DEBUG] handleCancelSession called with sessionId: ${sessionId}`);
     cancelSession(sessionId);
   };
 
