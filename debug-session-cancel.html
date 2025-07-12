@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Session Cancellation</title>
+</head>
+<body>
+    <h1>Session Cancellation Debug</h1>
+    <button onclick="testCouncilCancel()">Test Council Cancel</button>
+    <button onclick="testIndividualCancel()">Test Individual Cancel</button>
+    <div id="results"></div>
+
+    <script>
+    async function testCouncilCancel() {
+        try {
+            const response = await fetch('/api/cancel-council-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ participantId: 14 })
+            });
+            
+            const data = await response.text();
+            document.getElementById('results').innerHTML = `
+                <h3>Council Cancel Response:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Response: ${data}</p>
+            `;
+        } catch (error) {
+            document.getElementById('results').innerHTML = `
+                <h3>Council Cancel Error:</h3>
+                <p>${error.message}</p>
+            `;
+        }
+    }
+
+    async function testIndividualCancel() {
+        try {
+            const response = await fetch('/api/cancel-individual-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ sessionId: 1 })
+            });
+            
+            const data = await response.text();
+            document.getElementById('results').innerHTML = `
+                <h3>Individual Cancel Response:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Response: ${data}</p>
+            `;
+        } catch (error) {
+            document.getElementById('results').innerHTML = `
+                <h3>Individual Cancel Error:</h3>
+                <p>${error.message}</p>
+            `;
+        }
+    }
+    </script>
+</body>
+</html>
