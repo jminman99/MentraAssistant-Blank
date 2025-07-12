@@ -58,9 +58,16 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       });
     },
     onError: (error: any) => {
+      let errorMessage = error.message || "Failed to cancel session";
+      
+      // Handle development server limitation
+      if (errorMessage.includes("405") || errorMessage.includes("Method not allowed")) {
+        errorMessage = "Session cancellation requires production deployment. The feature is ready but not available in development mode.";
+      }
+      
       toast({
         title: "Cancellation Failed",
-        description: error.message || "Failed to cancel session",
+        description: errorMessage,
         variant: "destructive",
       });
     },
