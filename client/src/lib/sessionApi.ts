@@ -8,11 +8,10 @@ export async function cancelSession(
     throw new Error("Invalid session ID");
   }
 
-  // Different endpoints and methods for different session types
-  const url = sessionType === "individual" 
-    ? `/api/session-bookings/${id}` 
-    : `/api/council-sessions/cancel?id=${id}`;
-    
+  const url = sessionType === "individual"
+    ? `/api/session-bookings/${id}`
+    : `/api/council-sessions/${id}/cancel`;
+
   const method = sessionType === "individual" ? "DELETE" : "POST";
 
   const response = await fetch(url, {
