@@ -4,8 +4,8 @@ import { getSessionToken } from '../../_lib/auth';
 import { storage } from '../../_lib/storage';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'POST') {
-    return handlePost(req, res);
+  if (req.method === 'DELETE') {
+    return handleDelete(req, res);
   }
 
   return res.status(405).json({
@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 }
 
-async function handlePost(req: VercelRequest, res: VercelResponse) {
+async function handleDelete(req: VercelRequest, res: VercelResponse) {
   try {
     // Get and verify Clerk token
     const token = getSessionToken(req);

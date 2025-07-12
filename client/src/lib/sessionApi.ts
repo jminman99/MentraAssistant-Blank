@@ -12,7 +12,7 @@ export async function cancelSession(
     ? `/api/session-bookings/${id}/cancel`
     : `/api/council-sessions/${id}/cancel`;
 
-  const method = "POST"; // Both endpoints now use POST
+  const method = "DELETE"; // Both endpoints now use DELETE
 
   const response = await fetch(url, {
     method,
