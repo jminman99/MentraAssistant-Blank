@@ -1,6 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from "../../_lib/storage.js";
-import { getSessionToken } from "../../_lib/auth.js";
 import { verifyToken } from '@clerk/backend';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,6 +7,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Dynamic imports to avoid module resolution issues
+    const { storage } = await import('../../_lib/storage.js');
+    const { getSessionToken } = await import('../../_lib/auth.js');
+    
     // Extract and verify Clerk JWT token
     const token = getSessionToken(req);
     if (!token) {

@@ -1,7 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyToken } from '@clerk/backend';
-import { getSessionToken } from '../../_lib/auth.js';
-import { storage } from '../../_lib/storage.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'DELETE') {
@@ -16,6 +14,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function handleDelete(req: VercelRequest, res: VercelResponse) {
   try {
+    // Dynamic imports to avoid module resolution issues
+    const { storage } = await import('../../_lib/storage.js');
+    const { getSessionToken } = await import('../../_lib/auth.js');
+    
     // Get and verify Clerk token
     const token = getSessionToken(req);
     if (!token) {
