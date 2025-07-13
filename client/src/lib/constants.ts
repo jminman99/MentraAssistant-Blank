@@ -1,15 +1,15 @@
 // Default UI Label Mapping Layer - Fallback for organizations without custom labels
 export const DefaultFeatureDisplayLabels = {
   // Main Navigation Features
-  aiMentors: "AI Instant Advice",
-  humanMentors: "1-on-1 Human Mentors", 
+  wiseGuides: "AI Instant Advice",
+  experiencedGuides: "1-on-1 Human Mentors", 
   councilSessions: "Group Mentoring",
   mySessions: "My Bookings",
   planUsage: "Subscription & Usage",
   
-  // Tab Navigation
-  wiseGuides: "AI Instant Advice",
-  experiencedGuides: "1-on-1 Human Mentors",
+  // Legacy aliases for backwards compatibility
+  aiMentors: "AI Instant Advice",
+  humanMentors: "1-on-1 Human Mentors",
   sessions: "My Sessions",
   
   // Session Types
@@ -59,13 +59,13 @@ export const DefaultFeatureDisplayLabels = {
 // Navigation Menu Configuration
 export const NavigationMenuItems = [
   { 
-    key: "aiMentors" as LabelKey,
+    key: "wiseGuides" as LabelKey,
     route: "/dashboard", 
     icon: "MessageCircle",
     description: "Get instant guidance from AI mentors"
   },
   { 
-    key: "humanMentors" as LabelKey,
+    key: "experiencedGuides" as LabelKey,
     route: "/human-mentors", 
     icon: "Users",
     description: "Book sessions with experienced human mentors"
@@ -87,12 +87,12 @@ export const NavigationMenuItems = [
 // Dashboard Tab Configuration
 export const DashboardTabs = [
   {
-    key: "aiMentors" as LabelKey,
+    key: "wiseGuides" as LabelKey,
     value: "ai-mentors",
     icon: "Sparkles"
   },
   {
-    key: "humanMentors" as LabelKey, 
+    key: "experiencedGuides" as LabelKey, 
     value: "human-mentors",
     icon: "Users"
   },

@@ -28,6 +28,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarAvailability } from "@/components/calendar-availability";
 import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
+import { FeatureDisplayLabels } from "@/lib/feature-labels";
 import { useOrganizationLabels } from "@/hooks/use-organization-labels";
 
 // Council booking form schema
