@@ -14,7 +14,8 @@ import {
   semanticConfigurations,
   mentorPersonalities,
   mentorLifeStories,
-  mentorAvailability
+  mentorAvailability,
+  brandingConfigurations
 } from '../shared/schema.js';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import type {
@@ -205,6 +206,53 @@ export class VercelStorage {
     } catch (error) {
       console.error('Error fetching mentor personality:', error);
       return null;
+    }
+  }
+
+  async getBrandingConfiguration(organizationId: number): Promise<any | null> {
+    try {
+      const result = await db
+        .select()
+        .from(brandingConfigurations)
+        .where(eq(brandingConfigurations.organizationId, organizationId))
+        .limit(1);
+
+      return result[0] || null;
+    } catch (error) {
+      this.handleError('getBrandingConfiguration', error);
+    }
+  }
+
+  async updateBrandingConfiguration(organizationId: number, data: any): Promise<any> {
+    try {
+      // First try to update existing configuration
+      const existing = await this.getBrandingConfiguration(organizationId);
+      
+      if (existing) {
+        const result = await db
+          .update(brandingConfigurations)
+          .set({
+            ...data,
+            updatedAt: new Date(),
+          })
+          .where(eq(brandingConfigurations.organizationId, organizationId))
+          .returning();
+
+        return result[0];
+      } else {
+        // Create new configuration if none exists
+        const result = await db
+          .insert(brandingConfigurations)
+          .values({
+            organizationId,
+            ...data,
+          })
+          .returning();
+
+        return result[0];
+      }
+    } catch (error) {
+      this.handleError('updateBrandingConfiguration', error);
     }
   }
 

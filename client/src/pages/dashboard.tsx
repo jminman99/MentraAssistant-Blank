@@ -27,6 +27,8 @@ import { addDays } from "date-fns";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarAvailability } from "@/components/calendar-availability";
+import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
+import { useOrganizationLabels } from "@/hooks/use-organization-labels";
 
 // Council booking form schema
 const councilBookingSchema = z.object({
@@ -419,6 +421,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const { branding, isLoading: brandingLoading, mentorTerminology } = useOrganizationLabels();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [, setLocation] = useLocation();

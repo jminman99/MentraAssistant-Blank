@@ -179,6 +179,17 @@ export const brandingConfigurations = pgTable("branding_configurations", {
   colorScheme: text("color_scheme").notNull(), // "masculine-slate", "professional-blue", "warm-earth", etc.
   mentorTerminology: text("mentor_terminology").notNull(), // "guides", "mentors", "advisors", "coaches"
   tone: text("tone").notNull(), // "masculine-direct", "professional-warm", "inspiring-supportive"
+  // Multi-tenant UI Label Configuration
+  featureLabels: jsonb("feature_labels").$type<Record<string, string>>().default(sql`'{}'::jsonb`),
+  navigationConfig: jsonb("navigation_config").$type<{
+    items: Array<{
+      key: string;
+      route: string;
+      icon: string;
+      enabled: boolean;
+      order: number;
+    }>;
+  }>().default(sql`'{"items": []}'::jsonb`),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
