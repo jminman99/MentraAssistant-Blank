@@ -7,6 +7,7 @@ import SignUpPage from "./pages/sign-up";
 import DevSignInPage from "./pages/dev-sign-in";
 import PlanUsagePage from "./pages/plan-usage";
 import SessionsPage from "./pages/sessions";
+import IndividualBooking from "./pages/individual-booking";
 import { useAuth } from "./lib/auth-hook";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/plan-usage" component={() => <PrivateRoute component={PlanUsagePage} />} />
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />
+      <Route path="/individual-booking" component={() => <PrivateRoute component={IndividualBooking} />} />
       <Route path="/">
         {() => (user ? <Dashboard /> : <Redirect to="/sign-in" />)}
       </Route>
