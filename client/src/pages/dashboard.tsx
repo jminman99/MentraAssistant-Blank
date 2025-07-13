@@ -708,9 +708,10 @@ export default function Dashboard() {
                   size="sm"
                   onClick={() => setSelectedTab("ai-mentors")}
                   className="w-full justify-start h-10"
+                  title="Thought Partners, Not Fixers."
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Wise Guides
+                  AI Mentors
                 </Button>
                 <Button
                   variant={
@@ -721,7 +722,7 @@ export default function Dashboard() {
                   className="w-full justify-start h-10"
                 >
                   <Compass className="h-4 w-4 mr-2" />
-                  Experienced Guides
+                  {FeatureDisplayLabels.experiencedGuides}
                 </Button>
                 <Button
                   variant={selectedTab === "council" ? "default" : "outline"}
@@ -730,7 +731,7 @@ export default function Dashboard() {
                   className="w-full justify-start h-10"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Council Sessions
+                  {FeatureDisplayLabels.councilSessions}
                 </Button>
                 <Button
                   variant={selectedTab === "sessions" ? "default" : "outline"}
@@ -739,7 +740,7 @@ export default function Dashboard() {
                   className="w-full justify-start h-10"
                 >
                   <Star className="h-4 w-4 mr-2" />
-                  My Sessions
+                  {FeatureDisplayLabels.mySessions}
                 </Button>
                 <Button
                   variant={selectedTab === "plan" ? "default" : "outline"}
@@ -748,7 +749,7 @@ export default function Dashboard() {
                   className="w-full justify-start h-10"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Plan & Usage
+                  {FeatureDisplayLabels.planUsage}
                 </Button>
               </div>
             </div>
@@ -760,9 +761,9 @@ export default function Dashboard() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40">
         <div className="flex items-center justify-around py-2">
           <Link href="/mentors">
-            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
+            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600" title="Thought Partners, Not Fixers.">
               <Sparkles className="h-5 w-5" />
-              <span className="text-xs font-medium">Wise Guides</span>
+              <span className="text-xs font-medium">AI Mentors</span>
             </button>
           </Link>
           <Link href="/individual-booking">

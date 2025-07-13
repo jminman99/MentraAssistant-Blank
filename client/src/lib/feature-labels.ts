@@ -27,7 +27,7 @@ export const ExampleUsage = {
 
 // Export the main labels object for direct import (matches your original example)
 export const FeatureDisplayLabels = {
-  wiseGuides: "AI Instant Advice",
+  wiseGuides: "My Top Recommendation",
   experiencedGuides: "1-on-1 Human Mentors",
   councilSessions: "Group Mentoring",
   mySessions: "My Bookings",

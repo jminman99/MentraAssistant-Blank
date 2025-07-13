@@ -1,7 +1,7 @@
 // Default UI Label Mapping Layer - Fallback for organizations without custom labels
 export const DefaultFeatureDisplayLabels = {
   // Main Navigation Features
-  wiseGuides: "AI Instant Advice",
+  wiseGuides: "My Top Recommendation",
   experiencedGuides: "1-on-1 Human Mentors", 
   councilSessions: "Group Mentoring",
   mySessions: "My Bookings",
