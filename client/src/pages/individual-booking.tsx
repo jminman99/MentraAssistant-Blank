@@ -38,6 +38,7 @@ export default function IndividualBooking() {
   // Fetch mentors
   const { data: mentorsData, isLoading: isLoadingMentors } = useQuery({
     queryKey: ['/api/human-mentors'],
+    queryFn: () => apiRequest('/api/human-mentors'),
     enabled: hasAccess,
   });
   const mentors = Array.isArray(mentorsData?.data) ? mentorsData.data : [];
@@ -45,6 +46,7 @@ export default function IndividualBooking() {
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
     queryKey: ['/api/session-bookings'],
+    queryFn: () => apiRequest('/api/session-bookings').then(res => res.data || []),
     enabled: hasAccess,
   });
 
@@ -66,25 +68,32 @@ export default function IndividualBooking() {
         throw new Error("Missing mentor or date/time selection");
       }
 
+      // Create scheduled date with proper timezone handling
       const scheduledAt = new Date(selectedDateTime.date);
-      const [hours, minutes] = selectedDateTime.time.split(':');
-      scheduledAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const [hours, minutes] = selectedDateTime.time.split(':').map(Number);
+      
+      // Ensure we're working with local time, not UTC
+      scheduledAt.setHours(hours, minutes, 0, 0);
+      
+      // Get the Clerk session token for authentication
+      const clerkToken = await window.Clerk?.session?.getToken();
+      if (!clerkToken) {
+        throw new Error("Authentication required");
+      }
 
       const requestBody = {
         humanMentorId: selectedMentor.id,
-        sessionType: 'individual',
-        scheduledAt: scheduledAt.toISOString(),
+        scheduledDate: scheduledAt.toISOString(),
         duration: 30, // Fixed 30 minutes as per PRD
-        meetingType: 'video',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         sessionGoals: null // Optional for individual sessions
       };
 
       console.log('[DEBUG] Sending booking request:', requestBody);
-      const response = await fetch('/api/sessions', {
+      const response = await fetch('/api/session-bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${clerkToken}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -93,7 +102,7 @@ export default function IndividualBooking() {
       console.log('[DEBUG] Booking response:', responseData);
       
       if (!response.ok) {
-        throw new Error(responseData.message || 'Booking failed');
+        throw new Error(responseData.error || responseData.message || 'Booking failed');
       }
       return responseData;
     },
@@ -134,6 +143,24 @@ export default function IndividualBooking() {
   };
 
   const handleBookSession = () => {
+    if (!selectedMentor) {
+      toast({
+        title: "No Mentor Selected",
+        description: "Please select a mentor first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedDateTime) {
+      toast({
+        title: "No Time Selected",
+        description: "Please select a date and time for your session.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!canBookMore) {
       toast({
         title: "Monthly Limit Reached", 
@@ -142,6 +169,7 @@ export default function IndividualBooking() {
       });
       return;
     }
+
     bookSession();
   };
 
@@ -237,18 +265,30 @@ export default function IndividualBooking() {
 
         {/* Mentor Selection Step */}
         {currentStep === 'mentors' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mentors.map((mentor) => (
-              <MentorCard
-                key={mentor.id}
-                mentor={mentor}
-                onClick={() => handleMentorSelect(mentor)}
-                showImage={true}
-                showBio={true}
-                className="hover:shadow-lg"
-              />
-            ))}
-          </div>
+          <>
+            {mentors.length === 0 ? (
+              <div className="text-center py-12">
+                <User className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No Mentors Available</h3>
+                <p className="text-slate-600">
+                  We're currently working on adding more mentors. Please check back later.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mentors.map((mentor) => (
+                  <MentorCard
+                    key={mentor.id}
+                    mentor={mentor}
+                    onClick={() => handleMentorSelect(mentor)}
+                    showImage={true}
+                    showBio={true}
+                    className="hover:shadow-lg"
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Scheduling Step */}
