@@ -63,9 +63,13 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   try {
+    console.log('[DEBUG] Session booking POST request received');
+    console.log('[DEBUG] Request body:', req.body);
+    
     // Extract and verify Clerk JWT token
     const token = getSessionToken(req);
     if (!token) {
+      console.error('[DEBUG] No token found in request');
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
@@ -74,6 +78,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     try {
       const verifiedToken = await clerkClient.verifyToken(token);
       userId = verifiedToken.sub;
+      console.log('[DEBUG] Token verified, user ID:', userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
       return res.status(401).json({ success: false, error: "Invalid token" });
@@ -109,9 +114,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       status: 'scheduled' as const
     };
 
+    console.log('[DEBUG] Creating session with data:', sessionData);
     const newSession = await storage.createSessionBooking(sessionData);
-
-    console.log(`✅ Created individual session booking:`, newSession);
+    console.log('[DEBUG] Session created successfully:', newSession);
 
     return res.status(200).json({
       success: true,

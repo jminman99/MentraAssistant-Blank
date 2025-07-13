@@ -37,7 +37,7 @@ export default function IndividualBooking() {
 
   // Fetch mentors
   const { data: mentorsData, isLoading: isLoadingMentors } = useQuery({
-    queryKey: ['/api/human-mentors'],
+    queryKey: ['human-mentors'],
     queryFn: () => apiRequest('/api/human-mentors'),
     enabled: hasAccess,
   });
@@ -45,7 +45,7 @@ export default function IndividualBooking() {
 
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
-    queryKey: ['/api/session-bookings'],
+    queryKey: ['session-bookings'],
     queryFn: () => apiRequest('/api/session-bookings').then(res => res.data || []),
     enabled: hasAccess,
   });
@@ -75,12 +75,6 @@ export default function IndividualBooking() {
       // Ensure we're working with local time, not UTC
       scheduledAt.setHours(hours, minutes, 0, 0);
       
-      // Get the Clerk session token for authentication
-      const clerkToken = await window.Clerk?.session?.getToken();
-      if (!clerkToken) {
-        throw new Error("Authentication required");
-      }
-
       const requestBody = {
         humanMentorId: selectedMentor.id,
         scheduledDate: scheduledAt.toISOString(),
@@ -89,22 +83,19 @@ export default function IndividualBooking() {
       };
 
       console.log('[DEBUG] Sending booking request:', requestBody);
-      const response = await fetch('/api/session-bookings', {
+      
+      // Use apiRequest which handles authentication properly
+      const response = await apiRequest('/api/session-bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${clerkToken}`,
-        },
-        body: JSON.stringify(requestBody),
+        body: requestBody,
       });
       
-      const responseData = await response.json();
-      console.log('[DEBUG] Booking response:', responseData);
+      console.log('[DEBUG] Booking response:', response);
       
-      if (!response.ok) {
-        throw new Error(responseData.error || responseData.message || 'Booking failed');
+      if (!response.success) {
+        throw new Error(response.error || 'Booking failed');
       }
-      return responseData;
+      return response.data;
     },
     onSuccess: (data) => {
       toast({
@@ -116,8 +107,8 @@ export default function IndividualBooking() {
       setSelectedMentor(null);
       setSelectedDateTime(null);
       setCurrentStep('mentors');
-      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['session-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['auth-user'] });
       
       // Navigate to sessions page after short delay to let user see the success toast
       setTimeout(() => {
