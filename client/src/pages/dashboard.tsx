@@ -506,7 +506,7 @@ export default function Dashboard() {
                     : ""
                 }`}
               >
-                Wise Guides
+                {FeatureDisplayLabels.wiseGuides}
               </button>
               <button
                 onClick={() => setSelectedTab("human-mentors")}
@@ -516,7 +516,7 @@ export default function Dashboard() {
                     : ""
                 }`}
               >
-                Experienced Guides
+                {FeatureDisplayLabels.experiencedGuides}
               </button>
               <button
                 onClick={() => setSelectedTab("council")}
@@ -527,7 +527,7 @@ export default function Dashboard() {
                 }`}
               >
                 <Crown className="w-3 h-3" />
-                <span>Council</span>
+                <span>{FeatureDisplayLabels.councilSessions}</span>
               </button>
               <button
                 onClick={() => setSelectedTab("sessions")}
@@ -537,7 +537,7 @@ export default function Dashboard() {
                     : ""
                 }`}
               >
-                My Sessions
+                {FeatureDisplayLabels.mySessions}
               </button>
               <button
                 onClick={() => setSelectedTab("plan")}
@@ -547,7 +547,7 @@ export default function Dashboard() {
                     : ""
                 }`}
               >
-                Plan & Usage
+                {FeatureDisplayLabels.planUsage}
               </button>
               {(user.role === "admin" || user.role === "super_admin") && (
                 <Link href="/admin">
@@ -628,7 +628,7 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Experienced Guides
+                    {FeatureDisplayLabels.experiencedGuides}
                   </h2>
                   <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <MessageCircle className="h-4 w-4" />
@@ -642,7 +642,7 @@ export default function Dashboard() {
                   {humanMentors.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-slate-500">
-                        No experienced guides available
+                        No {FeatureDisplayLabels.experiencedGuides.toLowerCase()} available
                       </div>
                       <div className="text-sm text-slate-400 mt-1">
                         Check back later for new mentors
@@ -666,7 +666,7 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-slate-900">
-                    My Sessions
+                    {FeatureDisplayLabels.mySessions}
                   </h2>
                   <Link href="/sessions">
                     <Button variant="outline" size="sm">

@@ -19,12 +19,9 @@ export const ExampleUsage = {
   // React component example
   renderNavLink: (key: LabelKey, route: string, icon: React.ComponentType) => {
     const Icon = icon;
-    return (
-      <NavLink to={route}>
-        <Icon />
-        {getDisplayLabel(key)}
-      </NavLink>
-    );
+    // Note: This would need proper React imports in a real component
+    // Example implementation pattern for reference
+    return `${route}: ${getDisplayLabel(key)}`;
   }
 };
 
@@ -36,3 +33,6 @@ export const FeatureDisplayLabels = {
   mySessions: "My Bookings",
   planUsage: "Subscription & Usage",
 } as const;
+
+// Console log to verify the labels are correct
+console.log("FeatureDisplayLabels loaded:", FeatureDisplayLabels);
