@@ -641,6 +641,9 @@ client/
   - ✅ Enables organizations to customize feature names (e.g. 'AI Mentors' → 'Wise Guides')
   - ✅ Maintains backwards compatibility with default labels as fallbacks
   - ✅ Multi-tenant architecture allows each organization to customize their user interface terminology
+  - ✅ Updated label keys to match specification: wiseGuides, experiencedGuides, councilSessions, mySessions, planUsage
+  - ✅ Created FeatureDisplayLabels export for direct import usage pattern
+  - ✅ System supports exact pattern: import { FeatureDisplayLabels } from "./constants"
 
 - July 12, 2025: ✅ COMPLETED complete session cancellation rewrite with simple POST endpoints
   - ✅ Created /api/cancel-council-session.ts with POST method for reliable council cancellation  
