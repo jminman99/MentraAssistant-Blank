@@ -4,7 +4,7 @@
  * Will be automatically disabled when real API endpoints are working
  */
 
-export const DEV_MODE = false; // Disabled for production
+export const DEV_MODE = true; // Force enable for Replit development
 
 // Mock user data for development testing
 export const MOCK_USER = {
@@ -72,12 +72,12 @@ export const MOCK_HUMAN_MENTORS = [
 // Mock API function that simulates network calls
 export async function mockApiCall<T>(data: T, delay = 500): Promise<T> {
   await new Promise(resolve => setTimeout(resolve, delay));
-  
+
   // Simulate occasional network errors in development
   if (Math.random() < 0.05) {
     throw new Error('Simulated network error');
   }
-  
+
   return data;
 }
 
@@ -113,7 +113,7 @@ export class DevAuthService {
       await mockApiCall(null, 800); // Simulate API call
       this.isAuthenticated = true;
       this.currentUser = MOCK_USER;
-      
+
       return { success: true, data: MOCK_USER };
     } else {
       throw new Error('Email required');
@@ -124,7 +124,7 @@ export class DevAuthService {
     if (!this.isAuthenticated) {
       return null;
     }
-    
+
     await mockApiCall(null, 200);
     return { success: true, data: this.currentUser };
   }

@@ -15,6 +15,11 @@ export class VercelApiClient {
   }
 
   private async getAuthHeaders() {
+    // In development, skip token authentication
+    if (process.env.NODE_ENV === 'development') {
+      return {};
+    }
+    
     if (!this.getToken) {
       console.warn("No token provider configured");
       return {};
