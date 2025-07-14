@@ -27,7 +27,7 @@ export default function IndividualBooking() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  
+
   const [selectedMentor, setSelectedMentor] = useState<HumanMentor | null>(null);
   const [selectedDateTime, setSelectedDateTime] = useState<{date: Date; time: string} | null>(null);
   const [currentStep, setCurrentStep] = useState<'mentors' | 'scheduling' | 'confirmation'>('mentors');
@@ -36,12 +36,20 @@ export default function IndividualBooking() {
   const hasAccess = user && ['individual', 'council'].includes(user.subscriptionPlan);
 
   // Fetch mentors
-  const { data: mentorsData, isLoading: isLoadingMentors } = useQuery({
+  const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery<ApiResponse<HumanMentor[]>>({
     queryKey: ['human-mentors'],
     queryFn: () => apiRequest('/api/human-mentors'),
     enabled: hasAccess,
   });
-  const mentors = Array.isArray(mentorsData?.data) ? mentorsData.data : [];
+
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEBUG] Mentors API Response:', mentorsResponse);
+    console.log('[DEBUG] Mentors Error:', mentorsError);
+    console.log('[DEBUG] Has Access:', hasAccess);
+  }
+
+  const mentors = Array.isArray(mentorsResponse?.data) ? mentorsResponse.data : [];
 
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
@@ -71,10 +79,10 @@ export default function IndividualBooking() {
       // Create scheduled date with proper timezone handling
       const scheduledAt = new Date(selectedDateTime.date);
       const [hours, minutes] = selectedDateTime.time.split(':').map(Number);
-      
+
       // Ensure we're working with local time, not UTC
       scheduledAt.setHours(hours, minutes, 0, 0);
-      
+
       const requestBody = {
         humanMentorId: selectedMentor.id,
         scheduledDate: scheduledAt.toISOString(),
@@ -83,15 +91,15 @@ export default function IndividualBooking() {
       };
 
       console.log('[DEBUG] Sending booking request:', requestBody);
-      
+
       // Use apiRequest which handles authentication properly
       const response = await apiRequest('/api/session-bookings', {
         method: 'POST',
         body: requestBody,
       });
-      
+
       console.log('[DEBUG] Booking response:', response);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Booking failed');
       }
@@ -102,14 +110,14 @@ export default function IndividualBooking() {
         title: "Session Booked Successfully!",
         description: `Your 30-minute session with ${selectedMentor?.user.firstName} is confirmed for ${format(selectedDateTime!.date, 'MMMM d, yyyy')} at ${selectedDateTime!.time}.`,
       });
-      
+
       // Reset form and navigate to sessions page
       setSelectedMentor(null);
       setSelectedDateTime(null);
       setCurrentStep('mentors');
       queryClient.invalidateQueries({ queryKey: ['session-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['auth-user'] });
-      
+
       // Navigate to sessions page after short delay to let user see the success toast
       setTimeout(() => {
         setLocation('/sessions');
@@ -232,7 +240,7 @@ export default function IndividualBooking() {
               Dashboard
             </Button>
           </div>
-          
+
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             {currentStep === 'mentors' ? 'Choose Your Mentor' : 'Schedule Your Session'}
           </h1>
@@ -242,7 +250,7 @@ export default function IndividualBooking() {
               : `Book your session with ${selectedMentor?.user.firstName} ${selectedMentor?.user.lastName}`
             }
           </p>
-          
+
           {/* Monthly usage indicator */}
           <div className="mt-4 flex items-center gap-2">
             <Badge variant={canBookMore ? "secondary" : "destructive"}>
@@ -309,7 +317,7 @@ export default function IndividualBooking() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span>Duration:</span>
@@ -324,7 +332,7 @@ export default function IndividualBooking() {
                       <span className="font-medium">Video Call</span>
                     </div>
                   </div>
-                  
+
                   {selectedDateTime && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2 text-green-800">
@@ -353,7 +361,7 @@ export default function IndividualBooking() {
                     sessionDuration={30}
                     isCouncilMode={false}
                   />
-                  
+
                   {selectedDateTime && (
                     <div className="mt-6 flex justify-end">
                       <Button 
