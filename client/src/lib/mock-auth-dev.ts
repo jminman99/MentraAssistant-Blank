@@ -4,7 +4,7 @@
  * Will be automatically disabled when real API endpoints are working
  */
 
-export const DEV_MODE = true; // Force enable for Replit development
+export const DEV_MODE = process.env.NODE_ENV === 'development' && !process.env.VERCEL;
 
 // Mock user data for development testing
 export const MOCK_USER = {

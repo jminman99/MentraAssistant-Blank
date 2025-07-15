@@ -38,39 +38,7 @@ export default function IndividualBooking() {
   // Fetch mentors
   const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery<ApiResponse<HumanMentor[]>>({
     queryKey: ['human-mentors'],
-    queryFn: async () => {
-      // In development, use mock data if API fails
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          const result = await apiRequest('/api/human-mentors');
-          return result;
-        } catch (error) {
-          // Fallback to mock data
-          return {
-            success: true,
-            data: [
-              {
-                id: 1,
-                user: { firstName: "Sarah", lastName: "Johnson" },
-                expertise: "Career transition, leadership development",
-                rating: "4.8",
-                hourlyRate: "$120/hour",
-                organizationId: 1
-              },
-              {
-                id: 2,
-                user: { firstName: "Michael", lastName: "Chen" },
-                expertise: "Entrepreneurship, business strategy", 
-                rating: "4.9",
-                hourlyRate: "$150/hour",
-                organizationId: 1
-              }
-            ]
-          };
-        }
-      }
-      return apiRequest('/api/human-mentors');
-    },
+    queryFn: () => apiRequest('/api/human-mentors'),
     enabled: hasAccess,
   });
 
@@ -86,19 +54,7 @@ export default function IndividualBooking() {
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
     queryKey: ['session-bookings'],
-    queryFn: async () => {
-      // In development, use mock data if API fails
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          const result = await apiRequest('/api/session-bookings');
-          return result;
-        } catch (error) {
-          // Return empty bookings for development
-          return { success: true, data: [] };
-        }
-      }
-      return apiRequest('/api/session-bookings').then(res => res.data || []);
-    },
+    queryFn: () => apiRequest('/api/session-bookings').then(res => res.data || []),
     enabled: hasAccess,
   });
 
