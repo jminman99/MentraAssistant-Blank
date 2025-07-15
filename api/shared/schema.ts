@@ -33,7 +33,7 @@ export const users = pgTable("users", {
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
-  clerk_user_id: varchar("clerk_user_id", { length: 100 }).unique(),
+  clerkUserId: varchar("clerkUserId", { length: 100 }).unique(),
   username: varchar("username", { length: 255 }).unique(),
 });
 
