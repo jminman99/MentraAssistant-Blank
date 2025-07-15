@@ -72,7 +72,7 @@ export class VercelStorage {
         throw new Error('Clerk User ID is required');
       }
 
-      const result = await db.select().from(users).where(eq(users.clerk_user_id, clerkUserId)).limit(1);
+      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkUserId)).limit(1);
       return result[0] || null;
     } catch (error) {
       this.handleError('getUserByClerkId', error);
