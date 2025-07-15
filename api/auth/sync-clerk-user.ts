@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (existingUser) {
         // Update existing user with Clerk ID
         user = await storage.updateUser(existingUser.id, {
-          clerkUserId,
+          clerk_user_id: clerkUserId,
           firstName: firstName || existingUser.firstName,
           lastName: lastName || existingUser.lastName,
         });
@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email,
           firstName: firstName || "",
           lastName: lastName || "",
-          clerkUserId,
+          clerk_user_id: clerkUserId,
           role: "user",
           subscriptionPlan: "ai-only",
         });

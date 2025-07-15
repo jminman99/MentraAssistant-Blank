@@ -58,7 +58,7 @@ export class VercelStorage {
       if (!id || id <= 0) {
         throw new Error('Invalid user ID provided');
       }
-      
+
       const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
       return result[0] || null;
     } catch (error) {
@@ -71,8 +71,8 @@ export class VercelStorage {
       if (!clerkUserId) {
         throw new Error('Clerk User ID is required');
       }
-      
-      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkUserId)).limit(1);
+
+      const result = await db.select().from(users).where(eq(users.clerk_user_id, clerkUserId)).limit(1);
       return result[0] || null;
     } catch (error) {
       this.handleError('getUserByClerkId', error);
@@ -84,7 +84,7 @@ export class VercelStorage {
       if (!email || !email.includes('@')) {
         throw new Error('Invalid email provided');
       }
-      
+
       const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
       return result[0] || null;
     } catch (error) {
@@ -97,7 +97,7 @@ export class VercelStorage {
       if (!data.email) {
         throw new Error('Email is required');
       }
-      
+
       const [user] = await db.insert(users).values(data).returning();
       if (!user) {
         throw new Error('Failed to create user');
@@ -113,7 +113,7 @@ export class VercelStorage {
       if (!id || id <= 0) {
         throw new Error('Invalid user ID provided');
       }
-      
+
       const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
       return user || null;
     } catch (error) {
@@ -127,7 +127,7 @@ export class VercelStorage {
       if (organizationId && organizationId <= 0) {
         throw new Error('Invalid organization ID provided');
       }
-      
+
       if (organizationId) {
         return await db.select().from(aiMentors).where(
           and(
@@ -147,7 +147,7 @@ export class VercelStorage {
       if (!id || id <= 0) {
         throw new Error('Invalid mentor ID provided');
       }
-      
+
       const result = await db.select().from(aiMentors).where(eq(aiMentors.id, id)).limit(1);
       return result[0] || null;
     } catch (error) {
@@ -227,7 +227,7 @@ export class VercelStorage {
     try {
       // First try to update existing configuration
       const existing = await this.getBrandingConfiguration(organizationId);
-      
+
       if (existing) {
         const result = await db
           .update(brandingConfigurations)
@@ -330,7 +330,7 @@ export class VercelStorage {
       } else {
         throw new Error('Missing date or time information');
       }
-      
+
       // Validate the final date
       if (isNaN(scheduledDate.getTime())) {
         throw new Error('Invalid date/time combination');
@@ -358,7 +358,7 @@ export class VercelStorage {
       coordinationStatus: 'pending',
       finalTimeConfirmed: false,
     }).returning();
-    
+
     console.log("✅ Storage: Council session created:", session);
 
     // Create participant using Drizzle ORM
@@ -418,7 +418,7 @@ export class VercelStorage {
   async getMentoringSessions(userId: number): Promise<any[]> {
     try {
       console.log('Fetching individual sessions for user:', userId);
-      
+
       const sessions = await db.execute(sql`
         SELECT 
           sb.id,
@@ -440,7 +440,7 @@ export class VercelStorage {
         WHERE sb.mentee_id = ${userId}
         ORDER BY sb.scheduled_date DESC
       `);
-      
+
       // Transform to match SessionBooking interface
       const transformedSessions = sessions.rows.map((session: any) => ({
         id: session.id,
@@ -463,7 +463,7 @@ export class VercelStorage {
           rating: session.mentorRating || '4.8'
         }
       }));
-      
+
       console.log(`Found ${transformedSessions.length} individual sessions for user ${userId}`);
       return transformedSessions;
     } catch (error) {
@@ -490,7 +490,7 @@ export class VercelStorage {
         .set(data)
         .where(eq(sessionBookings.id, id))
         .returning();
-      
+
       return session || null;
     } catch (error) {
       console.error('Error updating session booking:', error);
@@ -505,7 +505,7 @@ export class VercelStorage {
         .set({ status: 'cancelled' })
         .where(eq(sessionBookings.id, id))
         .returning();
-      
+
       return session || null;
     } catch (error) {
       console.error('Error cancelling session booking:', error);

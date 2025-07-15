@@ -33,7 +33,7 @@ export const users = pgTable("users", {
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
-  clerkUserId: varchar("clerkUserId", { length: 100 }).unique(),
+  clerk_user_id: varchar("clerk_user_id", { length: 100 }).unique(),
   username: varchar("username", { length: 255 }).unique(),
 });
 
@@ -201,18 +201,18 @@ export const mentorApplications = pgTable("mentor_applications", {
   email: text("email").notNull(),
   phone: text("phone"),
   age: integer("age"),
-  
+
   // Basic Information
   bio: text("bio").notNull(),
   expertise: text("expertise").notNull(),
   yearsExperience: integer("years_experience"),
-  
+
   // Semantic Content for AI Training - Flexible JSON structure
   lifeStories: jsonb("life_stories").$type<any[]>().default([]),
   challenges: jsonb("challenges").$type<any[]>().default([]),
   quotes: jsonb("quotes").$type<any[]>().default([]),
   principles: jsonb("principles").$type<any[]>().default([]),
-  
+
   // Topic-specific wisdom capture
   careerWisdom: text("career_wisdom"),
   relationshipAdvice: text("relationship_advice"),
@@ -222,14 +222,14 @@ export const mentorApplications = pgTable("mentor_applications", {
   financialWisdom: text("financial_wisdom"),
   mentalHealthSupport: text("mental_health_support"),
   purposeAndBelonging: text("purpose_and_belonging"),
-  
+
   // Application workflow
   organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'set null' }),
   status: mentorApplicationStatusEnum("status").notNull().default("pending"),
   adminNotes: text("admin_notes"),
   interviewDate: timestamp("interview_date"),
   approvedBy: integer("approved_by").references(() => users.id, { onDelete: 'set null' }),
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
