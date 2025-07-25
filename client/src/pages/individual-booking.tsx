@@ -44,6 +44,7 @@ export default function IndividualBooking() {
 
   // Debug logging
   if (process.env.NODE_ENV === 'development') {
+    console.log('MENTORS RAW:', mentorsResponse); // what shape is it?
     console.log('[DEBUG] Mentors API Response:', mentorsResponse);
     console.log('[DEBUG] Mentors Error:', mentorsError);
     console.log('[DEBUG] Has Access:', hasAccess);
