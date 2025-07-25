@@ -63,14 +63,38 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     }
 
     const orgId = user.organizationId || 1;
+    console.log('[human-mentors] orgId=', orgId, 'userId=', user.id);
 
     // Fetch human mentors for the organization
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
     // Ensure mentors is always an array, never undefined
     const safeMentors = Array.isArray(mentors) ? mentors : [];
     
+    console.log('[human-mentors] mentors.length=', safeMentors.length);
+    
     if (!mentors) {
       console.warn('Human mentors query returned null/undefined, using empty array');
+    }
+    
+    // If no mentors for this org, try a fallback
+    if (safeMentors.length === 0) {
+      console.log('[human-mentors] No mentors for orgId', orgId, ', trying fallback...');
+      const fallbackMentors = await storage.getHumanMentorsByOrganization(1);
+      const safeFallback = Array.isArray(fallbackMentors) ? fallbackMentors : [];
+      console.log('[human-mentors] fallback mentors.length=', safeFallback.length);
+      
+      if (safeFallback.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: safeFallback,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          }
+        });
+      }
     }
 
     return res.status(200).json({

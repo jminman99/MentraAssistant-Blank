@@ -5,17 +5,52 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Star, DollarSign, Clock, Video } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useAuth } from '@/lib/auth-hook';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Mentors() {
   const [, setLocation] = useLocation();
-  const { data, isLoading } = useQuery({
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  
+  const { data, isLoading, error } = useQuery({
     queryKey: ['/api/human-mentors'],
-    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
+    queryFn: async () => {
+      const res = await apiRequest('/api/human-mentors', {}, () => getToken({ template: 'mentra-api' }));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to fetch mentors');
+      }
+      return res;
+    },
+    enabled: isLoaded && isSignedIn,
   });
+  
   const mentors = Array.isArray(data?.data) ? data.data : [];
+
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center py-12">
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">Sign In Required</h1>
+          <p className="text-slate-600">Please sign in to view available mentors.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <div className="flex justify-center p-8">Loading mentors...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center py-12">
+          <h1 className="text-3xl font-bold text-red-600 mb-4">Error Loading Mentors</h1>
+          <p className="text-slate-600 mb-4">{error.message}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
