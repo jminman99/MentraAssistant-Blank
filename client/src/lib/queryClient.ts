@@ -4,7 +4,7 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     let errorMessage = `${res.status}: ${text}`;
-    
+
     // Handle token expiration errors specifically
     if (res.status === 401) {
       try {
@@ -16,7 +16,7 @@ async function throwIfResNotOk(res: Response) {
         // If we can't parse the error, use the default message
       }
     }
-    
+
     throw new Error(errorMessage);
   }
 }
@@ -28,40 +28,47 @@ export function setTokenProvider(tokenFn: () => Promise<string | null>) {
   getTokenFn = tokenFn;
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const headers: Record<string, string> = {};
-  
-  // Add Content-Type for requests with data
-  if (data) {
-    headers["Content-Type"] = "application/json";
-  }
-  
-  // Add fresh Clerk token if available
-  if (getTokenFn) {
+export const apiRequest = async (
+  path: string,
+  opts: RequestInit = {},
+  getToken?: () => Promise<string | null>
+): Promise<any> => {
+  let token = null;
+
+  // Try to get token from parameter or global provider
+  if (getToken) {
     try {
-      const token = await getTokenFn();
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      token = await getToken();
     } catch (error) {
-      console.error("Failed to get fresh token:", error);
+      console.error("Failed to get token from parameter:", error);
+    }
+  } else if (getTokenFn) {
+    try {
+      token = await getTokenFn();
+    } catch (error) {
+      console.error("Failed to get token from global provider:", error);
     }
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
+  const res = await fetch(path, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...opts.headers,
+    },
     credentials: "include",
+    body:
+      opts.body && typeof opts.body !== "string"
+        ? JSON.stringify(opts.body)
+        : opts.body,
   });
 
-  await throwIfResNotOk(res);
-  return res;
-}
+  if (res.status === 401) throw new Error("Unauthorized");
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+};
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
@@ -70,7 +77,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const headers: Record<string, string> = {};
-    
+
     // Add fresh Clerk token if available
     if (getTokenFn) {
       try {
