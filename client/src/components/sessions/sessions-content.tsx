@@ -25,7 +25,7 @@ async function fetchSessionBookings(url: string, getToken: () => Promise<string 
 }
 
 export function SessionsContent({ compact = false }: SessionsContentProps) {
-  const { isLoaded, isSignedIn, getToken, user } = useAuth();
+  const { isLoaded, isSignedIn, getToken, user, backendReady } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("upcoming");
@@ -40,12 +40,12 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Fetch council sessions for council users with improved error handling
   const { data: councilData = [], isLoading: councilLoading, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
-    enabled: isLoaded && isSignedIn && user?.subscriptionPlan === 'council',
+    enabled: isLoaded && isSignedIn && backendReady && user?.subscriptionPlan === 'council',
     queryFn: () => fetchSessionBookings('/api/council-bookings', getToken),
   });
 
   // Council users only get council sessions, individual users only get individual sessions
-  const allSessions = user?.subscriptionPlan === 'council' 
+  const allSessions = (backendReady && user?.subscriptionPlan === 'council') 
     ? councilData
         .filter(cs => cs.sessionId != null && cs.id != null)
         .map((cs: any) => ({
@@ -121,7 +121,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     },
   });
 
-  const isLoading = !isLoaded || sessionsLoading || (user?.subscriptionPlan === 'council' && councilLoading);
+  const isLoading = !isLoaded || sessionsLoading || (!backendReady && isSignedIn) || (backendReady && user?.subscriptionPlan === 'council' && councilLoading);
   const now = new Date();
   
   const upcomingSessions = allSessions.filter(session => 
