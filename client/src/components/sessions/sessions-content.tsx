@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,30 +8,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, Video, User, X, ExternalLink, Star, Users, MessageSquare } from "lucide-react";
+import { Calendar, Video, X, Star, MessageSquare } from "lucide-react";
 import { format, parseISO, isAfter, isBefore, subHours, isSameMonth } from "date-fns";
 import { useAuth } from "@/lib/auth-hook";
 import { Link } from "wouter";
-import { ApiResponse, SessionBooking, DevServerError } from "@/types";
-import { parseApiJson } from "@/lib/utils";
+import { SessionBooking } from "@/types";
 
 interface SessionsContentProps {
   compact?: boolean;
 }
 
-async function fetchSessionBookings(url: string): Promise<SessionBooking[]> {
-  const response = await apiRequest('GET', url);
-  const result = await response.json() as ApiResponse<SessionBooking[]>;
-  
-  if (!result.success) {
-    throw new Error(result.error || "Failed to fetch sessions");
-  }
-  
-  return result.data || [];
+async function fetchSessionBookings(url: string, getToken: () => Promise<string | null>): Promise<SessionBooking[]> {
+  const res = await apiRequest(url, {}, () => getToken({ template: "mentra-api" }));
+  if (!res.success) throw new Error(res.error || "Failed to fetch sessions");
+  return res.data ?? [];
 }
 
 export function SessionsContent({ compact = false }: SessionsContentProps) {
-  const { user } = useAuth();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("upcoming");
@@ -38,14 +33,15 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   // Fetch user's session bookings with improved error handling
   const { data: sessionsData = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
-    queryFn: () => fetchSessionBookings('/api/session-bookings'),
+    enabled: isLoaded && isSignedIn,
+    queryFn: () => fetchSessionBookings('/api/session-bookings', getToken),
   });
 
   // Fetch council sessions for council users with improved error handling
   const { data: councilData = [], isLoading: councilLoading, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
-    enabled: user?.subscriptionPlan === 'council',
-    queryFn: () => fetchSessionBookings('/api/council-bookings'),
+    enabled: isLoaded && isSignedIn && user?.subscriptionPlan === 'council',
+    queryFn: () => fetchSessionBookings('/api/council-bookings', getToken),
   });
 
   // Council users only get council sessions, individual users only get individual sessions
@@ -93,29 +89,15 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
           throw new Error(`Invalid council session data: ${sessionId}`);
         }
         
-        // Use the working POST endpoint instead of DELETE
-        const response = await apiRequest('POST', '/api/cancel-council-session', {
-          participantId: participantId
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to cancel council session');
-        }
-        
-        return response.json();
+        const res = await apiRequest("/api/cancel-council-session",
+          { method: "POST", body: { participantId } },
+          () => getToken({ template: "mentra-api" }));
+        if (!res.success) throw new Error(res.error || "Failed to cancel");
       } else {
-        // Handle individual sessions using POST endpoint
-        const response = await apiRequest('POST', '/api/cancel-individual-session', {
-          sessionId: sessionId
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to cancel individual session');
-        }
-        
-        return response.json();
+        const res = await apiRequest("/api/cancel-individual-session",
+          { method: "POST", body: { sessionId } },
+          () => getToken({ template: "mentra-api" }));
+        if (!res.success) throw new Error(res.error || "Failed to cancel");
       }
     },
     onSuccess: () => {
@@ -139,7 +121,7 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     },
   });
 
-  const isLoading = sessionsLoading || (user?.subscriptionPlan === 'council' && councilLoading);
+  const isLoading = !isLoaded || sessionsLoading || (user?.subscriptionPlan === 'council' && councilLoading);
   const now = new Date();
   
   const upcomingSessions = allSessions.filter(session => 
@@ -218,7 +200,6 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
                   <span>{format(parseISO(session.scheduledDate), 'MMM d, yyyy')}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
                   <span>{format(parseISO(session.scheduledDate), 'h:mm a')}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -241,7 +222,6 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
                 <a href={session.videoLink} target="_blank" rel="noopener noreferrer">
                   <Video className="h-4 w-4 mr-2" />
                   Join
-                  <ExternalLink className="h-4 w-4 ml-2" />
                 </a>
               </Button>
             )}
@@ -290,9 +270,8 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
     );
   }
 
-  // Show API error state if we have real server errors (not dev server issues)
-  const hasRealApiError = (sessionsError && sessionsError.name !== 'DevServerError') || 
-                          (councilError && councilError.name !== 'DevServerError');
+  // Show API error state if we have real server errors
+  const hasRealApiError = sessionsError || councilError;
   
   if (hasRealApiError) {
     return (
