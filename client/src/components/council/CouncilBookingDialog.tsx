@@ -1,20 +1,17 @@
-
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogWrapper } from "@/components/ui/dialog-wrapper";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import CalendarAvailability from "@/components/calendar-availability";
-import { fetchWithClerkToken, processApiResponse } from "@/lib/api-utils";
+import { CalendarAvailability } from "@/components/calendar-availability";
 import { addDays } from "date-fns";
+import { fetchWithTokenAndProcess } from "@/lib/api-utils";
 
 const councilBookingSchema = z.object({
   selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
@@ -41,10 +38,19 @@ export default function CouncilBookingDialog({
   mentors,
   onBookingSuccess
 }: CouncilBookingDialogProps) {
-  const [, navigate] = useLocation();
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
+
+  // Memoized selected mentor objects to prevent unnecessary recalculations
+  const selectedMentorObjects = useMemo(() => 
+    selectedMentors
+      .map(id => mentors.find(m => m.id === id))
+      .filter((mentor): mentor is HumanMentor => Boolean(mentor)),
+    [selectedMentors, mentors]
+  );
 
   const form = useForm<CouncilBookingData>({
     resolver: zodResolver(councilBookingSchema),
@@ -66,20 +72,15 @@ export default function CouncilBookingDialog({
       const requestBody = {
         selectedMentorIds: data.selectedMentorIds,
         sessionGoals: data.sessionGoals,
-        questions: data.questions,
-        preferredDate: data.preferredDate.toISOString(),
+        questions: data.questions || "",
+        preferredDate: data.preferredDate.toISOString().split('T')[0],
         preferredTimeSlot: data.preferredTime,
       };
 
-      const response = await fetchWithClerkToken(getToken, '/api/council-sessions/book', {
+      return fetchWithTokenAndProcess(getToken, '/api/council-sessions/book', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(requestBody),
       });
-
-      return processApiResponse(response);
     },
     onSuccess: (response: any) => {
       toast({
@@ -114,24 +115,18 @@ export default function CouncilBookingDialog({
     },
   });
 
-  const selectedMentorObjects = selectedMentors
-    .map(mentorId => mentors.find(m => m.id === mentorId))
-    .filter(Boolean);
-
   const onSubmit = (data: CouncilBookingData) => {
     bookCouncilSession(data);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Book Your Council Session</DialogTitle>
-          <DialogDescription>
-            Complete the details for your council session with {selectedMentors.length} mentors.
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogWrapper 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Book Council Session"
+      description={`Schedule a council session with ${selectedMentors.length} selected mentors for comprehensive guidance.`}
+      size="lg"
+    >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Selected Mentors Summary */}
@@ -205,28 +200,20 @@ export default function CouncilBookingDialog({
             />
 
             <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isBooking || !watchedDate || !watchedTime}
-                className="flex-1"
-                aria-label={isBooking ? "Booking council session..." : "Confirm council session booking"}
-              >
-                {isBooking ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Booking...
-                  </>
-                ) : (
-                  "Confirm Council Session"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <LoadingButton 
+                  type="submit" 
+                  loading={isBooking}
+                  loadingText="Booking..."
+                  className="flex-1"
+                >
+                  Book Council Session
+                </LoadingButton>
+              </div>
+            </form>
+          </Form>
+    </DialogWrapper>
   );
 }

@@ -13,7 +13,7 @@ import CouncilBookingDialog from "@/components/council/CouncilBookingDialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SkeletonMentorGrid, SessionCardSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorFallback } from "@/components/ui/error-fallback";
-import { fetchWithClerkToken, processApiResponse, extractApiData, sortMentorsByRating } from "@/lib/api-utils";
+import { fetchWithTokenAndProcess, extractApiData, sortMentorsByRating } from "@/lib/api-utils";
 
 interface HumanMentor {
   id: number;
@@ -36,8 +36,7 @@ function CouncilSessionsList() {
     refetchInterval: 5000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const response = await fetchWithClerkToken(getToken, '/api/council-bookings');
-      return processApiResponse(response);
+      return fetchWithTokenAndProcess(getToken, '/api/council-bookings');
     },
   });
 
@@ -153,8 +152,7 @@ export default function CouncilScheduling() {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetchWithClerkToken(getToken, '/api/human-mentors');
-      return processApiResponse(response);
+      return fetchWithTokenAndProcess(getToken, '/api/human-mentors');
     },
   });
 

@@ -9,10 +9,28 @@ export async function fetchWithClerkToken(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = await getToken();
+  let token: string | null = null;
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  // Retry loop to handle Clerk hydration race conditions
+  while (attempts < maxAttempts && !token) {
+    try {
+      token = await getToken();
+      if (token) break;
+    } catch (error) {
+      console.warn(`Token fetch attempt ${attempts + 1} failed:`, error);
+    }
+    
+    attempts++;
+    if (attempts < maxAttempts && !token) {
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 200 * attempts));
+    }
+  }
 
   if (!token) {
-    throw new Error('No authentication token available');
+    throw new Error('No authentication token available after retries');
   }
 
   // Safely handle headers - ensure we have a plain object
@@ -69,6 +87,18 @@ export async function processApiResponse<T = any>(response: Response): Promise<T
   } catch {
     throw new Error(`Non-JSON response: ${raw}`);
   }
+}
+
+/**
+ * Enhanced fetch with token, retry logic, and automatic response processing
+ */
+export async function fetchWithTokenAndProcess<T = any>(
+  getToken: () => Promise<string | null>,
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await fetchWithClerkToken(getToken, url, options);
+  return processApiResponse<T>(response);
 }
 
 /**
