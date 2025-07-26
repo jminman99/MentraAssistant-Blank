@@ -73,6 +73,9 @@ export default function CouncilBookingDialog({
 
       const response = await fetchWithClerkToken(getToken, '/api/council-sessions/book', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(requestBody),
       });
 
