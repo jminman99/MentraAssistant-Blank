@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-hook";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, User, Star, ArrowLeft, CheckCircle2, Video } from "lucide-react";
@@ -14,6 +14,12 @@ import SessionUsageBadge from "@/components/session-usage-badge";
 import SessionConfirmation from "@/components/session-confirmation";
 import { HumanMentor } from "@/types";
 import { useLocation } from "wouter";
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 interface SessionBooking {
   id: number;
@@ -36,10 +42,10 @@ export default function IndividualBooking() {
   const hasAccess = user && ['individual', 'council'].includes(user.subscriptionPlan);
 
   // Fetch mentors
-  const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery<ApiResponse<HumanMentor[]>>({
+  const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery({
     queryKey: ['human-mentors'],
     queryFn: async () => {
-      const response = await apiRequest('/api/human-mentors');
+      const response = await apiRequest('/api/human-mentors', {}, () => getToken());
       console.log('[DEBUG] Raw mentors response:', response);
       return response;
     },
@@ -63,7 +69,7 @@ export default function IndividualBooking() {
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
     queryKey: ['session-bookings'],
-    queryFn: () => apiRequest('/api/session-bookings').then(res => res.data || []),
+    queryFn: () => apiRequest('/api/session-bookings', {}, () => getToken()).then(res => res.data || []),
     enabled: hasAccess,
   });
 
@@ -101,11 +107,11 @@ export default function IndividualBooking() {
 
       console.log('[DEBUG] Sending booking request:', requestBody);
 
-      // Use apiRequest which handles authentication properly
+      // Use apiRequest with proper auth token
       const response = await apiRequest('/api/session-bookings', {
         method: 'POST',
         body: requestBody,
-      });
+      }, () => getToken());
 
       console.log('[DEBUG] Booking response:', response);
 

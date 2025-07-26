@@ -99,6 +99,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
     console.log('[DEBUG] Human mentors from DB:', safeMentors);
     console.log('[DEBUG] Mentors count:', safeMentors?.length || 0);
+    console.log('[DEBUG] First mentor structure:', safeMentors[0]);
 
     return res.status(200).json({
       success: true,
