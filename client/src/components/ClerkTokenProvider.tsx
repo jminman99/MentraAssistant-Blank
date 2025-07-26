@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { vercelApiClient } from '../lib/api-client-vercel';
 import { setTokenProvider } from '../lib/queryClient';

@@ -53,18 +53,13 @@ const MaybeClerkTokenProvider: React.ComponentType<{ children: React.ReactNode }
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root not found");
 
+console.log('main.tsx starting to render');
+
 ReactDOM.createRoot(rootEl).render(
-  // Note: React.StrictMode double-mounts effects in development. Remove temporarily if it interferes with debugging.
   <React.StrictMode>
-    <MaybeClerkProvider>
-      <QueryClientProvider client={queryClient}>
-        <MaybeClerkTokenProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <App />
-          </Suspense>
-          <Toaster />
-        </MaybeClerkTokenProvider>
-      </QueryClientProvider>
-    </MaybeClerkProvider>
+    <div>
+      <h1>Hello World Test</h1>
+      <p>If you see this, React is working</p>
+    </div>
   </React.StrictMode>
 );

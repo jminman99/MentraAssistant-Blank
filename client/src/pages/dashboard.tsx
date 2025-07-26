@@ -9,8 +9,8 @@ import {
   Crown,
   Settings,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-hook";
+import { Button } from "../components/ui/button";
+import { useAuth } from "@clerk/clerk-react";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
@@ -56,10 +56,38 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch available mentors for council sessions
+  // Fetch available mentors for council sessions  
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ["/api/human-mentors"],
-    queryFn: () => fetch("/api/human-mentors").then((res) => res.json()),
+    enabled: isLoaded && isSignedIn,
+    queryFn: async () => {
+      if (!getToken) throw new Error('No authentication available');
+      
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: 'mentra-api' });
+      } catch {
+        try {
+          token = await getToken({ template: 'default' });
+        } catch {
+          token = await getToken();
+        }
+      }
+      
+      if (!token) throw new Error('No Clerk token available');
+      
+      const res = await fetch('/api/human-mentors', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
   });
   const mentors = Array.isArray(data?.data) ? data.data : [];
 

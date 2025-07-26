@@ -1,7 +1,7 @@
 import React from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@clerk/clerk-react";
-import Dashboard from "./pages/dashboard";
+import DashboardSimple from "./pages/dashboard-simple";
 import TestPage from "./pages/test";
 import SignInPage from "./pages/sign-in";
 import SignUpPage from "./pages/sign-up";
@@ -45,6 +45,8 @@ function Router() {
 
   const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
   const SignInComponent = clerkPublishableKey ? SignInPage : DevSignInPage;
+  
+  console.log('App Router - isLoaded:', isLoaded, 'isSignedIn:', isSignedIn, 'hasClerkKey:', !!clerkPublishableKey);
 
   if (!isLoaded) {
     return (
@@ -60,12 +62,12 @@ function Router() {
       <Route path="/sign-in" component={SignInComponent} />
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/login" component={() => <Redirect to="/sign-in" />} />
-      <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
+      <Route path="/dashboard" component={() => <PrivateRoute component={DashboardSimple} />} />
       <Route path="/plan-usage" component={() => <PrivateRoute component={PlanUsagePage} />} />
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />
       <Route path="/individual-booking" component={() => <PrivateRoute component={IndividualBooking} />} />
       <Route path="/">
-        {() => (isSignedIn ? <Dashboard /> : <Redirect to="/sign-in" />)}
+        {() => (isSignedIn ? <DashboardSimple /> : <Redirect to="/sign-in" />)}
       </Route>
       <Route path="*">
         <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
