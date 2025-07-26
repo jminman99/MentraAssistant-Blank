@@ -43,15 +43,15 @@ interface HumanMentor {
 }
 
 function CouncilSessionsList() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken, isAuthenticated } = useAuth();
 
   const { data: sessionsData, isLoading } = useQuery({
     queryKey: ['/api/council-bookings'],
-    enabled: isLoaded && isSignedIn,
+    enabled: (isLoaded && isSignedIn) || isAuthenticated,
     refetchInterval: 5000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const token = await getClerkToken(getToken);
+      const token = await getClerkToken(getToken).catch(() => null);
 
       const response = await fetch('/api/council-bookings', {
         headers: {
@@ -142,7 +142,7 @@ export default function CouncilScheduling() {
   const queryClient = useQueryClient();
 
   // Fetch available mentors for council sessions  
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken, isAuthenticated } = useAuth();
 
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -163,9 +163,9 @@ export default function CouncilScheduling() {
   // Fetch available mentors for council sessions
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/human-mentors'],
-    enabled: isLoaded && isSignedIn,
+    enabled: (isLoaded && isSignedIn) || isAuthenticated,
     queryFn: async () => {
-      const token = await getClerkToken(getToken);
+      const token = await getClerkToken(getToken).catch(() => null);
 
       const res = await fetch('/api/human-mentors', {
         headers: {
@@ -221,7 +221,7 @@ export default function CouncilScheduling() {
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {
-      const token = await getClerkToken(getToken);
+      const token = await getClerkToken(getToken).catch(() => null);
 
       const requestBody = {
         selectedMentorIds: data.selectedMentorIds,
