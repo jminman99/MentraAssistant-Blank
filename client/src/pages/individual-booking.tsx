@@ -1,416 +1,517 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Calendar, Clock, Star, MapPin, RefreshCw } from 'lucide-react';
-import { useAuth } from '@/lib/auth-hook';
-import { Link } from 'wouter';
+
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { CalendarDays, Clock, Star, Check } from "lucide-react";
+import { format } from "date-fns";
+import { getClerkToken } from "@/lib/auth-helpers";
+
+const individualBookingSchema = z.object({
+  humanMentorId: z.number().min(1, "Please select a mentor"),
+  scheduledDate: z.string().min(1, "Please select a date and time"),
+  duration: z.number().min(30, "Minimum 30 minutes"),
+  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
+});
+
+type IndividualBookingData = z.infer<typeof individualBookingSchema>;
 
 interface HumanMentor {
   id: number;
-  userId: number;
-  expertise: string;
-  rating: string;
-  hourlyRate: number;
-  isActive: boolean;
   user: {
-    id: number;
     firstName: string;
     lastName: string;
-    email: string;
     profileImage?: string;
   };
+  expertise: string;
+  bio: string;
+  rating: string | null;
+  hourlyRate: string;
 }
 
-interface BookingFormData {
-  mentorId: number;
+interface SessionBooking {
+  id: number;
   scheduledDate: string;
   duration: number;
   sessionGoals: string;
+  status: string;
+  humanMentor: {
+    user: {
+      firstName: string;
+      lastName: string;
+    };
+    expertise: string;
+  };
 }
 
-// Helper function to get the token
-async function getClerkToken(getToken: () => Promise<string | null>): Promise<string> {
-  if (!getToken) {
-    throw new Error('Authentication not available');
+function IndividualSessionsList() {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+
+  const { data: sessionsData, isLoading } = useQuery({
+    queryKey: ['/api/session-bookings'],
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const token = await getClerkToken(getToken);
+
+      const response = await fetch('/api/session-bookings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    },
+  });
+
+  const sessions = Array.isArray(sessionsData?.data) ? sessionsData.data : [];
+
+  if (isLoading) {
+    return (
+      <div className="mb-8 text-center">
+        <p>Loading your individual sessions...</p>
+      </div>
+    );
   }
 
-  const token = await getToken();
-  if (!token) {
-    throw new Error('Failed to get authentication token');
-  }
-  return token;
+  return (
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+        Your Individual Sessions ({sessions.length})
+      </h2>
+
+      {sessions.length === 0 ? (
+        <div className="text-center">
+          <p className="text-slate-600 dark:text-slate-400">No individual sessions scheduled yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sessions.map((booking: SessionBooking) => (
+            <Card key={booking.id}>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  Session with {booking.humanMentor.user.firstName} {booking.humanMentor.user.lastName}
+                </CardTitle>
+                <CardDescription>
+                  {booking.status === 'scheduled' ? 'Confirmed Session' : booking.status}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-slate-500" />
+                    <span className="text-sm">
+                      {format(new Date(booking.scheduledDate), 'PPP')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-slate-500" />
+                    <span className="text-sm">
+                      {format(new Date(booking.scheduledDate), 'p')} ({booking.duration} min)
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="w-fit">
+                    {booking.humanMentor.expertise}
+                  </Badge>
+                  {booking.sessionGoals && (
+                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Session Goals:</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{booking.sessionGoals}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function IndividualBooking() {
-  const { isLoaded, isSignedIn, getToken, user } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+
   const [selectedMentor, setSelectedMentor] = useState<HumanMentor | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [bookingForm, setBookingForm] = useState<BookingFormData>({
-    mentorId: 0,
-    scheduledDate: '',
-    duration: 60,
-    sessionGoals: ''
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+
+  const form = useForm<IndividualBookingData>({
+    resolver: zodResolver(individualBookingSchema),
+    defaultValues: {
+      humanMentorId: 0,
+      scheduledDate: "",
+      duration: 60,
+      sessionGoals: "",
+    },
   });
 
-  // Force refresh mentors data when component mounts
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      queryClient.invalidateQueries({ queryKey: ['/api/human-mentors'] });
-    }
-  }, [isLoaded, isSignedIn, queryClient]);
-
-  // Fetch human mentors with better error handling and retry logic
-  const { data: mentors = [], isLoading: mentorsLoading, error: mentorsError, refetch } = useQuery({
-    queryKey: ['/api/human-mentors', retryCount],
+  // Fetch available mentors
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['/api/human-mentors'],
     enabled: isLoaded && isSignedIn,
-    staleTime: 0, // Always fetch fresh data
-    retry: 3,
     queryFn: async () => {
-      console.log('[Individual Booking] Fetching mentors...');
-
       const token = await getClerkToken(getToken);
 
       const res = await fetch('/api/human-mentors', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      console.log('[Individual Booking] Mentors API response:', res.status);
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('[Individual Booking] Mentors API error:', errorData);
-        throw new Error(errorData.error || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log('[Individual Booking] Mentors data received:', data);
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch mentors');
-      }
-
-      // Handle both array and object responses
-      const mentorData = Array.isArray(data.data) ? data.data : (data.data?.mentors || []);
-      console.log('[Individual Booking] Processed mentor data:', mentorData);
-
-      return mentorData;
-    },
-  });
-
-  // Book session mutation with improved error handling
-  const { mutate: bookSession, isPending: isBooking } = useMutation({
-    mutationFn: async (bookingData: BookingFormData) => {
-      console.log('[Individual Booking] Booking session with data:', bookingData);
-
-      const token = await getClerkToken(getToken);
-
-      const res = await fetch('/api/session-bookings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(bookingData)
+        credentials: 'include',
       });
 
-      console.log('[Individual Booking] Booking API response:', res.status);
-
+      const raw = await res.text().catch(() => '');
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('[Individual Booking] Booking API error:', errorData);
-        throw new Error(errorData.error || `HTTP ${res.status}: Failed to book session`);
+        try {
+          const j = JSON.parse(raw);
+          throw new Error(j.message || j.error || `HTTP ${res.status}`);
+        } catch {
+          throw new Error(raw || `HTTP ${res.status}`);
+        }
       }
 
-      const data = await res.json();
-      console.log('[Individual Booking] Booking success:', data);
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to book session');
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`Non-JSON response: ${raw}`);
       }
 
-      return data.data;
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Session Booked!',
-        description: 'Your individual session has been successfully booked.',
-      });
-
-      // Reset form and selected mentor
-      setSelectedMentor(null);
-      setBookingForm({
-        mentorId: 0,
-        scheduledDate: '',
-        duration: 60,
-        sessionGoals: ''
-      });
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/human-mentors'] });
-    },
-    onError: (error: Error) => {
-      console.error('[Individual Booking] Booking failed:', error);
-      toast({
-        title: 'Booking Failed',
-        description: error.message || 'Unable to book session. Please try again.',
-        variant: 'destructive',
-      });
+      if (json?.success === false) {
+        throw new Error(json.message || json.error || 'Failed to load mentors');
+      }
+      return json;
     },
   });
 
-  const handleSelectMentor = (mentor: HumanMentor) => {
-    console.log('[Individual Booking] Selected mentor:', mentor);
-    setSelectedMentor(mentor);
-    setBookingForm(prev => ({
-      ...prev,
-      mentorId: mentor.id
-    }));
-  };
+  const mentors = Array.isArray(data?.data) ? data.data : [];
 
-  const handleBookSession = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Redirect to login if not authenticated
+  if (isLoaded && !isSignedIn) {
+    navigate('/sign-in');
+    return null;
+  }
 
-    if (!selectedMentor) {
-      toast({
-        title: 'No Mentor Selected',
-        description: 'Please select a mentor before booking.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!bookingForm.scheduledDate || !bookingForm.sessionGoals.trim()) {
-      toast({
-        title: 'Incomplete Form',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    console.log('[Individual Booking] Submitting booking:', bookingForm);
-    bookSession(bookingForm);
-  };
-
-  const handleRetryMentors = () => {
-    setRetryCount(prev => prev + 1);
-    refetch();
-  };
-
+  // Don't render if user data isn't available
   if (!isLoaded) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="text-center">Loading...</div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading...</div>
+        </div>
       </div>
     );
   }
 
-  if (!isSignedIn) {
+  // Submit individual session booking
+  const { mutate: bookIndividualSession, isPending: isBooking } = useMutation({
+    mutationFn: async (data: IndividualBookingData) => {
+      const token = await getClerkToken(getToken);
+
+      const requestBody = {
+        humanMentorId: data.humanMentorId,
+        scheduledDate: data.scheduledDate,
+        duration: data.duration,
+        sessionGoals: data.sessionGoals,
+      };
+
+      const response = await fetch('/api/session-bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return result;
+    },
+    onSuccess: (response: any) => {
+      toast({
+        title: "Individual Session Booked!",
+        description: response.message || "Your individual session has been successfully booked.",
+      });
+      setShowBookingDialog(false);
+      setSelectedMentor(null);
+      form.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/human-mentors'] });
+    },
+    onError: (error: Error) => {
+      const isSessionExpired = error.message.includes('Session expired') || 
+                              error.message.includes('TOKEN_EXPIRED') ||
+                              error.message.includes('401');
+
+      if (isSessionExpired) {
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again",
+          variant: "destructive",
+        });
+        navigate('/sign-in');
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  const handleSelectMentor = (mentor: HumanMentor) => {
+    setSelectedMentor(mentor);
+    form.setValue('humanMentorId', mentor.id);
+    setShowBookingDialog(true);
+  };
+
+  const onSubmit = (data: IndividualBookingData) => {
+    bookIndividualSession(data);
+  };
+
+  if (!isLoaded || isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-          <p className="mb-4">Please sign in to book individual sessions.</p>
-          <Link href="/sign-in">
-            <Button>Sign In</Button>
-          </Link>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">{!isLoaded ? "Loading..." : "Loading mentors..."}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-4">Book Individual Session</h1>
-        <p className="text-muted-foreground">
-          Choose a mentor and schedule your one-on-one session
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-4 py-8 max-w-6xl pb-32 lg:pb-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+            Individual Sessions
+          </h1>
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-4">
+            Book one-on-one sessions with expert mentors for personalized guidance
+          </p>
 
-      {mentorsLoading && (
-        <div className="text-center py-8">
-          <div className="text-muted-foreground">Loading mentors...</div>
-        </div>
-      )}
-
-      {mentorsError && (
-        <div className="text-center py-8">
-          <div className="text-red-500 font-medium mb-2">Error loading mentors</div>
-          <div className="text-sm text-red-400 mb-4">{mentorsError.message}</div>
-          <Button onClick={handleRetryMentors} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Retry Loading
-          </Button>
-        </div>
-      )}
-
-      {!mentorsLoading && !mentorsError && mentors.length === 0 && (
-        <div className="text-center py-8">
-          <div className="text-muted-foreground mb-2">No mentors available at this time</div>
-          <div className="text-sm text-muted-foreground mb-4">Please check back later</div>
-          <Button onClick={handleRetryMentors} variant="outline" className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Refresh Mentors
-          </Button>
-        </div>
-      )}
-
-      {!mentorsLoading && mentors.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Mentor Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Select a Mentor</h2>
-              <Button onClick={handleRetryMentors} variant="outline" size="sm" className="gap-2">
-                <RefreshCw className="h-3 w-3" />
-                Refresh
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {mentors.map((mentor: HumanMentor) => (
-                <Card 
-                  key={mentor.id} 
-                  className={`cursor-pointer transition-all ${
-                    selectedMentor?.id === mentor.id 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:shadow-md'
-                  }`}
-                  onClick={() => handleSelectMentor(mentor)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <img 
-                        src={mentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`} 
-                        alt={`${mentor.user.firstName} ${mentor.user.lastName}`} 
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">
-                            {mentor.user.firstName} {mentor.user.lastName}
-                          </h3>
-                          <Badge variant="secondary">{mentor.rating} ⭐</Badge>
-                        </div>
-                        <p className="text-muted-foreground text-sm mb-2">
-                          {mentor.expertise}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>${mentor.hourlyRate}/hour</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            Available
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+          <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 rounded-lg mb-8">
+            <h2 className="text-xl font-semibold text-white mb-2">
+              Direct Access to Expertise
+            </h2>
+            <p className="text-slate-300 mb-3">
+              Connect with individual mentors for focused, personalized guidance tailored to your specific needs and goals.
+            </p>
+            <div className="bg-slate-700/20 border border-slate-600/30 rounded-lg p-3">
+              <p className="text-slate-100 font-medium">
+                Individual Plan: Hourly sessions with expert mentors
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Booking Form */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Book Your Session</h2>
+        {/* Mentor Selection */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              Select Your Mentor
+            </h2>
+          </div>
 
-            {selectedMentor ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Session with {selectedMentor.user.firstName} {selectedMentor.user.lastName}
-                  </CardTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {mentors?.map((mentor: HumanMentor) => (
+              <Card 
+                key={mentor.id} 
+                className="cursor-pointer transition-all duration-200 hover:shadow-md"
+                onClick={() => handleSelectMentor(mentor)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">
+                      {mentor.user.firstName} {mentor.user.lastName}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {mentor.rating && (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          <span className="text-sm">{mentor.rating}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="w-fit">
+                    {mentor.expertise}
+                  </Badge>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleBookSession} className="space-y-4">
-                    <div>
-                      <Label htmlFor="scheduledDate">Session Date & Time</Label>
-                      <Input
-                        id="scheduledDate"
-                        type="datetime-local"
-                        value={bookingForm.scheduledDate}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          scheduledDate: e.target.value
-                        }))}
-                        required
-                        min={new Date().toISOString().slice(0, 16)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="duration">Duration (minutes)</Label>
-                      <select
-                        id="duration"
-                        value={bookingForm.duration}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          duration: parseInt(e.target.value)
-                        }))}
-                        className="w-full p-2 border border-input rounded-md"
-                      >
-                        <option value={30}>30 minutes</option>
-                        <option value={60}>60 minutes</option>
-                        <option value={90}>90 minutes</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="sessionGoals">Session Goals</Label>
-                      <Textarea
-                        id="sessionGoals"
-                        placeholder="What would you like to achieve in this session?"
-                        value={bookingForm.sessionGoals}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          sessionGoals: e.target.value
-                        }))}
-                        required
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className="pt-4">
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        disabled={isBooking}
-                      >
-                        {isBooking ? 'Booking...' : 'Book Session'}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <div className="text-muted-foreground">
-                    Select a mentor to book your session
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mb-3 line-clamp-3">
+                    {mentor.bio}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      ${mentor.hourlyRate}/hour
+                    </span>
+                    <Button size="sm" variant="outline">
+                      Book Session
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            )}
+            ))}
           </div>
+
+          {mentors && mentors.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                No mentors available
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Check back later for available mentors.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Display existing individual sessions */}
+        <IndividualSessionsList />
+
+        {/* Booking Dialog */}
+        <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Book Individual Session</DialogTitle>
+              <DialogDescription>
+                Schedule your one-on-one session with {selectedMentor?.user.firstName} {selectedMentor?.user.lastName}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Selected Mentor Summary */}
+                {selectedMentor && (
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Selected Mentor:</h4>
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={selectedMentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64`} 
+                        alt={`${selectedMentor.user.firstName} ${selectedMentor.user.lastName}`} 
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-medium">
+                          {selectedMentor.user.firstName} {selectedMentor.user.lastName}
+                        </p>
+                        <p className="text-sm text-slate-600">{selectedMentor.expertise}</p>
+                        <p className="text-sm text-slate-500">${selectedMentor.hourlyRate}/hour</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Date & Time */}
+                <FormField
+                  control={form.control}
+                  name="scheduledDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Date & Time</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          min={new Date().toISOString().slice(0, 16)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Duration */}
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Duration</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select duration" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="30">30 minutes</SelectItem>
+                          <SelectItem value="60">60 minutes</SelectItem>
+                          <SelectItem value="90">90 minutes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Session Goals */}
+                <FormField
+                  control={form.control}
+                  name="sessionGoals"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Goals</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="What would you like to achieve in this session?"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" onClick={() => setShowBookingDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isBooking}
+                    className="flex-1"
+                  >
+                    {isBooking ? "Booking..." : "Confirm Session"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
