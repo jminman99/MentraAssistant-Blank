@@ -146,7 +146,13 @@ export default function CouncilScheduling() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/human-mentors'],
     enabled: isLoaded && isSignedIn,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     queryFn: async () => {
+      if (!isSignedIn) {
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetchWithClerkToken(getToken, '/api/human-mentors');
       return processApiResponse(response);
     },

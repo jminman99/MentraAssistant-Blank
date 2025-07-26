@@ -10,16 +10,25 @@ export async function fetchWithClerkToken(
   url: string, 
   options: RequestInit = {}
 ) {
-  const token = await getClerkToken(getToken);
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  });
+  try {
+    const token = await getClerkToken(getToken);
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+    
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Error in fetchWithClerkToken:', error);
+    throw error;
+  }
 }
 
 /**

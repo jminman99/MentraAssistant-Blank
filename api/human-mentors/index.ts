@@ -3,6 +3,15 @@ import { verifyToken } from "@clerk/backend";
 import { storage } from "../_lib/storage.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Add CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -20,6 +29,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       if (m) token = decodeURIComponent(m[1]);
     }
     if (!token) {
+      console.error("No token provided");
       return res.status(401).json({
         success: false,
         code: "UNAUTHENTICATED",
@@ -59,39 +69,59 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const orgId = user.organizationId || 1;
 
     // Fetch mentors for org
-    const mentors = await storage.getHumanMentorsByOrganization(orgId);
-    const safeMentors = Array.isArray(mentors) ? mentors : [];
+    let mentors;
+    try {
+      mentors = await storage.getHumanMentorsByOrganization(orgId);
+      const safeMentors = Array.isArray(mentors) ? mentors : [];
 
-    // Add realistic availability data to each mentor
-    const mentorsWithAvailability = safeMentors.map((mentor: any) => {
-      const currentHour = new Date().getHours();
-      const isBusinessHours = currentHour >= 9 && currentHour <= 17;
-      const randomAvailability = Math.random() > 0.3;
-      
-      return {
-        ...mentor,
-        availability: {
-          today: isBusinessHours && randomAvailability,
-          tomorrow: Math.random() > 0.2,
-          thisWeek: Math.random() > 0.1,
-          nextAvailable: isBusinessHours && randomAvailability ? 'Today' : 'Tomorrow',
-          timeSlots: generateTimeSlots()
-        }
-      };
-    });
+      // Add realistic availability data to each mentor
+      const mentorsWithAvailability = safeMentors.map((mentor: any) => {
+        const currentHour = new Date().getHours();
+        const isBusinessHours = currentHour >= 9 && currentHour <= 17;
+        const randomAvailability = Math.random() > 0.3;
 
-    console.log("[human-mentors]", { orgId, userId: user.id, len: safeMentors.length });
+        return {
+          ...mentor,
+          availability: {
+            today: isBusinessHours && randomAvailability,
+            tomorrow: Math.random() > 0.2,
+            thisWeek: Math.random() > 0.1,
+            nextAvailable: isBusinessHours && randomAvailability ? 'Today' : 'Tomorrow',
+            timeSlots: generateTimeSlots()
+          }
+        };
+      });
 
-    return res.status(200).json({
-      success: true,
-      data: mentorsWithAvailability,
-      hasAccess: safeMentors.length > 0,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
+      console.log("[human-mentors]", { orgId, userId: user.id, len: safeMentors.length });
+
+      return res.status(200).json({
+        success: true,
+        data: mentorsWithAvailability,
+        hasAccess: safeMentors.length > 0,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    } catch (storageError) {
+      console.error('Storage error fetching mentors:', storageError);
+      return res.status(500).json({
+        success: false,
+        error: "Database connection error"
+      });
+    }
+
+  } catch (error: any) {
+    console.error("Error fetching human mentors:", error);
+    const msg = error?.message || "Failed to fetch human mentors";
+    const code = /expired/i.test(msg) ? "TOKEN_EXPIRED" : "INTERNAL_ERROR";
+    const status = code === "TOKEN_EXPIRED" ? 401 : 500;
+    return res.status(status).json({
+      success: false,
+      code,
+      message: msg,
     });
   }
 }
@@ -99,7 +129,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 function generateTimeSlots() {
   const slots = [];
   const hours = [9, 10, 11, 14, 15, 16]; // 9am-11am, 2pm-4pm
-  
+
   for (const hour of hours) {
     // Randomly make some slots unavailable to simulate real availability
     if (Math.random() > 0.4) {
@@ -115,17 +145,6 @@ function generateTimeSlots() {
       });
     }
   }
-  
+
   return slots;
-  } catch (error: any) {
-    console.error("Error fetching human mentors:", error);
-    const msg = error?.message || "Failed to fetch human mentors";
-    const code = /expired/i.test(msg) ? "TOKEN_EXPIRED" : "INTERNAL_ERROR";
-    const status = code === "TOKEN_EXPIRED" ? 401 : 500;
-    return res.status(status).json({
-      success: false,
-      code,
-      message: msg,
-    });
-  }
 }
