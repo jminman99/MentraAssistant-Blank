@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,6 @@ import { z } from "zod";
 import { CalendarDays, Clock, Users, Video, MessageSquare, Check, Star } from "lucide-react";
 import { format, addDays, isBefore, startOfDay } from "date-fns";
 import CalendarAvailability from "@/components/calendar-availability";
-import { useAuth } from "@/lib/auth";
 
 const councilBookingSchema = z.object({
   selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
@@ -45,11 +44,11 @@ interface HumanMentor {
 function CouncilSessionsList() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user, isLoading: authLoading } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (authLoading || !user) {
-      setIsLoading(authLoading);
+    if (!isLoaded || !isSignedIn) {
+      setIsLoading(!isLoaded);
       return;
     }
 
@@ -143,7 +142,7 @@ export default function CouncilScheduling() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading: authLoading } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -161,17 +160,68 @@ export default function CouncilScheduling() {
     },
   });
 
-  // Fetch available mentors for council sessions (only if authenticated)
+  // Fetch available mentors for council sessions
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/human-mentors'],
-    enabled: !!user && !authLoading, // Only fetch when user is authenticated
+    enabled: isLoaded && isSignedIn,
+    queryFn: async () => {
+      if (!getToken) {
+        throw new Error('No authentication available');
+      }
+
+      // Try multiple token templates for compatibility
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: 'mentra-api' });
+      } catch {
+        try {
+          token = await getToken({ template: 'default' });
+        } catch {
+          token = await getToken();
+        }
+      }
+      
+      if (!token) {
+        throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
+      }
+
+      const res = await fetch('/api/human-mentors', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const raw = await res.text().catch(() => '');
+      if (!res.ok) {
+        try {
+          const j = JSON.parse(raw);
+          throw new Error(j.message || j.error || `HTTP ${res.status}`);
+        } catch {
+          throw new Error(raw || `HTTP ${res.status}`);
+        }
+      }
+
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`Non-JSON response: ${raw}`);
+      }
+
+      if (json?.success === false) {
+        throw new Error(json.message || json.error || 'Failed to load mentors');
+      }
+      return json;
+    },
   });
 
   const mentors = Array.isArray(data?.data) ? data.data : [];
 
   // Redirect to login if not authenticated
-  if (!authLoading && !user) {
-    navigate('/login');
+  if (isLoaded && !isSignedIn) {
+    navigate('/sign-in');
     return null;
   }
 
@@ -242,11 +292,11 @@ export default function CouncilScheduling() {
     bookCouncilSession(data);
   };
 
-  if (authLoading || isLoading) {
+  if (!isLoaded || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">{authLoading ? "Loading..." : "Loading mentors..."}</div>
+          <div className="text-lg">{!isLoaded ? "Loading..." : "Loading mentors..."}</div>
         </div>
       </div>
     );

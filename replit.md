@@ -160,6 +160,19 @@ client/
 
 ## Changelog
 
+- July 26, 2025: ✅ COMPLETED unified Clerk authentication and mentor loading fixes
+  - ✅ Fixed auth hook inconsistencies - unified all components to use @clerk/clerk-react directly
+  - ✅ Enhanced useHumanMentors hook with multi-template token support (mentra-api, default, fallback)
+  - ✅ Updated API endpoint with cookie fallback authentication (__session cookie support)
+  - ✅ Implemented comprehensive error handling with raw response parsing
+  - ✅ Fixed council-scheduling.tsx to use proper Clerk authentication (isLoaded, isSignedIn)
+  - ✅ Updated mentors.tsx with unified token fetching and error handling
+  - ✅ Added query gating on isLoaded && isSignedIn to prevent premature API calls
+  - ✅ Enhanced API to return detailed error codes (UNAUTHENTICATED, TOKEN_EXPIRED, USER_NOT_FOUND)
+  - ✅ Added organization-based mentor filtering with proper debugging logs
+  - ✅ Created improved apiRequest function with automatic token detection
+  - ✅ Fixed deployment start script configuration to use vite preview for production
+
 - July 25, 2025: ✅ REVERTED to stable working state (commit c318beb from July 15th)
   - All changes made on July 25th were causing application failures
   - Individual booking page testing code caused 77+ import/React errors

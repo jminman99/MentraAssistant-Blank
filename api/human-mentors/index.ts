@@ -1,87 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '../_lib/db.js';
-import { humanMentors, users } from '../shared/schema.js';
-import { eq } from 'drizzle-orm';
-import { verifyToken } from '@clerk/backend';
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { verifyToken } from "@clerk/backend";
+import { storage } from "../_lib/storage.js";
 
-export async function GET(request: NextRequest) {
-  try {
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'Authorization header missing or invalid'
-      }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-
-    // Verify the token with Clerk
-    try {
-      await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY
-      });
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid or expired token'
-      }, { status: 401 });
-    }
-
-    // Get database connection
-    const db = getDatabase();
-
-    // Fetch human mentors with user information
-    const mentorData = await db
-      .select({
-        id: humanMentors.id,
-        userId: humanMentors.userId,
-        expertise: humanMentors.expertise,
-        rating: humanMentors.rating,
-        hourlyRate: humanMentors.hourlyRate,
-        isActive: humanMentors.isActive,
-        user: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
-          profileImage: users.profileImage
-        }
-      })
-      .from(humanMentors)
-      .innerJoin(users, eq(humanMentors.userId, users.id))
-      .where(eq(humanMentors.isActive, true));
-
-    // Transform the data to match expected format
-    const formattedMentors = mentorData.map(mentor => ({
-      id: mentor.id,
-      userId: mentor.userId,
-      expertise: mentor.expertise,
-      rating: mentor.rating,
-      hourlyRate: mentor.hourlyRate,
-      isActive: mentor.isActive,
-      user: mentor.user
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: formattedMentors
-    });
-
-  } catch (error) {
-    console.error('Error fetching human mentors:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error'
-    }, { status: 500 });
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ success: false, error: "Method not allowed" });
   }
+  return handleGet(req, res);
 }
 
-export async function POST(request: NextRequest) {
-  return NextResponse.json({
-    success: false,
-    error: 'Method not allowed'
-  }, { status: 405 });
+async function handleGet(req: VercelRequest, res: VercelResponse) {
+  try {
+    // Token from Authorization or __session cookie (fallback)
+    const auth = req.headers.authorization || "";
+    let token: string | undefined;
+    if (auth.startsWith("Bearer ")) token = auth.slice(7);
+    if (!token && req.headers.cookie) {
+      const m = req.headers.cookie.match(/(?:^|;\s*)__session=([^;]+)/);
+      if (m) token = decodeURIComponent(m[1]);
+    }
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        code: "UNAUTHENTICATED",
+        message: "Missing bearer token",
+      });
+    }
+
+    // Verify Clerk JWT
+    let clerkUserId: string;
+    try {
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY as string,
+      });
+      clerkUserId = payload.sub as string;
+      console.log("✅ Clerk user verified:", clerkUserId);
+    } catch (verifyError: any) {
+      const msg = verifyError?.message || "verify failed";
+      const code = /expired/i.test(msg) ? "TOKEN_EXPIRED" : "INVALID_TOKEN";
+      console.error("Token verification failed:", msg);
+      return res.status(401).json({
+        success: false,
+        code,
+        message: msg,
+      });
+    }
+
+    // Map Clerk user -> app user
+    const user = await storage.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        code: "USER_NOT_FOUND",
+        message: "User not found in database. Please sync your account.",
+      });
+    }
+
+    const orgId = user.organizationId || 1;
+
+    // Fetch mentors for org
+    const mentors = await storage.getHumanMentorsByOrganization(orgId);
+    const safeMentors = Array.isArray(mentors) ? mentors : [];
+
+    console.log("[human-mentors]", { orgId, userId: user.id, len: safeMentors.length });
+
+    return res.status(200).json({
+      success: true,
+      data: safeMentors,
+      hasAccess: safeMentors.length > 0,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching human mentors:", error);
+    const msg = error?.message || "Failed to fetch human mentors";
+    const code = /expired/i.test(msg) ? "TOKEN_EXPIRED" : "INTERNAL_ERROR";
+    const status = code === "TOKEN_EXPIRED" ? 401 : 500;
+    return res.status(status).json({
+      success: false,
+      code,
+      message: msg,
+    });
+  }
 }

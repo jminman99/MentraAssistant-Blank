@@ -8,6 +8,7 @@ export function useHumanMentors() {
 
   return useQuery({
     queryKey: ['human-mentors'],
+    enabled: isLoaded && isSignedIn,
     queryFn: async () => {
       console.log('[fetch mentors] starting request');
       
@@ -16,13 +17,25 @@ export function useHumanMentors() {
         throw new Error('No authentication available');
       }
 
-      // Get fresh token
-      const token = await getToken({ template: 'mentra-api' });
+      // Try multiple token templates for compatibility
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: 'mentra-api' });
+      } catch {
+        // Fallback to default template
+        try {
+          token = await getToken({ template: 'default' });
+        } catch {
+          // Final fallback - no template
+          token = await getToken();
+        }
+      }
+      
       console.debug('[apiRequest] url', '/api/human-mentors', 'token?', !!token);
       
       if (!token) {
         console.error('[fetch mentors] failed to get token');
-        throw new Error('Failed to get authentication token');
+        throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
       }
 
       const response = await fetch('/api/human-mentors', {
@@ -30,20 +43,38 @@ export function useHumanMentors() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       console.log('[fetch mentors] response status:', response.status);
 
+      // Parse response with improved error handling
+      const raw = await response.text().catch(() => '');
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('[fetch mentors] error response:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        try {
+          const j = JSON.parse(raw);
+          throw new Error(j.message || j.error || `HTTP ${response.status}`);
+        } catch {
+          throw new Error(raw || `HTTP ${response.status}`);
+        }
       }
 
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`Non-JSON response: ${raw}`);
+      }
+
+      if (data?.success === false) {
+        throw new Error(data.message || data.error || 'Failed to load mentors');
+      }
+
       console.log('[fetch mentors] success:', data);
       return data;
     },
-    enabled: isLoaded && isSignedIn,
+    staleTime: 0,
+    retry: 0,
+    refetchOnWindowFocus: false,
   });
 }

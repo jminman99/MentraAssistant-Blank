@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@clerk/clerk-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Star, DollarSign, Clock, Video } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { useAuth } from '@/lib/auth-hook';
-import { apiRequest } from '@/lib/queryClient';
 
 export default function Mentors() {
   const [, setLocation] = useLocation();
@@ -14,14 +13,58 @@ export default function Mentors() {
   
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/human-mentors'],
-    queryFn: async () => {
-      const res = await apiRequest('/api/human-mentors', {}, () => getToken());
-      if (!res.success) {
-        throw new Error(res.error || 'Failed to fetch mentors');
-      }
-      return res;
-    },
     enabled: isLoaded && isSignedIn,
+    queryFn: async () => {
+      if (!getToken) {
+        throw new Error('No authentication available');
+      }
+
+      // Try multiple token templates for compatibility
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: 'mentra-api' });
+      } catch {
+        try {
+          token = await getToken({ template: 'default' });
+        } catch {
+          token = await getToken();
+        }
+      }
+      
+      if (!token) {
+        throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
+      }
+
+      const res = await fetch('/api/human-mentors', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const raw = await res.text().catch(() => '');
+      if (!res.ok) {
+        try {
+          const j = JSON.parse(raw);
+          throw new Error(j.message || j.error || `HTTP ${res.status}`);
+        } catch {
+          throw new Error(raw || `HTTP ${res.status}`);
+        }
+      }
+
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`Non-JSON response: ${raw}`);
+      }
+
+      if (json?.success === false) {
+        throw new Error(json.message || json.error || 'Failed to load mentors');
+      }
+      return json;
+    },
   });
   
   const mentors = Array.isArray(data?.data) ? data.data : [];

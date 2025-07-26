@@ -1,5 +1,6 @@
 import React from "react";
 import { Switch, Route, useLocation } from "wouter";
+import { useAuth } from "@clerk/clerk-react";
 import Dashboard from "./pages/dashboard";
 import TestPage from "./pages/test";
 import SignInPage from "./pages/sign-in";
@@ -8,7 +9,6 @@ import DevSignInPage from "./pages/dev-sign-in";
 import PlanUsagePage from "./pages/plan-usage";
 import SessionsPage from "./pages/sessions";
 import IndividualBooking from "./pages/individual-booking";
-import { useAuth } from "./lib/auth-hook";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function Redirect({ to }: { to: string }) {
@@ -20,16 +20,16 @@ function Redirect({ to }: { to: string }) {
 }
 
 function PrivateRoute({ component: Component }: { component: React.ComponentType<any> }) {
-  const { user, isLoading } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
 
   React.useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoaded && !isSignedIn) {
       setLocation("/sign-in");
     }
-  }, [isLoading, user, setLocation]);
+  }, [isLoaded, isSignedIn, setLocation]);
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
         <div className="text-lg">Loading...</div>
@@ -37,16 +37,16 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
     );
   }
 
-  return user ? <Component /> : null;
+  return isSignedIn ? <Component /> : null;
 }
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
 
   const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
   const SignInComponent = clerkPublishableKey ? SignInPage : DevSignInPage;
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
         <div className="text-lg">Loading...</div>
@@ -65,7 +65,7 @@ function Router() {
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />
       <Route path="/individual-booking" component={() => <PrivateRoute component={IndividualBooking} />} />
       <Route path="/">
-        {() => (user ? <Dashboard /> : <Redirect to="/sign-in" />)}
+        {() => (isSignedIn ? <Dashboard /> : <Redirect to="/sign-in" />)}
       </Route>
       <Route path="*">
         <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
