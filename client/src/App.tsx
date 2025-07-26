@@ -1,7 +1,6 @@
 import React from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@clerk/clerk-react";
-import DashboardSimple from "./pages/dashboard-simple";
 import Dashboard from "./pages/dashboard";
 import TestPage from "./pages/test";
 import SignInPage from "./pages/sign-in";
@@ -57,7 +56,7 @@ function Router() {
       <Switch>
         <Route path="/test" component={TestPage} />
         <Route path="/sign-in" component={DevSignInPage} />
-        <Route path="/dashboard" component={DashboardSimple} />
+        <Route path="/dashboard" component={Dashboard} />
         <Route path="/" component={DevSignInPage} />
         <Route path="*">
           <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">

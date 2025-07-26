@@ -498,12 +498,11 @@ export default function Dashboard() {
     window.scrollTo(0, 0);
   }, []);
 
-  // ✅ ADDED: guard if no user
-  if (!user) {
-    setLocation("/login");
+  // Don't redirect if user is loading - let Clerk handle auth
+  if (!isLoaded) {
     return (
-      <div className="p-8 text-center text-slate-600">
-        Redirecting to login...
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
