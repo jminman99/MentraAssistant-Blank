@@ -98,13 +98,9 @@ function Router() {
 }
 
 function App() {
-  console.log('App component rendering...');
   return (
     <ErrorBoundary>
-      <div style={{ background: '#e0e0e0', padding: '10px', margin: '10px' }}>
-        <h2>Debug: App component loaded</h2>
-        <Router />
-      </div>
+      <Router />
     </ErrorBoundary>
   );
 }
