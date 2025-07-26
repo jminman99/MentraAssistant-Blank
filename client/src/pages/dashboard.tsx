@@ -449,7 +449,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
 }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoaded } = useAuth();
   const { branding, isLoading: brandingLoading, mentorTerminology } = useOrganizationLabels();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);

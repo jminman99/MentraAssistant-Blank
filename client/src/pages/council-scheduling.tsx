@@ -84,7 +84,7 @@ function CouncilSessionsList() {
       <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
         Your Council Sessions ({sessions.length})
       </h2>
-      
+
       {sessions.length === 0 ? (
         <div className="text-center">
           <p className="text-slate-600 dark:text-slate-400">No council sessions scheduled yet.</p>
@@ -149,11 +149,11 @@ async function getClerkToken(getToken: any): Promise<string> {
       token = await getToken();
     }
   }
-  
+
   if (!token) {
     throw new Error('Session expired—please sign in');
   }
-  
+
   return token;
 }
 
@@ -161,8 +161,10 @@ export default function CouncilScheduling() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch available mentors for council sessions  
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  
+
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -238,7 +240,7 @@ export default function CouncilScheduling() {
         preferredDate: data.preferredDate.toISOString(),
         preferredTimeSlot: data.preferredTime,
       };
-      
+
       const response = await fetch('/api/council-sessions/book', {
         method: 'POST',
         headers: {
@@ -248,13 +250,13 @@ export default function CouncilScheduling() {
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       return result;
     },
     onSuccess: (response: any) => {
@@ -273,7 +275,7 @@ export default function CouncilScheduling() {
       const isSessionExpired = error.message.includes('Session expired') || 
                               error.message.includes('TOKEN_EXPIRED') ||
                               error.message.includes('401');
-      
+
       if (isSessionExpired) {
         toast({
           title: "Session Expired",
@@ -296,7 +298,7 @@ export default function CouncilScheduling() {
       const newSelection = prev.includes(mentorId)
         ? prev.filter(id => id !== mentorId)
         : [...prev, mentorId];
-      
+
       // Update form value
       form.setValue('selectedMentorIds', newSelection);
       return newSelection;
@@ -332,7 +334,7 @@ export default function CouncilScheduling() {
           <p className="text-lg text-slate-600 dark:text-slate-400 mb-4">
             Build your council of 3-5 mentors for <strong>ONE single one-hour session</strong> where all mentors participate together
           </p>
-          
+
           <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold text-white mb-2">
               "Sometimes you need one man who's lived it. Sometimes you need a council who's seen it all."
@@ -453,7 +455,7 @@ export default function CouncilScheduling() {
                 Complete the details for your council session with {selectedMentors.length} mentors.
               </DialogDescription>
             </DialogHeader>
-            
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Selected Mentors Summary */}
