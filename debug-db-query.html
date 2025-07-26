@@ -1,0 +1,153 @@
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Debug Tool</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        button { 
+            background: #007cba; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #005a8b; }
+        .results { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+        }
+        .query-buttons { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            margin: 20px 0; 
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Database Debug Tool</h1>
+        <p>Check what's in your database tables for session bookings</p>
+        
+        <h2>Quick Queries</h2>
+        <div class="query-buttons">
+            <button onclick="runQuery('users')">Show Users</button>
+            <button onclick="runQuery('session_bookings')">Show Session Bookings</button>
+            <button onclick="runQuery('council_bookings')">Show Council Bookings</button>
+            <button onclick="runQuery('human_mentors')">Show Human Mentors</button>
+            <button onclick="runQuery('recent_sessions')">Show Recent Sessions</button>
+            <button onclick="runQuery('tables')">List All Tables</button>
+        </div>
+        
+        <div id="results" class="results">
+            Click a button above to run a query...
+        </div>
+    </div>
+
+    <script>
+        async function runQuery(type) {
+            const results = document.getElementById('results');
+            results.textContent = 'Loading...';
+            
+            try {
+                let query, description;
+                
+                switch(type) {
+                    case 'users':
+                        query = 'SELECT id, email, firstName, lastName, role, clerkUserId FROM users ORDER BY id DESC LIMIT 10';
+                        description = 'Recent 10 users:';
+                        break;
+                    case 'session_bookings':
+                        query = `SELECT sb.id, sb.menteeId, sb.humanMentorId, sb.scheduledDate, sb.duration, sb.sessionGoals, sb.status, 
+                                u.email as mentee_email, hm.id as mentor_id 
+                                FROM session_bookings sb 
+                                LEFT JOIN users u ON sb.menteeId = u.id 
+                                LEFT JOIN human_mentors hm ON sb.humanMentorId = hm.id 
+                                ORDER BY sb.id DESC LIMIT 10`;
+                        description = 'Recent 10 individual session bookings:';
+                        break;
+                    case 'council_bookings':
+                        query = `SELECT cb.id, cb.menteeId, cb.sessionGoals, cb.preferredDate, cb.status, cb.createdAt,
+                                u.email as mentee_email
+                                FROM council_bookings cb 
+                                LEFT JOIN users u ON cb.menteeId = u.id 
+                                ORDER BY cb.id DESC LIMIT 10`;
+                        description = 'Recent 10 council session bookings:';
+                        break;
+                    case 'human_mentors':
+                        query = `SELECT hm.id, hm.expertise, hm.bio, hm.hourlyRate, 
+                                u.firstName, u.lastName, u.email 
+                                FROM human_mentors hm 
+                                LEFT JOIN users u ON hm.userId = u.id 
+                                ORDER BY hm.id DESC`;
+                        description = 'All human mentors:';
+                        break;
+                    case 'recent_sessions':
+                        query = `SELECT 'individual' as type, sb.id, sb.scheduledDate, sb.status, u.email as mentee 
+                                FROM session_bookings sb 
+                                LEFT JOIN users u ON sb.menteeId = u.id 
+                                WHERE sb.scheduledDate >= NOW() - INTERVAL '7 days'
+                                UNION ALL
+                                SELECT 'council' as type, cb.id, cb.preferredDate as scheduledDate, cb.status, u.email as mentee 
+                                FROM council_bookings cb 
+                                LEFT JOIN users u ON cb.menteeId = u.id 
+                                WHERE cb.preferredDate >= NOW() - INTERVAL '7 days'
+                                ORDER BY scheduledDate DESC`;
+                        description = 'Sessions from last 7 days:';
+                        break;
+                    case 'tables':
+                        query = `SELECT table_name, column_name, data_type 
+                                FROM information_schema.columns 
+                                WHERE table_schema = 'public' 
+                                ORDER BY table_name, ordinal_position`;
+                        description = 'Database schema:';
+                        break;
+                }
+                
+                // Make request to a debug endpoint we'll create
+                const response = await fetch('/api/debug-db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                results.textContent = `${description}\n\n${JSON.stringify(data, null, 2)}`;
+                
+            } catch (error) {
+                results.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+```

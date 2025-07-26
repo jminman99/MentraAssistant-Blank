@@ -1,4 +1,5 @@
 
+```typescript
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
@@ -7,11 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { HumanMentor } from "@/types";
+import { CalendarAvailability } from "@/components/calendar-availability";
+import { format } from "date-fns";
 
 const individualBookingSchema = z.object({
   humanMentorId: z.number().min(1, "Please select a mentor"),
@@ -49,6 +51,8 @@ async function getClerkToken(getToken: any): Promise<string> {
 
 export function IndividualBookingDialog({ mentor, onClose, onSuccess }: IndividualBookingDialogProps) {
   const { getToken } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>();
 
   const form = useForm<IndividualBookingData>({
     resolver: zodResolver(individualBookingSchema),
@@ -92,13 +96,29 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     },
   });
 
+  const handleTimeSelect = (date: Date, time: string) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    
+    // Create ISO string for the scheduled date
+    const [hours, minutes] = time.split(':');
+    const scheduledDateTime = new Date(date);
+    scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    form.setValue("scheduledDate", scheduledDateTime.toISOString());
+  };
+
   const onSubmit = (data: IndividualBookingData) => {
+    if (!selectedDate || !selectedTime) {
+      form.setError("scheduledDate", { message: "Please select a date and time" });
+      return;
+    }
     bookIndividualSession(data);
   };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Book Session with {mentor.user?.firstName} {mentor.user?.lastName}
@@ -109,7 +129,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Session Goals */}
             <FormField
               control={form.control}
@@ -156,24 +176,35 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
               )}
             />
 
-            {/* Scheduled Date */}
-            <FormField
-              control={form.control}
-              name="scheduledDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Scheduled Date & Time</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="datetime-local" 
-                      className="w-full"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* Calendar Availability */}
+            <div className="space-y-4">
+              <FormLabel>Select Date & Time</FormLabel>
+              <CalendarAvailability
+                selectedMentorIds={[mentor.id]}
+                mentors={[mentor]}
+                onTimeSelect={handleTimeSelect}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                sessionDuration={form.watch("duration")}
+                isCouncilMode={false}
+              />
+              {selectedDate && selectedTime && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    Selected: {format(selectedDate, 'PPP')} at {selectedTime}
+                  </p>
+                </div>
               )}
-            />
+              <FormField
+                control={form.control}
+                name="scheduledDate"
+                render={() => (
+                  <FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button
@@ -185,7 +216,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
               </Button>
               <Button
                 type="submit"
-                disabled={isBooking}
+                disabled={isBooking || !selectedDate || !selectedTime}
                 className="bg-slate-900 hover:bg-slate-800 text-white"
               >
                 {isBooking ? "Booking..." : "Book Session"}
@@ -197,3 +228,4 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     </Dialog>
   );
 }
+```
