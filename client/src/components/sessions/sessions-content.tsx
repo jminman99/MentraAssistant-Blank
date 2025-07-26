@@ -19,7 +19,7 @@ interface SessionsContentProps {
 }
 
 async function fetchSessionBookings(url: string, getToken: () => Promise<string | null>): Promise<SessionBooking[]> {
-  const res = await apiRequest(url, {}, () => getToken({ template: "mentra-api" }));
+  const res = await apiRequest(url, {}, getToken);
   if (!res.success) throw new Error(res.error || "Failed to fetch sessions");
   return res.data ?? [];
 }
@@ -34,14 +34,14 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
   const { data: sessionsData = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
     enabled: isLoaded && isSignedIn,
-    queryFn: () => fetchSessionBookings('/api/session-bookings', getToken),
+    queryFn: () => fetchSessionBookings('/api/session-bookings', () => getToken()),
   });
 
   // Fetch council sessions for council users with improved error handling
   const { data: councilData = [], isLoading: councilLoading, error: councilError } = useQuery({
     queryKey: ['/api/council-bookings'],
-    enabled: isLoaded && isSignedIn && backendReady && user?.subscriptionPlan === 'council',
-    queryFn: () => fetchSessionBookings('/api/council-bookings', getToken),
+    enabled: !!(isLoaded && isSignedIn && backendReady && user?.subscriptionPlan === 'council'),
+    queryFn: () => fetchSessionBookings('/api/council-bookings', () => getToken()),
   });
 
   // Council users only get council sessions, individual users only get individual sessions
@@ -91,12 +91,12 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
         
         const res = await apiRequest("/api/cancel-council-session",
           { method: "POST", body: { participantId } },
-          () => getToken({ template: "mentra-api" }));
+          () => getToken());
         if (!res.success) throw new Error(res.error || "Failed to cancel");
       } else {
         const res = await apiRequest("/api/cancel-individual-session",
           { method: "POST", body: { sessionId } },
-          () => getToken({ template: "mentra-api" }));
+          () => getToken());
         if (!res.success) throw new Error(res.error || "Failed to cancel");
       }
     },

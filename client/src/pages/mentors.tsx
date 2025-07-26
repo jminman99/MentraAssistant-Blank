@@ -15,7 +15,7 @@ export default function Mentors() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/human-mentors'],
     queryFn: async () => {
-      const res = await apiRequest('/api/human-mentors', {}, () => getToken({ template: 'mentra-api' }));
+      const res = await apiRequest('/api/human-mentors', {}, () => getToken());
       if (!res.success) {
         throw new Error(res.error || 'Failed to fetch mentors');
       }
