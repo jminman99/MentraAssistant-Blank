@@ -72,7 +72,7 @@ function useClerkAuthentication() {
             lastName: clerkUser.lastName,
           },
           signal, // Abort on unmount
-        }, () => getToken({ template: 'mentra-api' }));
+        }, () => getToken());
         
         if (!res.success) {
           throw new Error(res.error || 'Failed to sync user');
