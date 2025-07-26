@@ -30,10 +30,11 @@ import { CalendarAvailability } from "@/components/calendar-availability";
 import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
 import { FeatureDisplayLabels } from "@/lib/feature-labels";
 import { useOrganizationLabels } from "@/hooks/use-organization-labels";
+import { IndividualBookingDialog } from "@/components/mentors/IndividualBookingDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Calendar, Users, TrendingUp, ChevronRight, User, Star } from "lucide-react";
+import { MessageSquare, Calendar, Users, TrendingUp, ChevronRight, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Council booking form schema
@@ -1016,103 +1017,19 @@ export default function Dashboard() {
 
         {/* Individual Booking Dialog */}
         {showIndividualBookingDialog && selectedIndividualMentor && (
-            <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
-                <div className="flex items-center justify-center min-h-screen p-4">
-                    <div className="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-                        <div className="mb-4">
-                            <h2 className="text-xl font-semibold text-slate-900">
-                                Book Session with {selectedIndividualMentor.user?.firstName} {selectedIndividualMentor.user?.lastName}
-                            </h2>
-                            <p className="text-slate-600 text-sm">
-                                Schedule a one-on-one session for personalized guidance.
-                            </p>
-                        </div>
-
-                        <Form {...individualForm}>
-                            <form onSubmit={individualForm.handleSubmit((values) => {
-                                bookIndividualSession({ ...values, humanMentorId: selectedIndividualMentor.id });
-                            })} className="space-y-4">
-                                {/* Session Goals */}
-                                <FormField
-                                    control={individualForm.control}
-                                    name="sessionGoals"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Session Goals</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder="Describe what you want to accomplish in this session..."
-                                                    className="min-h-[80px]"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {/* Duration */}
-                                <FormField
-                                    control={individualForm.control}
-                                    name="duration"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Duration (minutes)</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value.toString()}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select duration" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="30">30 minutes</SelectItem>
-                                                    <SelectItem value="60">60 minutes</SelectItem>
-                                                    <SelectItem value="90">90 minutes</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                {/* Scheduled Date - Placeholder for now */}
-                                <FormField
-                                    control={individualForm.control}
-                                    name="scheduledDate"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Scheduled Date</FormLabel>
-                                            <FormControl>
-                                                <input type="datetime-local" className="border rounded px-3 py-2 w-full" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <div className="flex justify-end gap-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setShowIndividualBookingDialog(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={isIndividualBooking}
-                                        className="bg-slate-900 hover:bg-slate-800 text-white"
-                                    >
-                                        {isIndividualBooking ? "Booking..." : "Book Session"}
-                                    </Button>
-                                </div>
-                            </form>
-                        </Form>
-                    </div>
-                </div>
-            </div>
+            <IndividualBookingDialog 
+                mentor={selectedIndividualMentor}
+                onClose={() => setShowIndividualBookingDialog(false)}
+                onSuccess={() => {
+                    setShowIndividualBookingDialog(false);
+                    setSelectedIndividualMentor(null);
+                    queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+                    toast({
+                        title: "Session Booked!",
+                        description: "Your individual session has been scheduled successfully.",
+                    });
+                }}
+            />
         )}
 
       {/* Modals */}
