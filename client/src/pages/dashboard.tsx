@@ -30,6 +30,10 @@ import { CalendarAvailability } from "@/components/calendar-availability";
 import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
 import { FeatureDisplayLabels } from "@/lib/feature-labels";
 import { useOrganizationLabels } from "@/hooks/use-organization-labels";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MessageSquare, Calendar, Users, TrendingUp, ChevronRight, User, Star } from "lucide-react";
 
 // Council booking form schema
 const councilBookingSchema = z.object({

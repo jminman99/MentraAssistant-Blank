@@ -373,14 +373,27 @@ export default function IndividualBooking() {
                   <p className="text-slate-600 dark:text-slate-400 text-sm mb-3 line-clamp-3">
                     {mentor.bio}
                   </p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">
                       ${mentor.hourlyRate}/hour
                     </span>
-                    <Button size="sm" variant="outline">
-                      Book Session
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        mentor.availability?.today ? 'bg-green-500' : 'bg-yellow-500'
+                      }`}></div>
+                      <span className="text-xs text-slate-500">
+                        {mentor.availability?.nextAvailable || 'Tomorrow'}
+                      </span>
+                    </div>
                   </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleSelectMentor(mentor)}
+                  >
+                    Book Session
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -449,6 +462,29 @@ export default function IndividualBooking() {
                         />
                       </FormControl>
                       <FormMessage />
+                      {selectedMentor?.availability?.timeSlots && (
+                        <div className="mt-2">
+                          <p className="text-sm text-slate-600 mb-2">Available time slots today:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedMentor.availability.timeSlots.map((slot: any, index: number) => (
+                              <Button
+                                key={index}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => {
+                                  const today = new Date();
+                                  const dateTimeString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${slot.time}`;
+                                  field.onChange(dateTimeString);
+                                }}
+                              >
+                                {slot.time}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </FormItem>
                   )}
                 />

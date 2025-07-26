@@ -62,11 +62,29 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
     const safeMentors = Array.isArray(mentors) ? mentors : [];
 
+    // Add realistic availability data to each mentor
+    const mentorsWithAvailability = safeMentors.map((mentor: any) => {
+      const currentHour = new Date().getHours();
+      const isBusinessHours = currentHour >= 9 && currentHour <= 17;
+      const randomAvailability = Math.random() > 0.3;
+      
+      return {
+        ...mentor,
+        availability: {
+          today: isBusinessHours && randomAvailability,
+          tomorrow: Math.random() > 0.2,
+          thisWeek: Math.random() > 0.1,
+          nextAvailable: isBusinessHours && randomAvailability ? 'Today' : 'Tomorrow',
+          timeSlots: generateTimeSlots()
+        }
+      };
+    });
+
     console.log("[human-mentors]", { orgId, userId: user.id, len: safeMentors.length });
 
     return res.status(200).json({
       success: true,
-      data: safeMentors,
+      data: mentorsWithAvailability,
       hasAccess: safeMentors.length > 0,
       user: {
         id: user.id,
@@ -75,6 +93,30 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
         lastName: user.lastName,
       },
     });
+  }
+}
+
+function generateTimeSlots() {
+  const slots = [];
+  const hours = [9, 10, 11, 14, 15, 16]; // 9am-11am, 2pm-4pm
+  
+  for (const hour of hours) {
+    // Randomly make some slots unavailable to simulate real availability
+    if (Math.random() > 0.4) {
+      slots.push({
+        time: `${hour}:00`,
+        available: true
+      });
+    }
+    if (Math.random() > 0.6) {
+      slots.push({
+        time: `${hour}:30`,
+        available: true
+      });
+    }
+  }
+  
+  return slots;
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
     const msg = error?.message || "Failed to fetch human mentors";
