@@ -1,400 +1,339 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth-hook";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, User, Star, ArrowLeft, CheckCircle2, Video } from "lucide-react";
-import { format, addDays, startOfMonth, endOfMonth, isSameMonth, parseISO } from "date-fns";
-import CalendarAvailability from "@/components/calendar-availability-fixed";
-import MentorCard from "@/components/mentor-card";
-import SessionUsageBadge from "@/components/session-usage-badge";
-import SessionConfirmation from "@/components/session-confirmation";
-import { HumanMentor } from "@/types";
-import { useLocation } from "wouter";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { Calendar, Clock, Star, MapPin } from 'lucide-react';
+import { useAuth } from '@/lib/auth-hook';
+import { Link } from 'wouter';
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+interface HumanMentor {
+  id: number;
+  userId: number;
+  expertise: string;
+  rating: string;
+  hourlyRate: number;
+  isActive: boolean;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profileImage?: string;
+  };
 }
 
-interface SessionBooking {
-  id: number;
+interface BookingFormData {
+  mentorId: number;
   scheduledDate: string;
-  status: string;
-  humanMentor: HumanMentor;
+  duration: number;
+  sessionGoals: string;
 }
 
 export default function IndividualBooking() {
-  const { user } = useAuth();
+  const { isLoaded, isSignedIn, getToken, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-
   const [selectedMentor, setSelectedMentor] = useState<HumanMentor | null>(null);
-  const [selectedDateTime, setSelectedDateTime] = useState<{date: Date; time: string} | null>(null);
-  const [currentStep, setCurrentStep] = useState<'mentors' | 'scheduling' | 'confirmation'>('mentors');
+  const [bookingForm, setBookingForm] = useState<BookingFormData>({
+    mentorId: 0,
+    scheduledDate: '',
+    duration: 60,
+    sessionGoals: ''
+  });
 
-  // Check subscription access
-  const hasAccess = user && ['individual', 'council'].includes(user.subscriptionPlan);
-
-  // Fetch mentors
-  const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery({
-    queryKey: ['human-mentors'],
+  // Fetch human mentors
+  const { data: mentors = [], isLoading: mentorsLoading, error: mentorsError } = useQuery({
+    queryKey: ['/api/human-mentors'],
+    enabled: isLoaded && isSignedIn,
     queryFn: async () => {
-      const response = await apiRequest('/api/human-mentors', {}, () => getToken());
-      console.log('[DEBUG] Raw mentors response:', response);
-      return response;
+      const token = await getToken();
+      const res = await apiRequest('/api/human-mentors', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }, () => Promise.resolve(token));
+
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to fetch mentors');
+      }
+
+      // Handle both array and object responses
+      const mentorData = Array.isArray(res.data) ? res.data : (res.data?.mentors || []);
+      return mentorData;
     },
-    enabled: hasAccess,
   });
-
-  // Debug logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('MENTORS RAW:', mentorsResponse); // what shape is it?
-    console.log('[DEBUG] Mentors API Response:', mentorsResponse);
-    console.log('[DEBUG] Mentors Error:', mentorsError);
-    console.log('[DEBUG] Has Access:', hasAccess);
-  }
-
-  const mentors = Array.isArray(mentorsResponse?.data) 
-    ? mentorsResponse.data 
-    : Array.isArray(mentorsResponse) 
-    ? mentorsResponse 
-    : [];
-
-  // Fetch user's existing bookings to check monthly limit
-  const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
-    queryKey: ['session-bookings'],
-    queryFn: () => apiRequest('/api/session-bookings', {}, () => getToken()).then(res => res.data || []),
-    enabled: hasAccess,
-  });
-
-  // Calculate monthly session usage for the selected booking month
-  const selectedBookingMonth = selectedDateTime?.date || new Date();
-  const selectedMonthBookings = userBookings.filter(booking => {
-    const bookingDate = parseISO(booking.scheduledDate);
-    return isSameMonth(bookingDate, selectedBookingMonth) && 
-           booking.status !== 'cancelled';
-  });
-  const monthlyLimit = 2; // As per PRD
-  const sessionsUsed = selectedMonthBookings.length;
-  const canBookMore = sessionsUsed < monthlyLimit;
 
   // Book session mutation
   const { mutate: bookSession, isPending: isBooking } = useMutation({
-    mutationFn: async () => {
-      if (!selectedMentor || !selectedDateTime) {
-        throw new Error("Missing mentor or date/time selection");
-      }
-
-      // Create scheduled date with proper timezone handling
-      const scheduledAt = new Date(selectedDateTime.date);
-      const [hours, minutes] = selectedDateTime.time.split(':').map(Number);
-
-      // Ensure we're working with local time, not UTC
-      scheduledAt.setHours(hours, minutes, 0, 0);
-
-      const requestBody = {
-        humanMentorId: selectedMentor.id,
-        scheduledDate: scheduledAt.toISOString(),
-        duration: 30, // Fixed 30 minutes as per PRD
-        sessionGoals: null // Optional for individual sessions
-      };
-
-      console.log('[DEBUG] Sending booking request:', requestBody);
-
-      // Use apiRequest with proper auth token
-      const response = await apiRequest('/api/session-bookings', {
+    mutationFn: async (bookingData: BookingFormData) => {
+      const token = await getToken();
+      const res = await apiRequest('/api/session-bookings', {
         method: 'POST',
-        body: requestBody,
-      }, () => getToken());
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: bookingData
+      }, () => Promise.resolve(token));
 
-      console.log('[DEBUG] Booking response:', response);
-
-      if (!response.success) {
-        throw new Error(response.error || 'Booking failed');
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to book session');
       }
-      return response.data;
+
+      return res.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: "Session Booked Successfully!",
-        description: `Your 30-minute session with ${selectedMentor?.user.firstName} is confirmed for ${format(selectedDateTime!.date, 'MMMM d, yyyy')} at ${selectedDateTime!.time}.`,
+        title: 'Session Booked!',
+        description: 'Your individual session has been successfully booked.',
       });
 
-      // Reset form and navigate to sessions page
+      // Reset form and selected mentor
       setSelectedMentor(null);
-      setSelectedDateTime(null);
-      setCurrentStep('mentors');
-      queryClient.invalidateQueries({ queryKey: ['session-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['auth-user'] });
+      setBookingForm({
+        mentorId: 0,
+        scheduledDate: '',
+        duration: 60,
+        sessionGoals: ''
+      });
 
-      // Navigate to sessions page after short delay to let user see the success toast
-      setTimeout(() => {
-        setLocation('/sessions');
-      }, 1500);
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
     },
     onError: (error: Error) => {
+      console.error('Booking failed:', error);
       toast({
-        title: "Booking Failed",
-        description: error.message,
-        variant: "destructive",
+        title: 'Booking Failed',
+        description: error.message || 'Unable to book session. Please try again.',
+        variant: 'destructive',
       });
     },
   });
 
-  const handleMentorSelect = (mentor: HumanMentor) => {
+  const handleSelectMentor = (mentor: HumanMentor) => {
     setSelectedMentor(mentor);
-    setCurrentStep('scheduling');
+    setBookingForm(prev => ({
+      ...prev,
+      mentorId: mentor.id
+    }));
   };
 
-  const handleDateTimeSelect = (date: Date, time: string) => {
-    setSelectedDateTime({ date, time });
-  };
+  const handleBookSession = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleBookSession = () => {
     if (!selectedMentor) {
       toast({
-        title: "No Mentor Selected",
-        description: "Please select a mentor first.",
-        variant: "destructive",
+        title: 'No Mentor Selected',
+        description: 'Please select a mentor before booking.',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (!selectedDateTime) {
+    if (!bookingForm.scheduledDate || !bookingForm.sessionGoals.trim()) {
       toast({
-        title: "No Time Selected",
-        description: "Please select a date and time for your session.",
-        variant: "destructive",
+        title: 'Incomplete Form',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (!canBookMore) {
-      toast({
-        title: "Monthly Limit Reached", 
-        description: `You've used all ${monthlyLimit} sessions for ${selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'this month'}. Try selecting a different month.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    bookSession();
+    bookSession(bookingForm);
   };
 
-  const handleBackToMentors = () => {
-    setSelectedMentor(null);
-    setSelectedDateTime(null);
-    setCurrentStep('mentors');
-  };
-
-  // Access control check
-  if (!hasAccess) {
+  if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <Card className="max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-slate-900">Upgrade Required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-slate-600 mb-6">
-              Individual mentor sessions require an Individual or Council subscription plan.
-            </p>
-            <Button onClick={() => setLocation('/dashboard')}>
-              View Subscription Plans
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto py-8">
+        <div className="text-center">Loading...</div>
       </div>
     );
   }
 
-  // Loading state
-  if (isLoadingMentors || isLoadingBookings) {
+  if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-lg text-slate-600">Loading mentors...</div>
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-4">Please sign in to book individual sessions.</p>
+          <Link href="/sign-in">
+            <Button>Sign In</Button>
+          </Link>
+        </div>
       </div>
-    );
-  }
-
-  // Confirmation step
-  if (currentStep === 'confirmation' && selectedMentor && selectedDateTime) {
-    return (
-      <SessionConfirmation
-        type="individual"
-        mentor={selectedMentor}
-        date={selectedDateTime.date}
-        time={selectedDateTime.time}
-        duration={30}
-        onViewSessions={() => setLocation('/sessions')}
-        onBookAnother={handleBackToMentors}
-      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            {currentStep === 'scheduling' && (
-              <Button variant="outline" size="sm" onClick={handleBackToMentors}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Mentors
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setLocation('/dashboard')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
+    <div className="container mx-auto py-8 space-y-8">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-4">Book Individual Session</h1>
+        <p className="text-muted-foreground">
+          Choose a mentor and schedule your one-on-one session
+        </p>
+      </div>
+
+      {mentorsLoading && (
+        <div className="text-center py-8">
+          <div className="text-muted-foreground">Loading mentors...</div>
+        </div>
+      )}
+
+      {mentorsError && (
+        <div className="text-center py-8">
+          <div className="text-red-500 font-medium">Error loading mentors</div>
+          <div className="text-sm text-red-400 mt-1">{mentorsError.message}</div>
+        </div>
+      )}
+
+      {!mentorsLoading && !mentorsError && mentors.length === 0 && (
+        <div className="text-center py-8">
+          <div className="text-muted-foreground">No mentors available at this time</div>
+          <div className="text-sm text-muted-foreground mt-1">Please check back later</div>
+        </div>
+      )}
+
+      {!mentorsLoading && mentors.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Mentor Selection */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Select a Mentor</h2>
+            <div className="space-y-4">
+              {mentors.map((mentor: HumanMentor) => (
+                <Card 
+                  key={mentor.id} 
+                  className={`cursor-pointer transition-all ${
+                    selectedMentor?.id === mentor.id 
+                      ? 'ring-2 ring-primary bg-primary/5' 
+                      : 'hover:shadow-md'
+                  }`}
+                  onClick={() => handleSelectMentor(mentor)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <img 
+                        src={mentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`} 
+                        alt={`${mentor.user.firstName} ${mentor.user.lastName}`} 
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {mentor.user.firstName} {mentor.user.lastName}
+                          </h3>
+                          <Badge variant="secondary">{mentor.rating} ⭐</Badge>
+                        </div>
+                        <p className="text-muted-foreground text-sm mb-2">
+                          {mentor.expertise}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>${mentor.hourlyRate}/hour</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            Available
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            {currentStep === 'mentors' ? 'Choose Your Mentor' : 'Schedule Your Session'}
-          </h1>
-          <p className="text-slate-600">
-            {currentStep === 'mentors' 
-              ? 'Select an experienced mentor for your 30-minute individual session'
-              : `Book your session with ${selectedMentor?.user.firstName} ${selectedMentor?.user.lastName}`
-            }
-          </p>
+          {/* Booking Form */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Book Your Session</h2>
 
-          {/* Monthly usage indicator */}
-          <div className="mt-4 flex items-center gap-2">
-            <Badge variant={canBookMore ? "secondary" : "destructive"}>
-              {sessionsUsed}/{monthlyLimit} sessions for {selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'selected month'}
-            </Badge>
-            {!canBookMore && (
-              <span className="text-sm text-red-600">Monthly limit reached for {selectedDateTime ? format(selectedDateTime.date, 'MMMM yyyy') : 'selected month'}</span>
+            {selectedMentor ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    Session with {selectedMentor.user.firstName} {selectedMentor.user.lastName}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleBookSession} className="space-y-4">
+                    <div>
+                      <Label htmlFor="scheduledDate">Session Date & Time</Label>
+                      <Input
+                        id="scheduledDate"
+                        type="datetime-local"
+                        value={bookingForm.scheduledDate}
+                        onChange={(e) => setBookingForm(prev => ({
+                          ...prev,
+                          scheduledDate: e.target.value
+                        }))}
+                        required
+                        min={new Date().toISOString().slice(0, 16)}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="duration">Duration (minutes)</Label>
+                      <select
+                        id="duration"
+                        value={bookingForm.duration}
+                        onChange={(e) => setBookingForm(prev => ({
+                          ...prev,
+                          duration: parseInt(e.target.value)
+                        }))}
+                        className="w-full p-2 border border-input rounded-md"
+                      >
+                        <option value={30}>30 minutes</option>
+                        <option value={60}>60 minutes</option>
+                        <option value={90}>90 minutes</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="sessionGoals">Session Goals</Label>
+                      <Textarea
+                        id="sessionGoals"
+                        placeholder="What would you like to achieve in this session?"
+                        value={bookingForm.sessionGoals}
+                        onChange={(e) => setBookingForm(prev => ({
+                          ...prev,
+                          sessionGoals: e.target.value
+                        }))}
+                        required
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isBooking}
+                      >
+                        {isBooking ? 'Booking...' : 'Book Session'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <div className="text-muted-foreground">
+                    Select a mentor to book your session
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
-
-        {/* Mentor Selection Step */}
-        {currentStep === 'mentors' && (
-          <>
-            {mentors.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No Mentors Available</h3>
-                <p className="text-slate-600">
-                  We're currently working on adding more mentors. Please check back later.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mentors.map((mentor) => (
-                  <MentorCard
-                    key={mentor.id}
-                    mentor={mentor}
-                    onClick={() => handleMentorSelect(mentor)}
-                    showImage={true}
-                    showBio={true}
-                    className="hover:shadow-lg"
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Scheduling Step */}
-        {currentStep === 'scheduling' && selectedMentor && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Selected Mentor Info */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Selected Mentor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start gap-3 mb-4">
-                    <img 
-                      src={selectedMentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`} 
-                      alt={`${selectedMentor.user.firstName} ${selectedMentor.user.lastName}`} 
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-slate-900">
-                        {selectedMentor.user.firstName} {selectedMentor.user.lastName}
-                      </h3>
-                      <p className="text-sm text-slate-600">{selectedMentor.expertise}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="text-sm">{parseFloat(selectedMentor.rating || '0').toFixed(1)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span>Duration:</span>
-                      <span className="font-medium">30 minutes</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Rate:</span>
-                      <span className="font-medium">Included in Plan</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Format:</span>
-                      <span className="font-medium">Video Call</span>
-                    </div>
-                  </div>
-
-                  {selectedDateTime && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-green-800">
-                        <Calendar className="h-4 w-4" />
-                        <span className="font-medium">Selected Time</span>
-                      </div>
-                      <p className="text-sm text-green-700 mt-1">
-                        {format(selectedDateTime.date, 'MMMM d, yyyy')} at {selectedDateTime.time}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Calendar */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardContent className="p-6">
-                  <CalendarAvailability
-                    selectedDate={selectedDateTime?.date}
-                    selectedTime={selectedDateTime?.time}
-                    onDateTimeSelect={handleDateTimeSelect}
-                    selectedMentorIds={[selectedMentor.id]}
-                    mentors={mentors}
-                    sessionDuration={30}
-                    isCouncilMode={false}
-                  />
-
-                  {selectedDateTime && (
-                    <div className="mt-6 flex justify-end">
-                      <Button 
-                        onClick={handleBookSession}
-                        disabled={isBooking || !canBookMore}
-                        size="lg"
-                        className="min-w-[200px]"
-                      >
-                        {isBooking ? "Booking..." : "Confirm Session"}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
