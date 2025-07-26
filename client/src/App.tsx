@@ -2,6 +2,7 @@ import React from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@clerk/clerk-react";
 import DashboardSimple from "./pages/dashboard-simple";
+import Dashboard from "./pages/dashboard";
 import TestPage from "./pages/test";
 import SignInPage from "./pages/sign-in";
 import SignUpPage from "./pages/sign-up";
@@ -47,6 +48,24 @@ function Router() {
   const SignInComponent = clerkPublishableKey ? SignInPage : DevSignInPage;
   
   console.log('App Router - isLoaded:', isLoaded, 'isSignedIn:', isSignedIn, 'hasClerkKey:', !!clerkPublishableKey);
+  
+  // For development mode without Clerk, bypass authentication
+  if (!clerkPublishableKey) {
+    console.log('Development mode - bypassing auth checks, showing dev sign-in');
+    return (
+      <Switch>
+        <Route path="/test" component={TestPage} />
+        <Route path="/sign-in" component={DevSignInPage} />
+        <Route path="/dashboard" component={DashboardSimple} />
+        <Route path="/" component={DevSignInPage} />
+        <Route path="*">
+          <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
+            404 - Page not found
+          </div>
+        </Route>
+      </Switch>
+    );
+  }
 
   if (!isLoaded) {
     return (
@@ -79,9 +98,13 @@ function Router() {
 }
 
 function App() {
+  console.log('App component rendering...');
   return (
     <ErrorBoundary>
-      <Router />
+      <div style={{ background: '#e0e0e0', padding: '10px', margin: '10px' }}>
+        <h2>Debug: App component loaded</h2>
+        <Router />
+      </div>
     </ErrorBoundary>
   );
 }

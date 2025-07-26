@@ -53,13 +53,29 @@ const MaybeClerkTokenProvider: React.ComponentType<{ children: React.ReactNode }
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root not found");
 
-console.log('main.tsx starting to render');
+console.log('main.tsx: Starting React render...');
+console.log('main.tsx: Root element found:', !!rootEl);
 
-ReactDOM.createRoot(rootEl).render(
-  <React.StrictMode>
-    <div>
-      <h1>Hello World Test</h1>
-      <p>If you see this, React is working</p>
-    </div>
-  </React.StrictMode>
-);
+try {
+  ReactDOM.createRoot(rootEl).render(
+    <React.StrictMode>
+      <div style={{ padding: '20px', background: '#f0f0f0', minHeight: '100vh' }}>
+        <h1>Debug: React is rendering</h1>
+        <p>Environment: {JSON.stringify((import.meta as any).env || {})}</p>
+        <MaybeClerkProvider>
+          <QueryClientProvider client={queryClient}>
+            <MaybeClerkTokenProvider>
+              <Suspense fallback={<div>Loading...</div>}>
+                <App />
+              </Suspense>
+              <Toaster />
+            </MaybeClerkTokenProvider>
+          </QueryClientProvider>
+        </MaybeClerkProvider>
+      </div>
+    </React.StrictMode>
+  );
+  console.log('main.tsx: React render call completed');
+} catch (error) {
+  console.error('main.tsx: Error during render:', error);
+}
