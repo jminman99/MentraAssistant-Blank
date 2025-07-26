@@ -47,6 +47,26 @@ const councilBookingSchema = z.object({
 
 type CouncilBookingData = z.infer<typeof councilBookingSchema>;
 
+// Helper function to get Clerk token
+async function getClerkToken(getToken: any): Promise<string> {
+  if (!getToken) throw new Error('No authentication available');
+
+  let token: string | null = null;
+  try {
+    token = await getToken({ template: 'mentra-api' });
+  } catch {
+    try {
+      token = await getToken({ template: 'default' });
+    } catch {
+      token = await getToken();
+    }
+  }
+
+  if (!token) throw new Error('No Clerk token available');
+  return token;
+}
+
+
 // Council Scheduling Component - Fully Integrated into Dashboard
 function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: string) => void }) {
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
@@ -56,26 +76,13 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch available mentors for council sessions  
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { data, isLoading } = useQuery({
+  const { getToken } = useAuth();
+
+  // Fetch available mentors for council sessions
+  const { data: mentorsData, isLoading } = useQuery({
     queryKey: ["/api/human-mentors"],
-    enabled: isLoaded && isSignedIn,
     queryFn: async () => {
-      if (!getToken) throw new Error('No authentication available');
-
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'mentra-api' });
-      } catch {
-        try {
-          token = await getToken({ template: 'default' });
-        } catch {
-          token = await getToken();
-        }
-      }
-
-      if (!token) throw new Error('No Clerk token available');
+      const token = await getClerkToken(getToken);
 
       const res = await fetch('/api/human-mentors', {
         headers: {
@@ -89,7 +96,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
       return res.json();
     },
   });
-  const mentors = Array.isArray(data?.data) ? data.data : [];
+  const mentors = Array.isArray(mentorsData?.data) ? mentorsData.data : [];
 
   const form = useForm<CouncilBookingData>({
     resolver: zodResolver(councilBookingSchema),
@@ -473,7 +480,14 @@ export default function Dashboard() {
   } = useQuery<HumanMentor[]>({
     queryKey: ["/api/human-mentors"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/human-mentors");
+      const { getToken } = useAuth();
+      const token = await getClerkToken(getToken);
+      const res = await fetch("/api/human-mentors", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (!res.ok) {
         console.error("Failed to fetch mentors:", res.status);
         throw new Error("Not authorized or server error");

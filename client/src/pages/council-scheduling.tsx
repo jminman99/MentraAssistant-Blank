@@ -18,6 +18,7 @@ import { z } from "zod";
 import { CalendarDays, Clock, Users, Check, Star } from "lucide-react";
 import { format, addDays } from "date-fns";
 import CalendarAvailability from "@/components/calendar-availability";
+import { getClerkToken } from "@/lib/auth-helpers";
 
 const councilBookingSchema = z.object({
   selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
@@ -133,25 +134,7 @@ function CouncilSessionsList() {
   );
 }
 
-// Helper function for getting Clerk token
-async function getClerkToken(getToken: any): Promise<string> {
-  if (!getToken) {
-    throw new Error('No authentication available');
-  }
 
-  let token: string | null = null;
-  try {
-    token = await getToken();
-  } catch {
-    throw new Error('Failed to get authentication token');
-  }
-
-  if (!token) {
-    throw new Error('Session expired—please sign in');
-  }
-
-  return token;
-}
 
 export default function CouncilScheduling() {
   const [, navigate] = useLocation();

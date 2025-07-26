@@ -35,6 +35,19 @@ interface BookingFormData {
   sessionGoals: string;
 }
 
+// Helper function to get the token
+async function getClerkToken(getToken: () => Promise<string | null>): Promise<string> {
+  if (!getToken) {
+    throw new Error('Authentication not available');
+  }
+
+  const token = await getToken();
+  if (!token) {
+    throw new Error('Failed to get authentication token');
+  }
+  return token;
+}
+
 export default function IndividualBooking() {
   const { isLoaded, isSignedIn, getToken, user } = useAuth();
   const { toast } = useToast();
@@ -64,14 +77,7 @@ export default function IndividualBooking() {
     queryFn: async () => {
       console.log('[Individual Booking] Fetching mentors...');
 
-      if (!getToken) {
-        throw new Error('Authentication not available');
-      }
-
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Failed to get authentication token');
-      }
+      const token = await getClerkToken(getToken);
 
       const res = await fetch('/api/human-mentors', {
         headers: {
@@ -109,14 +115,7 @@ export default function IndividualBooking() {
     mutationFn: async (bookingData: BookingFormData) => {
       console.log('[Individual Booking] Booking session with data:', bookingData);
 
-      if (!getToken) {
-        throw new Error('Authentication not available');
-      }
-
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Failed to get authentication token');
-      }
+      const token = await getClerkToken(getToken);
 
       const res = await fetch('/api/session-bookings', {
         method: 'POST',
