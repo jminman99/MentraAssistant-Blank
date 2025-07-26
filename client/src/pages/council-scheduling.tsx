@@ -1,34 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { CalendarDays, Clock, Users, Check, Star } from "lucide-react";
-import { format, addDays } from "date-fns";
-import CalendarAvailability from "@/components/calendar-availability";
-import { getClerkToken } from "@/lib/auth-helpers";
-
-const councilBookingSchema = z.object({
-  selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
-  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
-  questions: z.string().optional(),
-  preferredDate: z.date(),
-  preferredTime: z.string(),
-});
-
-type CouncilBookingData = z.infer<typeof councilBookingSchema>;
+import { format } from "date-fns";
+import CouncilBookingDialog from "@/components/council/CouncilBookingDialog";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { SkeletonMentorGrid, SessionCardSkeleton } from "@/components/ui/loading-skeleton";
+import { ErrorFallback } from "@/components/ui/error-fallback";
+import { fetchWithClerkToken, processApiResponse, extractApiData, sortMentorsByRating } from "@/lib/api-utils";
 
 interface HumanMentor {
   id: number;
@@ -43,39 +28,47 @@ interface HumanMentor {
 }
 
 function CouncilSessionsList() {
-  const { isLoaded, isSignedIn, getToken, isAuthenticated } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
-  const { data: sessionsData, isLoading } = useQuery({
+  const { data: sessionsData, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/council-bookings'],
-    enabled: (isLoaded && isSignedIn) || isAuthenticated,
+    enabled: isLoaded && isSignedIn,
     refetchInterval: 5000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const token = await getClerkToken(getToken).catch(() => null);
-
-      const response = await fetch('/api/council-bookings', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await fetchWithClerkToken(getToken, '/api/council-bookings');
+      return processApiResponse(response);
     },
   });
 
-  const sessions = Array.isArray(sessionsData?.data) ? sessionsData.data : [];
+  const sessions = extractApiData(sessionsData);
 
   if (isLoading) {
     return (
-      <div className="mb-8 text-center">
-        <p>Loading your council sessions...</p>
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+          Your Council Sessions
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <SessionCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+          Your Council Sessions
+        </h2>
+        <ErrorFallback
+          title="Failed to load sessions"
+          description="We couldn't load your council sessions."
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
@@ -95,9 +88,14 @@ function CouncilSessionsList() {
           {sessions.map((booking: any) => (
             <Card key={booking.sessionId || booking.id}>
               <CardHeader>
-                <CardTitle className="text-lg">Council Session</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Council Session</CardTitle>
+                  <StatusBadge status={booking.status === 'pending' ? 'pending' : booking.status}>
+                    {booking.status === 'pending' ? 'Coordinating' : booking.status}
+                  </StatusBadge>
+                </div>
                 <CardDescription>
-                  {booking.status === 'pending' ? 'Coordinating with mentors...' : booking.status}
+                  {booking.status === 'pending' ? 'We\'re coordinating with your selected mentors' : `Session ${booking.status}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -138,68 +136,24 @@ function CouncilSessionsList() {
 
 export default function CouncilScheduling() {
   const [, navigate] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Fetch available mentors for council sessions  
-  const { isLoaded, isSignedIn, getToken, isAuthenticated } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
   const [selectedMentors, setSelectedMentors] = useState<number[]>([]);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTime, setSelectedTime] = useState<string>();
-
-  const form = useForm<CouncilBookingData>({
-    resolver: zodResolver(councilBookingSchema),
-    defaultValues: {
-      selectedMentorIds: [],
-      sessionGoals: "",
-      questions: "",
-      preferredDate: addDays(new Date(), 7), // Default to next week
-      preferredTime: "",
-    },
-  });
 
   // Fetch available mentors for council sessions
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/human-mentors'],
-    enabled: (isLoaded && isSignedIn) || isAuthenticated,
+    enabled: isLoaded && isSignedIn,
     queryFn: async () => {
-      const token = await getClerkToken(getToken).catch(() => null);
-
-      const res = await fetch('/api/human-mentors', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      const raw = await res.text().catch(() => '');
-      if (!res.ok) {
-        try {
-          const j = JSON.parse(raw);
-          throw new Error(j.message || j.error || `HTTP ${res.status}`);
-        } catch {
-          throw new Error(raw || `HTTP ${res.status}`);
-        }
-      }
-
-      let json: any = {};
-      try {
-        json = raw ? JSON.parse(raw) : {};
-      } catch {
-        throw new Error(`Non-JSON response: ${raw}`);
-      }
-
-      if (json?.success === false) {
-        throw new Error(json.message || json.error || 'Failed to load mentors');
-      }
-      return json;
+      const response = await fetchWithClerkToken(getToken, '/api/human-mentors');
+      return processApiResponse(response);
     },
   });
 
-  const mentors = Array.isArray(data?.data) ? data.data : [];
+  const rawMentors = extractApiData(data);
+  const mentors = useMemo(() => sortMentorsByRating(rawMentors), [rawMentors]);
 
   // Redirect to login if not authenticated
   if (isLoaded && !isSignedIn) {
@@ -218,79 +172,13 @@ export default function CouncilScheduling() {
     );
   }
 
-  // Submit council session booking
-  const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
-    mutationFn: async (data: CouncilBookingData) => {
-      const token = await getClerkToken(getToken).catch(() => null);
-
-      const requestBody = {
-        selectedMentorIds: data.selectedMentorIds,
-        sessionGoals: data.sessionGoals,
-        questions: data.questions,
-        preferredDate: data.preferredDate.toISOString(),
-        preferredTimeSlot: data.preferredTime,
-      };
-
-      const response = await fetch('/api/council-sessions/book', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return result;
-    },
-    onSuccess: (response: any) => {
-      toast({
-        title: "Council Session Confirmed!",
-        description: response.message || "Your council session has been automatically confirmed. Calendar invites will be sent shortly.",
-      });
-      setShowBookingDialog(false);
-      setSelectedMentors([]);
-      form.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/human-mentors'] });
-      navigate('/sessions');
-    },
-    onError: (error: Error) => {
-      const isSessionExpired = error.message.includes('Session expired') || 
-                              error.message.includes('TOKEN_EXPIRED') ||
-                              error.message.includes('401');
-
-      if (isSessionExpired) {
-        toast({
-          title: "Session Expired",
-          description: "Please sign in again",
-          variant: "destructive",
-        });
-        navigate('/sign-in');
-      } else {
-        toast({
-          title: "Booking Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    },
-  });
+  
 
   const toggleMentorSelection = (mentorId: number) => {
     setSelectedMentors(prev => {
       const newSelection = prev.includes(mentorId)
         ? prev.filter(id => id !== mentorId)
         : [...prev, mentorId];
-
-      // Update form value
-      form.setValue('selectedMentorIds', newSelection);
       return newSelection;
     });
   };
@@ -298,15 +186,43 @@ export default function CouncilScheduling() {
   const canAddMoreMentors = selectedMentors.length < 5;
   const hasMinimumMentors = selectedMentors.length >= 3;
 
-  const onSubmit = (data: CouncilBookingData) => {
-    bookCouncilSession(data);
+  const handleBookingSuccess = () => {
+    setSelectedMentors([]);
+    navigate('/sessions');
   };
 
   if (!isLoaded || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">{!isLoaded ? "Loading..." : "Loading mentors..."}</div>
+      <div className="min-h-screen bg-slate-50">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              Council Sessions
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-4">
+              Loading your mentors...
+            </p>
+          </div>
+          <SkeletonMentorGrid count={6} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              Council Sessions
+            </h1>
+          </div>
+          <ErrorFallback
+            title="Failed to load mentors"
+            description="We couldn't load the available mentors."
+            onRetry={() => refetch()}
+          />
         </div>
       </div>
     );
@@ -380,6 +296,17 @@ export default function CouncilScheduling() {
                     toggleMentorSelection(mentor.id);
                   }
                 }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${selectedMentors.includes(mentor.id) ? 'Remove' : 'Add'} ${mentor.user.firstName} ${mentor.user.lastName} ${selectedMentors.includes(mentor.id) ? 'from' : 'to'} council`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (canAddMoreMentors || selectedMentors.includes(mentor.id)) {
+                      toggleMentorSelection(mentor.id);
+                    }
+                  }
+                }}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -407,12 +334,20 @@ export default function CouncilScheduling() {
                     {mentor.bio}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">
-                      Council Member
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm text-slate-500">
+                        Council Member
+                      </span>
+                      {mentor.hourlyRate && (
+                        <span className="text-xs text-slate-400">
+                          ${mentor.hourlyRate}/hour
+                        </span>
+                      )}
+                    </div>
                     <Checkbox 
                       checked={selectedMentors.includes(mentor.id)}
                       className="pointer-events-none"
+                      aria-label={`${mentor.user.firstName} ${mentor.user.lastName} selected`}
                     />
                   </div>
                 </CardContent>
@@ -437,110 +372,13 @@ export default function CouncilScheduling() {
         <CouncilSessionsList />
 
         {/* Booking Dialog */}
-        <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Book Your Council Session</DialogTitle>
-              <DialogDescription>
-                Complete the details for your council session with {selectedMentors.length} mentors.
-              </DialogDescription>
-            </DialogHeader>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Selected Mentors Summary */}
-                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Your Selected Council:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {Array.isArray(mentors) && selectedMentors.map((mentorId) => {
-                      const mentor = Array.isArray(mentors)
-                        ? mentors.find(m => m.id === mentorId)
-                        : undefined;
-                      return mentor ? (
-                        <Badge key={mentorId} variant="secondary">
-                          {mentor.user?.firstName} {mentor.user?.lastName} - {mentor.expertise}
-                        </Badge>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-
-                {/* Calendar Availability */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-slate-900">Select Date & Time</h4>
-                  <p className="text-sm text-slate-600">
-                    Choose an hour-long time slot when all selected mentors are available.
-                  </p>
-                  <CalendarAvailability
-                    selectedMentors={selectedMentors}
-                    mentors={mentors || []}
-                    onTimeSelect={(date, time) => {
-                      setSelectedDate(date);
-                      setSelectedTime(time);
-                      form.setValue('preferredDate', date);
-                      form.setValue('preferredTime', time);
-                    }}
-                    selectedDate={selectedDate}
-                    selectedTime={selectedTime}
-                    sessionDuration={60}
-                    isCouncilMode={true}
-                  />
-                </div>
-
-                {/* Session Goals */}
-                <FormField
-                  control={form.control}
-                  name="sessionGoals"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Session Goals</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe what you want to accomplish in this council session..."
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Optional Questions */}
-                <FormField
-                  control={form.control}
-                  name="questions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Specific Questions (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Any specific questions you'd like to ask the council?"
-                          className="min-h-[80px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-3">
-                  <Button type="button" variant="outline" onClick={() => setShowBookingDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isBooking || !selectedDate || !selectedTime}
-                    className="flex-1"
-                  >
-                    {isBooking ? "Booking..." : "Confirm Council Session"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <CouncilBookingDialog
+          open={showBookingDialog}
+          onOpenChange={setShowBookingDialog}
+          selectedMentors={selectedMentors}
+          mentors={mentors}
+          onBookingSuccess={handleBookingSuccess}
+        />
       </div>
     </div>
   );
