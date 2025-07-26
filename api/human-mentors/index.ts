@@ -15,7 +15,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     // Extract and verify Clerk JWT token
     const token = req.headers.authorization?.replace('Bearer ', '') ||
                   req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
-    
+
     if (!token) {
       return res.status(401).json({ 
         success: false, 
@@ -35,7 +35,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", clerkUserId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      
+
       // Check if this is a token expiration error
       if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
         return res.status(401).json({ 
@@ -45,7 +45,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
           code: "TOKEN_EXPIRED"
         });
       }
-      
+
       return res.status(401).json({ 
         success: false, 
         error: "Invalid token",
@@ -69,20 +69,20 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
     // Ensure mentors is always an array, never undefined
     const safeMentors = Array.isArray(mentors) ? mentors : [];
-    
+
     console.log('[human-mentors] mentors.length=', safeMentors.length);
-    
+
     if (!mentors) {
       console.warn('Human mentors query returned null/undefined, using empty array');
     }
-    
+
     // If no mentors for this org, try a fallback
     if (safeMentors.length === 0) {
       console.log('[human-mentors] No mentors for orgId', orgId, ', trying fallback...');
       const fallbackMentors = await storage.getHumanMentorsByOrganization(1);
       const safeFallback = Array.isArray(fallbackMentors) ? fallbackMentors : [];
       console.log('[human-mentors] fallback mentors.length=', safeFallback.length);
-      
+
       if (safeFallback.length > 0) {
         return res.status(200).json({
           success: true,
@@ -97,9 +97,12 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    console.log('[DEBUG] Human mentors from DB:', safeMentors);
+    console.log('[DEBUG] Mentors count:', safeMentors?.length || 0);
+
     return res.status(200).json({
       success: true,
-      data: safeMentors,
+      data: safeMentors || [],
       user: {
         id: user.id,
         email: user.email,
@@ -110,7 +113,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
-    
+
     // Check if this is a token-related error
     if (error.message?.includes('expired') || error.message?.includes('JWT is expired')) {
       return res.status(401).json({
@@ -120,7 +123,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
         code: "TOKEN_EXPIRED"
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       error: error?.message || "Failed to fetch human mentors",

@@ -38,7 +38,11 @@ export default function IndividualBooking() {
   // Fetch mentors
   const { data: mentorsResponse, isLoading: isLoadingMentors, error: mentorsError } = useQuery<ApiResponse<HumanMentor[]>>({
     queryKey: ['human-mentors'],
-    queryFn: () => apiRequest('/api/human-mentors'),
+    queryFn: async () => {
+      const response = await apiRequest('/api/human-mentors');
+      console.log('[DEBUG] Raw mentors response:', response);
+      return response;
+    },
     enabled: hasAccess,
   });
 
@@ -50,7 +54,11 @@ export default function IndividualBooking() {
     console.log('[DEBUG] Has Access:', hasAccess);
   }
 
-  const mentors = Array.isArray(mentorsResponse?.data) ? mentorsResponse.data : [];
+  const mentors = Array.isArray(mentorsResponse?.data) 
+    ? mentorsResponse.data 
+    : Array.isArray(mentorsResponse) 
+    ? mentorsResponse 
+    : [];
 
   // Fetch user's existing bookings to check monthly limit
   const { data: userBookings = [], isLoading: isLoadingBookings } = useQuery<SessionBooking[]>({
