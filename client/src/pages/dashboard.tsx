@@ -63,7 +63,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
     enabled: isLoaded && isSignedIn,
     queryFn: async () => {
       if (!getToken) throw new Error('No authentication available');
-      
+
       let token: string | null = null;
       try {
         token = await getToken({ template: 'mentra-api' });
@@ -74,9 +74,9 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
           token = await getToken();
         }
       }
-      
+
       if (!token) throw new Error('No Clerk token available');
-      
+
       const res = await fetch('/api/human-mentors', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,7 +84,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
         },
         credentials: 'include',
       });
-      
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
@@ -106,7 +106,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {
       console.log("📝 Booking council session:", data);
-      
+
       // Ensure we have a valid date and time
       if (!data.preferredDate || !data.preferredTime) {
         throw new Error("Please select a date and time for your session");
@@ -126,19 +126,19 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
       try {
         console.log("🌐 Making request to:", "/api/council-sessions/book");
         console.log("📦 Request payload:", JSON.stringify(requestBody, null, 2));
-        
+
         const response = await apiRequest(
           "POST",
           "/api/council-sessions/book",
           requestBody,
         );
-        
+
         console.log("✅ Raw response status:", response.status);
         console.log("✅ Response headers:", Object.fromEntries(response.headers.entries()));
-        
+
         const responseText = await response.text();
         console.log("📄 Raw response text:", responseText);
-        
+
         let result;
         try {
           result = JSON.parse(responseText);
@@ -147,12 +147,12 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
           console.error("❌ Failed to parse response as JSON:", parseError);
           throw new Error(`Server returned non-JSON response: ${responseText}`);
         }
-        
+
         // Check if the API response indicates success
         if (result.success === false) {
           throw new Error(result.error || "Booking failed");
         }
-        
+
         return result;
       } catch (error) {
         console.error("❌ Booking completely failed:", error);
@@ -166,18 +166,18 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
     },
     onSuccess: async (data) => {
       console.log("🎉 Booking successful, response data:", data);
-      
+
       toast({
         title: "Council Session Booked!",
         description: "Your council session has been scheduled successfully. Check the Sessions tab to view details.",
         duration: 5000,
       });
-      
+
       // Clear the form and close modal
       setShowBookingForm(false);
       setSelectedMentors([]);
       form.reset();
-      
+
       // Invalidate relevant queries to refresh data
       await queryClient.invalidateQueries({
         queryKey: ["/api/council-bookings"],
@@ -188,7 +188,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
       await queryClient.invalidateQueries({
         queryKey: ["/api/upcoming-sessions"],
       });
-      
+
       // Auto-switch to sessions tab to show the new booking
       setTimeout(() => {
         setSelectedTab("sessions");
@@ -341,7 +341,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
                     console.log("⏰ Selected time:", selectedTime);
                     console.log("👥 Selected mentors:", selectedMentors);
                     console.log("📋 Form values:", form.getValues());
-                    
+
                     // Set default date/time if not selected for testing
                     if (!selectedDate) {
                       const defaultDate = addDays(new Date(), 7);
@@ -576,7 +576,7 @@ export default function Dashboard() {
               >
                 {FeatureDisplayLabels.planUsage}
               </button>
-              {(user.role === "admin" || user.role === "super_admin") && (
+              {isLoaded && user && (user.role === "admin" || user.role === "super_admin") && (
                 <Link href="/admin">
                   <button className="whitespace-nowrap text-slate-600 hover:text-primary transition-colors text-xs md:text-sm flex items-center space-x-1">
                     <Crown className="w-3 h-3" />
@@ -616,7 +616,7 @@ export default function Dashboard() {
                     <div className="text-xs text-slate-600">{user.email}</div>
                   </div>
                   <div className="p-2">
-                    {(user.role === "admin" || user.role === "super_admin") && (
+                    {isLoaded && user && (user.role === "admin" || user.role === "super_admin") && (
                       <Link href="/admin">
                         <Button
                           variant="ghost"
