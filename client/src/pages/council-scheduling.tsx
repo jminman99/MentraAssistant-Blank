@@ -15,8 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarDays, Clock, Users, Video, MessageSquare, Check, Star } from "lucide-react";
-import { format, addDays, isBefore, startOfDay } from "date-fns";
+import { CalendarDays, Clock, Users, Check, Star } from "lucide-react";
+import { format, addDays } from "date-fns";
 import CalendarAvailability from "@/components/calendar-availability";
 
 const councilBookingSchema = z.object({
@@ -42,41 +42,36 @@ interface HumanMentor {
 }
 
 function CouncilSessionsList() {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
-      setIsLoading(!isLoaded);
-      return;
-    }
+  const { data: sessionsData, isLoading } = useQuery({
+    queryKey: ['/api/council-bookings'],
+    enabled: isLoaded && isSignedIn,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const token = await getClerkToken(getToken);
 
-    const fetchSessions = async () => {
-      try {
-        const response = await fetch('/api/council-bookings', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSessions(Array.isArray(data) ? data : []);
-        } else {
-          setSessions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching sessions:', error);
-        setSessions([]);
-      } finally {
-        setIsLoading(false);
+      const response = await fetch('/api/council-bookings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    };
 
-    fetchSessions();
-    const interval = setInterval(fetchSessions, 5000);
-    return () => clearInterval(interval);
-  }, [user, authLoading]);
+      const data = await response.json();
+      return data;
+    },
+  });
 
-  if (isLoading || !user) {
+  const sessions = Array.isArray(sessionsData?.data) ? sessionsData.data : [];
+
+  if (isLoading) {
     return (
       <div className="mb-8 text-center">
         <p>Loading your council sessions...</p>
@@ -138,6 +133,30 @@ function CouncilSessionsList() {
   );
 }
 
+// Helper function for getting Clerk token with fallbacks
+async function getClerkToken(getToken: any): Promise<string> {
+  if (!getToken) {
+    throw new Error('No authentication available');
+  }
+
+  let token: string | null = null;
+  try {
+    token = await getToken({ template: 'mentra-api' });
+  } catch {
+    try {
+      token = await getToken({ template: 'default' });
+    } catch {
+      token = await getToken();
+    }
+  }
+  
+  if (!token) {
+    throw new Error('Session expired—please sign in');
+  }
+  
+  return token;
+}
+
 export default function CouncilScheduling() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -165,25 +184,7 @@ export default function CouncilScheduling() {
     queryKey: ['/api/human-mentors'],
     enabled: isLoaded && isSignedIn,
     queryFn: async () => {
-      if (!getToken) {
-        throw new Error('No authentication available');
-      }
-
-      // Try multiple token templates for compatibility
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'mentra-api' });
-      } catch {
-        try {
-          token = await getToken({ template: 'default' });
-        } catch {
-          token = await getToken();
-        }
-      }
-      
-      if (!token) {
-        throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
-      }
+      const token = await getClerkToken(getToken);
 
       const res = await fetch('/api/human-mentors', {
         headers: {
@@ -228,6 +229,8 @@ export default function CouncilScheduling() {
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {
+      const token = await getClerkToken(getToken);
+
       const requestBody = {
         selectedMentorIds: data.selectedMentorIds,
         sessionGoals: data.sessionGoals,
@@ -240,6 +243,7 @@ export default function CouncilScheduling() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
         body: JSON.stringify(requestBody),
@@ -262,14 +266,28 @@ export default function CouncilScheduling() {
       setSelectedMentors([]);
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/council-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/human-mentors'] });
       navigate('/sessions');
     },
     onError: (error: Error) => {
-      toast({
-        title: "Booking Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      const isSessionExpired = error.message.includes('Session expired') || 
+                              error.message.includes('TOKEN_EXPIRED') ||
+                              error.message.includes('401');
+      
+      if (isSessionExpired) {
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again",
+          variant: "destructive",
+        });
+        navigate('/sign-in');
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
