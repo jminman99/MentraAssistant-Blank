@@ -477,14 +477,13 @@ export default function Dashboard() {
 
   // ✅ ADDED: safely fetch mentors
   const {
-    data: humanMentors = [],
+    data: humanMentors,
     isLoading,
     isError,
     error,
-  } = useQuery<HumanMentor[]>({
+  } = useQuery({
     queryKey: ["/api/human-mentors"],
     queryFn: async () => {
-      const { getToken } = useAuth();
       const token = await getClerkToken(getToken);
       const res = await fetch("/api/human-mentors", {
         headers: {
@@ -496,9 +495,12 @@ export default function Dashboard() {
         console.error("Failed to fetch mentors:", res.status);
         throw new Error("Not authorized or server error");
       }
-      return res.json();
+      const data = await res.json();
+      console.log("Fetched mentor data:", data);
+      return data;
     },
     retry: false,
+    enabled: isLoaded && !!getToken,
   });
 
   // Handle URL params
@@ -684,7 +686,20 @@ export default function Dashboard() {
                 </div>
 
                 <div className="space-y-4">
-                  {humanMentors.length === 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-8">
+                      <div className="text-slate-500">Loading mentors...</div>
+                    </div>
+                  ) : isError ? (
+                    <div className="text-center py-8">
+                      <div className="text-slate-500">
+                        Unable to load mentors at this time
+                      </div>
+                      <div className="text-sm text-slate-400 mt-1">
+                        Please try again later
+                      </div>
+                    </div>
+                  ) : !humanMentors?.data || humanMentors.data.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-slate-500">
                         No {FeatureDisplayLabels.experiencedGuides.toLowerCase()} available
@@ -694,13 +709,54 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-slate-500 mb-4">
-                        Ready to book your individual session?
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {humanMentors.data.slice(0, 6).map((mentor: any) => (
+                          <Card key={mentor.id} className="hover:shadow-md transition-shadow">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg">
+                                  {mentor.user?.firstName} {mentor.user?.lastName}
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    mentor.availability?.today ? 'bg-green-500' : 'bg-yellow-500'
+                                  }`}></div>
+                                  <span className="text-xs text-slate-500">
+                                    {mentor.availability?.nextAvailable || 'Available'}
+                                  </span>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="w-fit">
+                                {mentor.expertise}
+                              </Badge>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-slate-600 text-sm mb-3 line-clamp-2">
+                                {mentor.bio}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  ${mentor.hourlyRate}/hour
+                                </span>
+                                <Link href="/individual-booking">
+                                  <Button size="sm" variant="outline">
+                                    Book Session
+                                  </Button>
+                                </Link>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                      <Link href="/individual-booking">
-                        <Button size="lg">Book Individual Session</Button>
-                      </Link>
+                      
+                      <div className="text-center pt-4">
+                        <Link href="/individual-booking">
+                          <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white">
+                            View All Mentors & Book Session
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>

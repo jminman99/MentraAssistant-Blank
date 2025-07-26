@@ -291,6 +291,7 @@ export default function IndividualBooking() {
   });
 
   const handleSelectMentor = (mentor: HumanMentor) => {
+    console.log('Selected mentor:', mentor);
     setSelectedMentor(mentor);
     form.setValue('humanMentorId', mentor.id);
     setShowBookingDialog(true);
