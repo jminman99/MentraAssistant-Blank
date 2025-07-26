@@ -133,7 +133,7 @@ function CouncilSessionsList() {
   );
 }
 
-// Helper function for getting Clerk token with fallbacks
+// Helper function for getting Clerk token
 async function getClerkToken(getToken: any): Promise<string> {
   if (!getToken) {
     throw new Error('No authentication available');
@@ -141,13 +141,9 @@ async function getClerkToken(getToken: any): Promise<string> {
 
   let token: string | null = null;
   try {
-    token = await getToken({ template: 'mentra-api' });
+    token = await getToken();
   } catch {
-    try {
-      token = await getToken({ template: 'default' });
-    } catch {
-      token = await getToken();
-    }
+    throw new Error('Failed to get authentication token');
   }
 
   if (!token) {

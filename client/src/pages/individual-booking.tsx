@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,7 +63,7 @@ export default function IndividualBooking() {
     retry: 3,
     queryFn: async () => {
       console.log('[Individual Booking] Fetching mentors...');
-      
+
       if (!getToken) {
         throw new Error('Authentication not available');
       }
@@ -100,7 +99,7 @@ export default function IndividualBooking() {
       // Handle both array and object responses
       const mentorData = Array.isArray(data.data) ? data.data : (data.data?.mentors || []);
       console.log('[Individual Booking] Processed mentor data:', mentorData);
-      
+
       return mentorData;
     },
   });
@@ -109,7 +108,7 @@ export default function IndividualBooking() {
   const { mutate: bookSession, isPending: isBooking } = useMutation({
     mutationFn: async (bookingData: BookingFormData) => {
       console.log('[Individual Booking] Booking session with data:', bookingData);
-      
+
       if (!getToken) {
         throw new Error('Authentication not available');
       }
