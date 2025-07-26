@@ -10,7 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@/lib/auth-hook";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
 import { UsageCard } from "@/components/subscription/usage-card";
@@ -460,7 +460,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
 }
 
 export default function Dashboard() {
-  const { user, logout, isLoaded } = useAuth();
+  const { user, logout, isLoaded, getToken } = useAuth();
   const { branding, isLoading: brandingLoading, mentorTerminology } = useOrganizationLabels();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
