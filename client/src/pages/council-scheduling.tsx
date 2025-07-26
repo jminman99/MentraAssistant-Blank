@@ -228,6 +228,17 @@ export default function CouncilScheduling() {
     return null;
   }
 
+  // Don't render if user data isn't available
+  if (!isLoaded) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   // Submit council session booking
   const { mutate: bookCouncilSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: CouncilBookingData) => {

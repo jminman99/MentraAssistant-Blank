@@ -598,22 +598,22 @@ export default function Dashboard() {
                 <div className="flex items-center space-x-2 cursor-pointer">
                   <img
                     src={
-                      user.profileImage ||
+                      user?.profileImage ||
                       `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100`
                     }
                     alt="User Profile"
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <span className="hidden sm:block text-sm font-medium text-slate-700">
-                    {user.firstName} {user.lastName.charAt(0)}.
+                    {user?.firstName} {user?.lastName ? user.lastName.charAt(0) : ''}.
                   </span>
                 </div>
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   <div className="p-4 border-b border-slate-200">
                     <div className="text-sm font-medium text-slate-900">
-                      {user.firstName} {user.lastName}
+                      {user?.firstName || ''} {user?.lastName || ''}
                     </div>
-                    <div className="text-xs text-slate-600">{user.email}</div>
+                    <div className="text-xs text-slate-600">{user?.email || ''}</div>
                   </div>
                   <div className="p-2">
                     {isLoaded && user && (user.role === "admin" || user.role === "super_admin") && (
@@ -660,7 +660,7 @@ export default function Dashboard() {
                   <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <MessageCircle className="h-4 w-4" />
                     <span>
-                      {user.sessionsUsed}/{user.sessionsLimit} sessions used
+                      {user?.sessionsUsed || 0}/{user?.sessionsLimit || 0} sessions used
                     </span>
                   </div>
                 </div>
@@ -705,7 +705,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {selectedTab === "plan" && (
+            {selectedTab === "plan" && user && (
               <div className="space-y-6">
                 <UsageCard user={user} />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
