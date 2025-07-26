@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { vercelApiClient } from '@/lib/api-client-vercel';
-import { setTokenProvider } from '@/lib/queryClient';
+import { vercelApiClient } from '../lib/api-client-vercel';
+import { setTokenProvider } from '../lib/queryClient';
 
 /**
  * Connects Clerk's authentication tokens to the API client

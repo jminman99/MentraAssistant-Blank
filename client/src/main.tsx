@@ -2,10 +2,10 @@
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
-import App from "./App-simple";
+import App from "./App";
 import "./index.css";
 import { ClerkTokenProvider } from "./components/ClerkTokenProvider";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "./components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Persist a single QueryClient across Vite HMR in development.
