@@ -34,22 +34,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Calendar, Users, TrendingUp, ChevronRight, User, Star } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Council booking form schema
 const councilBookingSchema = z.object({
-  selectedMentorIds: z
-    .array(z.number())
-    .min(3, "Select at least 3 mentors")
-    .max(5, "Maximum 5 mentors allowed"),
-  sessionGoals: z
-    .string()
-    .min(10, "Please describe your goals for the session"),
+  selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors"),
+  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
   questions: z.string().optional(),
   preferredDate: z.date(),
-  preferredTime: z.string(),
+  preferredTime: z.string().min(1, "Please select a time"),
+});
+
+// Individual booking form schema
+const individualBookingSchema = z.object({
+  humanMentorId: z.number().min(1, "Please select a mentor"),
+  scheduledDate: z.string().min(1, "Please select a date and time"),
+  duration: z.number().min(30, "Minimum 30 minutes"),
+  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
 });
 
 type CouncilBookingData = z.infer<typeof councilBookingSchema>;
+type IndividualBookingData = z.infer<typeof individualBookingSchema>;
 
 // Helper function to get Clerk token
 async function getClerkToken(getToken: any): Promise<string> {
@@ -110,6 +115,16 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
       questions: "",
       preferredDate: addDays(new Date(), 7),
       preferredTime: "",
+    },
+  });
+
+  const individualForm = useForm<IndividualBookingData>({
+    resolver: zodResolver(individualBookingSchema),
+    defaultValues: {
+      humanMentorId: 0,
+      scheduledDate: "",
+      duration: 60,
+      sessionGoals: "",
     },
   });
 
@@ -209,6 +224,46 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
       toast({
         title: "Booking Failed",
         description: error.message || "Failed to book council session",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { mutate: bookIndividualSession, isPending: isIndividualBooking } = useMutation({
+    mutationFn: async (data: IndividualBookingData) => {
+      const token = await getClerkToken(getToken);
+      const res = await fetch('/api/session-bookings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          humanMentorId: data.humanMentorId,
+          scheduledDate: data.scheduledDate,
+          duration: data.duration,
+          sessionGoals: data.sessionGoals,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    onSuccess: (response: any) => {
+      toast({
+        title: "Individual Session Booked!",
+        description: response.message || "Your individual session has been successfully booked.",
+        duration: 5000,
+      });
+      // setShowIndividualBookingDialog(false); // Assuming you want to close the dialog on success
+      // setSelectedIndividualMentor(null); // Reset the selected mentor
+      individualForm.reset(); // Reset the form
+      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] }); // Invalidate queries
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Individual Booking Failed",
+        description: error.message || "Failed to book individual session",
         variant: "destructive",
       });
     },
@@ -466,6 +521,9 @@ export default function Dashboard() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [, setLocation] = useLocation();
 
+    const [selectedIndividualMentor, setSelectedIndividualMentor] = useState<HumanMentor | null>(null);
+    const [showIndividualBookingDialog, setShowIndividualBookingDialog] = useState(false);
+
   // ✅ ADDED: safe logout handler
   const handleLogout = async () => {
     try {
@@ -503,6 +561,8 @@ export default function Dashboard() {
     enabled: isLoaded && !!getToken,
   });
 
+    const mentors = Array.isArray(humanMentors?.data) ? humanMentors.data : [];
+
   // Handle URL params
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -517,6 +577,11 @@ export default function Dashboard() {
     }
     window.scrollTo(0, 0);
   }, []);
+
+    const handleSelectIndividualMentor = (mentor: HumanMentor) => {
+        setSelectedIndividualMentor(mentor);
+        setShowIndividualBookingDialog(true);
+    };
 
   // Don't redirect if user is loading - let Clerk handle auth
   if (!isLoaded) {
@@ -739,23 +804,21 @@ export default function Dashboard() {
                                 <span className="text-sm font-medium">
                                   ${mentor.hourlyRate}/hour
                                 </span>
-                                <Link href="/individual-booking">
-                                  <Button size="sm" variant="outline">
+                                <Button size="sm" variant="outline" onClick={() => handleSelectIndividualMentor(mentor)}>
                                     Book Session
-                                  </Button>
-                                </Link>
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>
                         ))}
                       </div>
-                      
+
                       <div className="text-center pt-4">
-                        <Link href="/individual-booking">
-                          <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white">
-                            View All Mentors & Book Session
-                          </Button>
-                        </Link>
+                          {/*<Link href="/individual-booking">*/}
+                          {/*  <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white">*/}
+                          {/*    View All Mentors & Book Session*/}
+                          {/*  </Button>*/}
+                          {/*</Link>*/}
                       </div>
                     </div>
                   )}
@@ -783,6 +846,53 @@ export default function Dashboard() {
               <div className="space-y-6">
                 <UsageCard user={user} />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <User className="h-6 w-6 text-slate-700" />
+                            <h2 className="text-xl font-semibold text-slate-900">
+                                Individual Sessions
+                            </h2>
+                        </div>
+                        <p className="text-slate-600 mb-4">
+                            Book one-on-one sessions with expert mentors for personalized
+                            guidance and focused conversations.
+                        </p>
+
+                        {/* Individual Mentors Grid */}
+                        <div className="space-y-4">
+                            <h3 className="font-medium text-slate-900">Available Mentors</h3>
+                            <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                                {mentors?.map((mentor: any) => (
+                                    <div
+                                        key={mentor.id}
+                                        className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src={mentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40`}
+                                                alt={`${mentor.user.firstName} ${mentor.user.lastName}`}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                            <div>
+                                                <p className="font-medium text-sm">
+                                                    {mentor.user.firstName} {mentor.user.lastName}
+                                                </p>
+                                                <p className="text-xs text-slate-600">{mentor.expertise}</p>
+                                                <p className="text-xs text-slate-500">${mentor.hourlyRate}/hour</p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleSelectIndividualMentor(mentor)}
+                                        >
+                                            Book Session
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">
                     Upcoming Sessions
                   </h3>
@@ -903,6 +1013,107 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+        {/* Individual Booking Dialog */}
+        {showIndividualBookingDialog && selectedIndividualMentor && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
+                <div className="flex items-center justify-center min-h-screen p-4">
+                    <div className="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+                        <div className="mb-4">
+                            <h2 className="text-xl font-semibold text-slate-900">
+                                Book Session with {selectedIndividualMentor.user?.firstName} {selectedIndividualMentor.user?.lastName}
+                            </h2>
+                            <p className="text-slate-600 text-sm">
+                                Schedule a one-on-one session for personalized guidance.
+                            </p>
+                        </div>
+
+                        <Form {...individualForm}>
+                            <form onSubmit={individualForm.handleSubmit((values) => {
+                                bookIndividualSession({ ...values, humanMentorId: selectedIndividualMentor.id });
+                            })} className="space-y-4">
+                                {/* Session Goals */}
+                                <FormField
+                                    control={individualForm.control}
+                                    name="sessionGoals"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Session Goals</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Describe what you want to accomplish in this session..."
+                                                    className="min-h-[80px]"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Duration */}
+                                <FormField
+                                    control={individualForm.control}
+                                    name="duration"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duration (minutes)</FormLabel>
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value.toString()}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select duration" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="30">30 minutes</SelectItem>
+                                                    <SelectItem value="60">60 minutes</SelectItem>
+                                                    <SelectItem value="90">90 minutes</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Scheduled Date - Placeholder for now */}
+                                <FormField
+                                    control={individualForm.control}
+                                    name="scheduledDate"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Scheduled Date</FormLabel>
+                                            <FormControl>
+                                                <input type="datetime-local" className="border rounded px-3 py-2 w-full" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <div className="flex justify-end gap-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowIndividualBookingDialog(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={isIndividualBooking}
+                                        className="bg-slate-900 hover:bg-slate-800 text-white"
+                                    >
+                                        {isIndividualBooking ? "Booking..." : "Book Session"}
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+                    </div>
+                </div>
+            </div>
+        )}
 
       {/* Modals */}
       {showUpgradeModal && (
