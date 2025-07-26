@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -148,6 +147,8 @@ function IndividualSessionsList() {
     </div>
   );
 }
+
+const DEFAULT_MENTOR_IMAGE = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64";
 
 export default function IndividualBooking() {
   const [, navigate] = useLocation();
@@ -417,11 +418,11 @@ export default function IndividualBooking() {
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">Selected Mentor:</h4>
                     <div className="flex items-center gap-3">
-                      <img 
-                        src={selectedMentor.user.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64`} 
-                        alt={`${selectedMentor.user.firstName} ${selectedMentor.user.lastName}`} 
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
+                    <img 
+                      src={selectedMentor.user.profileImage || DEFAULT_MENTOR_IMAGE} 
+                      alt={`${selectedMentor.user.firstName} ${selectedMentor.user.lastName}`} 
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
                       <div>
                         <p className="font-medium">
                           {selectedMentor.user.firstName} {selectedMentor.user.lastName}
