@@ -32,28 +32,31 @@ export function createRequestContext(): RequestContext {
 }
 
 export async function authenticateRequest(req: VercelRequest, context: RequestContext): Promise<any> {
-  const user = await verifyToken(req);
-  if (!user) {
+  // Import storage here to avoid circular dependency issues
+  const { storage } = await import('./storage.js');
+  
+  const clerkUser = await verifyToken(req);
+  if (!clerkUser) {
     throw new Error('Authentication required');
   }
   
   // Get user from database using Clerk ID
-  const user = await storage.getUserByClerkId(clerkUserId);
-  if (!user) {
+  const dbUser = await storage.getUserByClerkId(clerkUser.clerkUserId || clerkUser.id);
+  if (!dbUser) {
     throw new Error('User not found in database');
   }
 
   // Ensure the user object has the correct integer ID format
   const authenticatedUser = {
-    id: Number(user.id), // Ensure it's a number, not string
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    clerkUserId: user.clerkUserId,
-    role: user.role,
-    subscriptionPlan: user.subscriptionPlan,
-    organizationId: user.organizationId,
-    createdAt: user.createdAt
+    id: Number(dbUser.id), // Ensure it's a number, not string
+    email: dbUser.email,
+    firstName: dbUser.firstName,
+    lastName: dbUser.lastName,
+    clerkUserId: dbUser.clerkUserId,
+    role: dbUser.role,
+    subscriptionPlan: dbUser.subscriptionPlan,
+    organizationId: dbUser.organizationId,
+    createdAt: dbUser.createdAt
   };
 
   // Log successful authentication
