@@ -1,9 +1,6 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { 
-  createIndividualSessionBooking, 
-  getIndividualSessionBookings 
-} from '../_lib/storage.js';
+import { storage } from '../_lib/storage.js';
 import { 
   applyCorsHeaders, 
   handlePreflight, 
@@ -72,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         scheduledDate: bookingData.scheduledDate.toISOString()
       });
 
-      const booking = await createIndividualSessionBooking(bookingData);
+      const booking = await storage.createIndividualSessionBooking(bookingData);
 
       logLatency(context, 'Session booking creation');
 
@@ -86,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for user:`, user.id);
 
       // Get user's bookings
-      const bookings = await getIndividualSessionBookings(user.id);
+      const bookings = await storage.getIndividualSessionBookings(user.id);
 
       logLatency(context, `Retrieved ${bookings?.length || 0} bookings`);
 

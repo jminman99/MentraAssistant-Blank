@@ -415,6 +415,49 @@ export class VercelStorage {
   }
 
   // Individual Session Booking methods
+  async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
+    return this.createSessionBooking(data);
+  }
+
+  async getIndividualSessionBookings(userId: number): Promise<SessionBooking[]> {
+    try {
+      console.log('Fetching individual session bookings for user:', userId);
+
+      const bookings = await db.execute(sql`
+        SELECT 
+          sb.id,
+          sb.mentee_id as "menteeId",
+          sb.human_mentor_id as "humanMentorId", 
+          sb.scheduled_date as "scheduledDate",
+          sb.duration,
+          sb.status,
+          sb.session_goals as "sessionGoals",
+          sb.meeting_type as "meetingType",
+          sb.video_link as "videoLink",
+          sb.created_at as "createdAt"
+        FROM session_bookings sb
+        WHERE sb.mentee_id = ${userId}
+        ORDER BY sb.scheduled_date DESC
+      `);
+
+      return bookings.rows.map((booking: any) => ({
+        id: booking.id,
+        menteeId: booking.menteeId,
+        humanMentorId: booking.humanMentorId,
+        scheduledDate: booking.scheduledDate,
+        duration: booking.duration || 60,
+        status: booking.status,
+        sessionGoals: booking.sessionGoals,
+        meetingType: booking.meetingType || 'video',
+        videoLink: booking.videoLink,
+        createdAt: booking.createdAt
+      }));
+    } catch (error) {
+      console.error('Error fetching individual session bookings:', error);
+      return [];
+    }
+  }
+
   async getMentoringSessions(userId: number): Promise<any[]> {
     try {
       console.log('Fetching individual sessions for user:', userId);
