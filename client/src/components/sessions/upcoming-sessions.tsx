@@ -15,21 +15,21 @@ interface UpcomingSessionsProps {
 
 export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
 
-  
+
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  
+
   // Fetch individual mentoring sessions
   const { data: individualSessions = [], isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['/api/session-bookings'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/session-bookings');
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch individual sessions");
       }
-      
+
       return Array.isArray(result?.data) ? result.data : [];
     },
     staleTime: 30000, // Cache for 30 seconds in production
@@ -59,12 +59,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     },
     onError: (error: any) => {
       let errorMessage = error.message || "Failed to cancel session";
-      
+
       // Handle development server limitation
       if (errorMessage.includes("405") || errorMessage.includes("Method not allowed")) {
         errorMessage = "Session cancellation requires production deployment. The feature is ready but not available in development mode.";
       }
-      
+
       toast({
         title: "Cancellation Failed",
         description: errorMessage,
@@ -79,17 +79,17 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/council-bookings');
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch council sessions");
       }
-      
+
       return Array.isArray(result?.data) ? result.data : [];
     },
     staleTime: 30000, // Cache for 30 seconds in production
     retry: 2, // Retry failed requests twice
   });
-  
+
   // Filter out cancelled sessions and add type
   const councilSessions = rawCouncilSessions
     .filter((session: any) => session.status !== 'cancelled')
@@ -99,12 +99,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   const sessions = individualSessions
     .filter((session: any) => session.status !== 'cancelled')
     .map((session: any) => ({ ...session, type: 'individual' }));
-  
+
   console.log('[DEBUG] Individual sessions:', sessions.length);
   console.log('[DEBUG] Council sessions:', councilSessions.length);
 
   const isLoading = Boolean(sessionsLoading || councilLoading);
-  
+
   console.log("📊 Sessions component state:", {
     isLoading,
     individualSessions: individualSessions.length,
@@ -127,7 +127,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   // Show API error state if we have real server errors (not just development issues)
   const hasRealApiError = (sessionsError && !sessionsError.message?.includes('HTML')) || 
                           (councilError && !councilError.message?.includes('HTML'));
-  
+
   if (hasRealApiError) {
     return (
       <div className="text-center py-8">
@@ -177,7 +177,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       // console.log('[DEBUG] Session date:', sessionDate);
       // console.log('[DEBUG] Start of today:', startOfToday);
       // console.log('[DEBUG] Is today or future?', sessionDate ? sessionDate >= startOfToday : false);
-      
+
       return {
         id: session.id, // This is the participant ID from storage
         sessionId: session.sessionId, // This is the actual session ID
@@ -194,13 +194,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       };
     })
   ];
-  
+
   console.log('[DEBUG] All sessions combined:', allSessions);
 
   // Enhanced filtering with detailed debugging
   const now = new Date();
   const gracePeriod = new Date(now.getTime() - 15 * 60 * 1000); // Extended to 15 minutes for safety
-  
+
   console.log('[SESSIONS] Starting filter process:', {
     totalSessions: allSessions.length,
     currentTime: now.toISOString(),
@@ -217,15 +217,15 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         scheduledAt: session.scheduledAt,
         type: session.type
       };
-      
+
       // Validate status
       const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
       const hasScheduledAt = !!session.scheduledAt;
-      
+
       // Parse date with better error handling
       let sessionDate = null;
       let dateParseError = null;
-      
+
       if (hasScheduledAt) {
         try {
           const parsed = parseISO(session.scheduledAt);
@@ -238,13 +238,13 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
           dateParseError = error.message;
         }
       }
-      
+
       // Time-based filtering (more lenient)
       const isWithinGracePeriod = sessionDate ? sessionDate >= gracePeriod : false;
       const hoursFromNow = sessionDate ? (sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60) : null;
-      
+
       const passes = isValidStatus && hasScheduledAt && sessionDate && isWithinGracePeriod;
-      
+
       console.log(`[SESSIONS] Session ${session.id}:`, {
         ...debug,
         isValidStatus,
@@ -255,18 +255,18 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         isWithinGracePeriod,
         passes
       });
-      
+
       return { ...session, _debug: debug, _passes: passes };
     })
     .filter(session => session._passes)
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
-    
+
   console.log('[SESSIONS] Filter results:', {
     totalFiltered: upcomingSessions.length,
     sessionIds: upcomingSessions.map(s => s.id)
   });
-    
+
   console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
   console.log('[DEBUG] Total sessions found:', allSessions.length);
   console.log('[DEBUG] Upcoming sessions count:', upcomingSessions.length);
@@ -300,9 +300,9 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         }
       }).length
     };
-    
+
     console.log('[SESSIONS] No upcoming sessions found:', debugInfo);
-    
+
     return (
       <div className="text-center py-8">
         <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
@@ -377,7 +377,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
                 </div>
               </div>
             </div>
-            
+
             {/* Cancel button for both session types */}
             <div className="mt-3">
               <AlertDialog>
@@ -423,7 +423,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
           </div>
         </div>
       ))}
-      
+
       {!compact && upcomingSessions.length > 0 && (
         <Button 
           variant="outline" 

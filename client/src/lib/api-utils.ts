@@ -21,7 +21,7 @@ export async function fetchWithClerkToken(
     } catch (error) {
       console.warn(`Token fetch attempt ${attempts + 1} failed:`, error);
     }
-    
+
     attempts++;
     if (attempts < maxAttempts && !token) {
       // Wait before retrying
@@ -92,13 +92,69 @@ export async function processApiResponse<T = any>(response: Response): Promise<T
 /**
  * Enhanced fetch with token, retry logic, and automatic response processing
  */
-export async function fetchWithTokenAndProcess<T = any>(
-  getToken: () => Promise<string | null>,
-  url: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetchWithClerkToken(getToken, url, options);
-  return processApiResponse<T>(response);
+export async function fetchWithTokenAndProcess(getToken: any, endpoint: string, options: RequestInit = {}) {
+  try {
+    // Get fresh token with multiple fallback strategies
+    let token;
+    let tokenSource = 'unknown';
+
+    try {
+      token = await getToken({ template: 'mentra-api' });
+      tokenSource = 'mentra-api';
+    } catch (e1) {
+      console.log('mentra-api template failed, trying default');
+      try {
+        token = await getToken({ template: 'default' });
+        tokenSource = 'default';
+      } catch (e2) {
+        console.log('default template failed, trying without template');
+        try {
+          token = await getToken();
+          tokenSource = 'no-template';
+        } catch (e3) {
+          console.error('All token strategies failed:', { e1, e2, e3 });
+          throw new Error('No authentication token available');
+        }
+      }
+    }
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    console.log('🔑 Fresh token fetched:', token ? `Token obtained via ${tokenSource}` : 'No token');
+    console.log('Auth token being sent:', token ? 'Token present' : 'No token');
+
+    const response = await fetch(endpoint, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    console.log(`API Response [${endpoint}]:`, response.status, response.statusText);
+
+    if (!response.ok) {
+      let errorText;
+      try {
+        errorText = await response.text();
+      } catch {
+        errorText = 'Unable to read error response';
+      }
+      console.error(`API Error ${response.status} [${endpoint}]:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`API Success [${endpoint}]:`, data?.data?.length || 'response received');
+    return data;
+
+  } catch (error) {
+    console.error(`API request failed [${endpoint}]:`, error);
+    throw error;
+  }
 }
 
 /**
