@@ -163,4 +163,3 @@ export function sortMentorsByRating(mentors: any[]) {
     return ratingB - ratingA;
   });
 }
-```
