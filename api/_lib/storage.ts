@@ -273,7 +273,7 @@ export class VercelStorage {
   async getHumanMentorsByOrganization(orgId: number): Promise<any[]> {
     try {
       console.log("[storage] Fetching mentors for organization:", orgId);
-      
+
       const rows = await db
         .select({
           id: humanMentors.id,
@@ -293,7 +293,7 @@ export class VercelStorage {
       return rows;
     } catch (error) {
       console.error("[storage] Error fetching mentors:", error);
-      
+
       // If there's a column error, try raw SQL as fallback
       try {
         console.log("[storage] Trying raw SQL fallback...");
@@ -302,14 +302,14 @@ export class VercelStorage {
             hm.id,
             hm.expertise_areas as "expertiseAreas",
             hm.bio,
-            hm."acuityAppointmentTypeId",
+            hm.acuityappointmenttypeid as "acuityAppointmentTypeId",
             u."firstName",
             u."lastName"
           FROM human_mentors hm
           LEFT JOIN users u ON hm.user_id = u.id
           WHERE hm.organization_id = ${orgId}
         `);
-        
+
         const mappedRows = result.rows.map((row: any) => ({
           id: row.id,
           expertiseAreas: row.expertiseAreas,
@@ -320,7 +320,7 @@ export class VercelStorage {
             lastName: row.lastName,
           }
         }));
-        
+
         console.log("[storage] Raw SQL succeeded, found mentors:", mappedRows.length);
         return mappedRows;
       } catch (rawError) {
@@ -606,16 +606,7 @@ export class VercelStorage {
         .where(eq(councilParticipants.id, participantId))
         .returning();
 
-      if (!updatedParticipant) {
-        throw new Error('Council participant not found');
-      }
-
-      console.log(`✅ Cancelled council participant ${participantId}`);
-      return {
-        success: true,
-        message: 'Council session cancelled successfully',
-        data: updatedParticipant
-      };
+      return updatedParticipant;
     } catch (error) {
       console.error('Error cancelling council session:', error);
       throw error;
