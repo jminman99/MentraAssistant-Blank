@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,6 +49,7 @@ async function getClerkToken(getToken: any): Promise<string> {
 
 export function IndividualBookingDialog({ mentor, onClose, onSuccess }: IndividualBookingDialogProps) {
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
 
@@ -68,7 +69,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       const res = await fetch('/api/session-bookings', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}\``,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -87,6 +88,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     },
     onSuccess: () => {
       form.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
       onSuccess();
     },
     onError: (error: Error) => {
