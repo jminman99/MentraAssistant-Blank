@@ -56,13 +56,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Create the booking with validated data
       const bookingData = {
-        menteeId: user.id,
+        menteeId: user.id, // This should be the internal database user ID, not Clerk ID
         humanMentorId: validatedData.humanMentorId,
         scheduledDate: validatedData.scheduledDate,
         duration: validatedData.duration,
         sessionGoals: validatedData.sessionGoals,
         status: 'confirmed' as const
       };
+
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Using user ID for booking:`, user.id, 'from user:', user);
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...bookingData,

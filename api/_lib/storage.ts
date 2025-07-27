@@ -66,17 +66,16 @@ export class VercelStorage {
     }
   }
 
-  async getUserByClerkId(clerkUserId: string): Promise<User | null> {
-    try {
-      if (!clerkUserId) {
-        throw new Error('Clerk User ID is required');
-      }
+  async getUserByClerkId(clerkUserId: string): Promise<any> {
+    const results = await db.execute(sql`
+      SELECT id, email, "firstName", "lastName", "clerkUserId", role, "subscriptionPlan", "organizationId", "createdAt"
+      FROM users 
+      WHERE "clerkUserId" = ${clerkUserId}
+    `);
 
-      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkUserId)).limit(1);
-      return result[0] || null;
-    } catch (error) {
-      this.handleError('getUserByClerkId', error);
-    }
+    const user = results.rows?.[0] || null;
+    console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
