@@ -20,17 +20,7 @@ export default function Mentors() {
         throw new Error('No authentication available');
       }
 
-      // Try multiple token templates for compatibility
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'mentra-api' });
-      } catch {
-        try {
-          token = await getToken({ template: 'default' });
-        } catch {
-          token = await getToken();
-        }
-      }
+      const token = await getToken();
       
       if (!token) {
         throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
