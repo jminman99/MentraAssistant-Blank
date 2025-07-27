@@ -270,7 +270,7 @@ export class VercelStorage {
   }
 
   // Human Mentor methods
-  async getHumanMentorsByOrganization(organizationId: number): Promise<any[]> {
+  async getHumanMentorsByOrganization(orgId: number): Promise<any[]> {
     const rows = await db
       .select({
         id: humanMentors.id,
@@ -284,7 +284,7 @@ export class VercelStorage {
       })
       .from(humanMentors)
       .leftJoin(users, eq(humanMentors.userId, users.id))
-      .where(eq(humanMentors.organizationId, organizationId));
+      .where(eq(humanMentors.organizationId, orgId));
 
     return rows;
   }

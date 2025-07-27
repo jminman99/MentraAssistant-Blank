@@ -17,19 +17,7 @@ export function useHumanMentors() {
         throw new Error('No authentication available');
       }
 
-      // Try multiple token templates for compatibility
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: 'mentra-api' });
-      } catch {
-        // Fallback to default template
-        try {
-          token = await getToken({ template: 'default' });
-        } catch {
-          // Final fallback - no template
-          token = await getToken();
-        }
-      }
+      const token = await getToken();
       
       console.debug('[apiRequest] url', '/api/human-mentors', 'token?', !!token);
       
