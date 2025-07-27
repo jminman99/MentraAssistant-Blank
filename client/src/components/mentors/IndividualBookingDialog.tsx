@@ -1,5 +1,3 @@
-
-```typescript
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
@@ -70,7 +68,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       const res = await fetch('/api/session-bookings', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}\``,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -99,12 +97,12 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
   const handleTimeSelect = (date: Date, time: string) => {
     setSelectedDate(date);
     setSelectedTime(time);
-    
+
     // Create ISO string for the scheduled date
     const [hours, minutes] = time.split(':');
     const scheduledDateTime = new Date(date);
     scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
+
     form.setValue("scheduledDate", scheduledDateTime.toISOString());
   };
 
@@ -228,4 +226,3 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     </Dialog>
   );
 }
-```
