@@ -66,20 +66,20 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
   const { mutate: bookIndividualSession, isPending: isBooking } = useMutation({
     mutationFn: async (data: IndividualBookingData) => {
       console.log('[BOOKING] Starting individual session booking:', data);
-      
+
       try {
         const token = await getClerkToken(getToken);
         console.log('[BOOKING] Token obtained successfully');
-        
+
         const requestPayload = {
           humanMentorId: data.humanMentorId,
           scheduledDate: data.scheduledDate,
           duration: data.duration,
           sessionGoals: data.sessionGoals,
         };
-        
+
         console.log('[BOOKING] Sending request:', requestPayload);
-        
+
         const res = await fetch('/api/session-bookings', {
           method: 'POST',
           headers: {
@@ -90,37 +90,47 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         });
 
         console.log('[BOOKING] Response status:', res.status);
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           console.error('[BOOKING] Server error:', errorText);
           throw new Error(`Booking failed (${res.status}): ${errorText}`);
         }
-        
+
         const result = await res.json();
         console.log('[BOOKING] Success result:', result);
         return result;
-        
+
       } catch (error) {
         console.error('[BOOKING] Request failed:', error);
         throw error;
       }
     },
     onSuccess: (result) => {
-      console.log('[BOOKING] Mutation success, invalidating cache:', result);
-      form.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
-      onSuccess();
+      try {
+        console.log('[BOOKING] Mutation success, invalidating cache:', result);
+        form.reset();
+        if (queryClient) {
+          queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+        }
+        onSuccess();
+      } catch (err) {
+        console.error('[BOOKING] Error in onSuccess handler:', err);
+      }
     },
     onError: (error: Error) => {
-      console.error("[BOOKING] Individual booking failed:", error);
-      // Add user-facing error handling
-      if (error.message.includes('401')) {
-        form.setError('root', { message: 'Authentication expired. Please refresh and try again.' });
-      } else if (error.message.includes('400')) {
-        form.setError('root', { message: 'Invalid booking data. Please check your selections.' });
-      } else {
-        form.setError('root', { message: `Booking failed: ${error.message}` });
+      try {
+        console.error("[BOOKING] Individual booking failed:", error);
+        // Add user-facing error handling
+        if (error.message.includes('401')) {
+          form.setError('root', { message: 'Authentication expired. Please refresh and try again.' });
+        } else if (error.message.includes('400')) {
+          form.setError('root', { message: 'Invalid booking data. Please check your selections.' });
+        } else {
+          form.setError('root', { message: `Booking failed: ${error.message}` });
+        }
+      } catch (err) {
+        console.error('[BOOKING] Error in onError handler:', err);
       }
     },
   });
@@ -134,24 +144,24 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       const [hours, minutes] = time.split(':');
       const hoursNum = parseInt(hours);
       const minutesNum = parseInt(minutes);
-      
+
       // Validate time components
       if (isNaN(hoursNum) || isNaN(minutesNum) || hoursNum < 0 || hoursNum > 23 || minutesNum < 0 || minutesNum > 59) {
         console.error('[BOOKING] Invalid time format:', time);
         form.setError("scheduledDate", { message: "Invalid time format" });
         return;
       }
-      
+
       const scheduledDateTime = new Date(date);
       scheduledDateTime.setHours(hoursNum, minutesNum, 0, 0);
-      
+
       // Validate the resulting date
       if (isNaN(scheduledDateTime.getTime())) {
         console.error('[BOOKING] Invalid date created:', { date, time, result: scheduledDateTime });
         form.setError("scheduledDate", { message: "Invalid date/time combination" });
         return;
       }
-      
+
       // Ensure it's in the future
       const now = new Date();
       if (scheduledDateTime <= now) {
@@ -159,11 +169,11 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         form.setError("scheduledDate", { message: "Session must be scheduled in the future" });
         return;
       }
-      
+
       const isoString = scheduledDateTime.toISOString();
       console.log('[BOOKING] Setting valid date:', { date, time, isoString, timestamp: scheduledDateTime.getTime() });
       form.setValue("scheduledDate", isoString);
-      
+
     } catch (error) {
       console.error('[BOOKING] Date creation error:', error, { date, time });
       form.setError("scheduledDate", { message: "Failed to set date/time" });
