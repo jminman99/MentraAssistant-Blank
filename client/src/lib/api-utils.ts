@@ -99,24 +99,13 @@ export async function fetchWithTokenAndProcess(getToken: any, endpoint: string, 
     let tokenSource = 'unknown';
 
     try {
-      token = await getToken({ template: 'mentra-api' });
-      tokenSource = 'mentra-api';
-    } catch (e1) {
-      console.log('mentra-api template failed, trying default');
-      try {
-        token = await getToken({ template: 'default' });
-        tokenSource = 'default';
-      } catch (e2) {
-        console.log('default template failed, trying without template');
-        try {
-          token = await getToken();
-          tokenSource = 'no-template';
-        } catch (e3) {
-          console.error('All token strategies failed:', { e1, e2, e3 });
-          throw new Error('No authentication token available');
-        }
-      }
+      token = await getToken();
+      tokenSource = 'default';
+    } catch (e3) {
+      console.error('All token strategies failed:', { e3 });
+      throw new Error('No authentication token available');
     }
+
 
     if (!token) {
       throw new Error('No authentication token available');
@@ -174,3 +163,4 @@ export function sortMentorsByRating(mentors: any[]) {
     return ratingB - ratingA;
   });
 }
+```

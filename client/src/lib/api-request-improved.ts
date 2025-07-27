@@ -3,9 +3,9 @@ export async function apiRequest(method: string, url: string, body?: unknown): P
   try {
     const anyWindow = window as any;
     if (anyWindow?.__clerk?.session?.getToken) {
-      token = await anyWindow.__clerk.session.getToken({ template: "default" });
+      token = await anyWindow.__clerk.session.getToken();
     } else if (anyWindow?.Clerk?.session?.getToken) {
-      token = await anyWindow.Clerk.session.getToken({ template: "default" });
+      token = await anyWindow.Clerk.session.getToken();
     }
   } catch {
     // Token fetch failed, continue without token
