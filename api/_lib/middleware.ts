@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyToken } from './auth.js';
 import { checkRateLimit, getRateLimitIdentifier, type RateLimitConfig } from './rate-limit.js';
@@ -37,8 +36,30 @@ export async function authenticateRequest(req: VercelRequest, context: RequestCo
   if (!user) {
     throw new Error('Authentication required');
   }
-  context.user = user;
-  return user;
+  
+  // Get user from database using Clerk ID
+  const user = await storage.getUserByClerkId(clerkUserId);
+  if (!user) {
+    throw new Error('User not found in database');
+  }
+
+  // Ensure the user object has the correct integer ID format
+  const authenticatedUser = {
+    id: Number(user.id), // Ensure it's a number, not string
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    clerkUserId: user.clerkUserId,
+    role: user.role,
+    subscriptionPlan: user.subscriptionPlan,
+    organizationId: user.organizationId,
+    createdAt: user.createdAt
+  };
+
+  // Log successful authentication
+  console.log(`[AUTH:${context.requestId}] User authenticated with database ID:`, authenticatedUser.id);
+
+  return authenticatedUser;
 }
 
 export function parseJsonBody(req: VercelRequest, context: RequestContext): void {
@@ -66,12 +87,12 @@ export function applyRateLimit(
 ): boolean {
   const identifier = getRateLimitIdentifier(req);
   const result = checkRateLimit(identifier, config);
-  
+
   // Add rate limit headers
   res.setHeader('X-RateLimit-Limit', config?.maxRequests || 10);
   res.setHeader('X-RateLimit-Remaining', result.remaining);
   res.setHeader('X-RateLimit-Reset', new Date(result.resetTime).toISOString());
-  
+
   if (!result.allowed) {
     console.warn(`[${context.requestId}] Rate limit exceeded for ${identifier}`);
     res.status(429).json({
@@ -82,14 +103,14 @@ export function applyRateLimit(
     });
     return false;
   }
-  
+
   return true;
 }
 
 export function createErrorResponse(error: unknown, context: RequestContext) {
   const latency = Date.now() - context.startTime;
   console.error(`[${context.requestId}] Error after ${latency}ms:`, error);
-  
+
   if (error instanceof Error) {
     // Database connection errors
     if (error.message.includes('database') || error.message.includes('connection')) {
@@ -102,7 +123,7 @@ export function createErrorResponse(error: unknown, context: RequestContext) {
         }
       };
     }
-    
+
     // Authentication errors
     if (error.message.includes('auth') || error.message.includes('token') || error.message.includes('Authentication')) {
       return {
@@ -127,7 +148,7 @@ export function createErrorResponse(error: unknown, context: RequestContext) {
       };
     }
   }
-  
+
   return {
     status: 500,
     body: { 

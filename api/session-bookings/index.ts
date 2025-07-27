@@ -55,8 +55,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const validatedData = validation.data!;
 
       // Create the booking with validated data
+      // Ensure we have the database user ID, not the Clerk ID
+      let databaseUserId = user.id;
+      
+      // If user.id is a string (Clerk ID), we need to look up the database user
+      if (typeof user.id === 'string' && user.id.startsWith('user_')) {
+        console.log(`[SESSION_BOOKINGS:${context.requestId}] Converting Clerk ID to database ID:`, user.id);
+        const dbUser = await storage.getUserByClerkId(user.id);
+        if (!dbUser) {
+          return res.status(400).json({
+            success: false,
+            error: 'User not found in database',
+            requestId: context.requestId
+          });
+        }
+        databaseUserId = dbUser.id;
+        console.log(`[SESSION_BOOKINGS:${context.requestId}] Found database user ID:`, databaseUserId);
+      }
+
       const bookingData = {
-        menteeId: user.id, // This should be the internal database user ID, not Clerk ID
+        menteeId: databaseUserId, // Use the proper integer database user ID
         humanMentorId: validatedData.humanMentorId,
         scheduledDate: validatedData.scheduledDate,
         duration: validatedData.duration,
@@ -64,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'confirmed' as const
       };
 
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] Using user ID for booking:`, user.id, 'from user:', user);
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Using database user ID for booking:`, databaseUserId);
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...bookingData,
@@ -82,10 +100,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
     } else if (req.method === 'GET') {
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for user:`, user.id);
+      // Ensure we have the database user ID for GET requests too
+      let databaseUserId = user.id;
+      
+      if (typeof user.id === 'string' && user.id.startsWith('user_')) {
+        const dbUser = await storage.getUserByClerkId(user.id);
+        if (!dbUser) {
+          return res.status(400).json({
+            success: false,
+            error: 'User not found in database',
+            requestId: context.requestId
+          });
+        }
+        databaseUserId = dbUser.id;
+      }
+
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for database user:`, databaseUserId);
 
       // Get user's bookings
-      const bookings = await storage.getIndividualSessionBookings(user.id);
+      const bookings = await storage.getIndividualSessionBookings(databaseUserId);
 
       logLatency(context, `Retrieved ${bookings?.length || 0} bookings`);
 
