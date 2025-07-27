@@ -69,10 +69,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const orgId = user.organizationId || 1;
 
     // Fetch mentors for org
-    let mentors;
-    try {
-      mentors = await storage.getHumanMentorsByOrganization(orgId);
-      const safeMentors = Array.isArray(mentors) ? mentors : [];
+    const mentors = await storage.getHumanMentorsByOrganization(orgId);
+    const safeMentors = Array.isArray(mentors) ? mentors : [];
 
       // Add realistic availability data to each mentor
       const mentorsWithAvailability = safeMentors.map((mentor: any) => {
@@ -105,13 +103,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
           lastName: user.lastName,
         },
       });
-    } catch (storageError) {
-      console.error('Storage error fetching mentors:', storageError);
-      return res.status(500).json({
-        success: false,
-        error: "Database connection error"
-      });
-    }
+
 
   } catch (error: any) {
     console.error("Error fetching human mentors:", error);
