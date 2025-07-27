@@ -848,7 +848,8 @@ export default function Dashboard() {
                 <UsageCard user={user} />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center```
+ gap-3 mb-4">
                             <User className="h-6 w-6 text-slate-700" />
                             <h2 className="text-xl font-semibold text-slate-900">
                                 Individual Sessions

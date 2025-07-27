@@ -104,7 +104,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 
     // Create the individual session booking
     const sessionData = {
-      menteeId: user.id,
+      menteeId: user.id, // This connects the session to the user
       humanMentorId,
       sessionType: 'individual' as const,
       duration,

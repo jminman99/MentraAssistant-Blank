@@ -123,15 +123,15 @@ export function SessionsContent({ compact = false }: SessionsContentProps) {
 
   const isLoading = !isLoaded || sessionsLoading || (!backendReady && isSignedIn) || (backendReady && user?.subscriptionPlan === 'council' && councilLoading);
   const now = new Date();
+  const gracePeriod = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
   
   const upcomingSessions = allSessions.filter(session => {
     const sessionDate = parseISO(session.scheduledDate);
-    const gracePeriod = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
     return (session.status === 'scheduled' || session.status === 'confirmed') && isAfter(sessionDate, gracePeriod);
   });
   const pastSessions = allSessions.filter(session => 
     session.status === 'completed' || 
-    ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(parseISO(session.scheduledDate), now))
+    ((session.status === 'scheduled' || session.status === 'confirmed') && isBefore(parseISO(session.scheduledDate), gracePeriod))
   );
 
   const canCancelSession = (session: SessionBooking) => {
