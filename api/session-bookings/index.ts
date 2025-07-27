@@ -1,109 +1,112 @@
+
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyToken } from '../_lib/auth.js';
 import { 
   createIndividualSessionBooking, 
   getIndividualSessionBookings 
 } from '../_lib/storage.js';
+import { 
+  applyCorsHeaders, 
+  handlePreflight, 
+  createRequestContext, 
+  authenticateRequest, 
+  parseJsonBody, 
+  logLatency, 
+  createErrorResponse,
+  applyRateLimit 
+} from '../_lib/middleware.js';
+import { validateSessionBooking } from '../_lib/validation.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Add CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  const context = createRequestContext();
+  
+  applyCorsHeaders(res);
+  
+  if (handlePreflight(req, res)) {
+    return;
   }
 
   try {
-    console.log('[SESSION_BOOKINGS] Request method:', req.method);
-    console.log('[SESSION_BOOKINGS] Headers:', req.headers);
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] ${req.method} request started`);
+
+    // Parse JSON body if needed
+    parseJsonBody(req, context);
 
     // Verify authentication
-    const user = await verifyToken(req);
-    if (!user) {
-      console.log('[SESSION_BOOKINGS] Authentication failed');
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Authentication required' 
-      });
-    }
-
-    console.log('[SESSION_BOOKINGS] User authenticated:', user.id);
+    const user = await authenticateRequest(req, context);
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] User authenticated:`, user.id);
 
     if (req.method === 'POST') {
-      console.log('[SESSION_BOOKINGS] POST request body:', req.body);
+      // Apply rate limiting for booking creation (stricter limits)
+      if (!applyRateLimit(req, res, context, { windowMs: 300000, maxRequests: 3 })) {
+        return; // Rate limit exceeded, response already sent
+      }
+      
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] POST request body:`, req.body);
 
-      const { humanMentorId, scheduledDate, duration, sessionGoals } = req.body;
-
-      // Validate required fields
-      if (!humanMentorId || !scheduledDate || !duration || !sessionGoals) {
-        console.log('[SESSION_BOOKINGS] Missing required fields:', { humanMentorId, scheduledDate, duration, sessionGoals });
+      // Validate request data
+      const validation = validateSessionBooking(req.body);
+      if (!validation.success) {
+        console.log(`[SESSION_BOOKINGS:${context.requestId}] Validation failed:`, validation.errors);
         return res.status(400).json({ 
           success: false, 
-          error: 'Missing required fields',
-          received: { humanMentorId, scheduledDate, duration, sessionGoals }
+          error: 'Validation failed',
+          details: validation.errors,
+          requestId: context.requestId
         });
       }
 
-      // Validate date
-      const parsedDate = new Date(scheduledDate);
-      if (isNaN(parsedDate.getTime())) {
-        console.log('[SESSION_BOOKINGS] Invalid date:', scheduledDate);
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid date format' 
-        });
-      }
+      const validatedData = validation.data!;
 
-      // Create the booking
+      // Create the booking with validated data
       const bookingData = {
         menteeId: user.id,
-        humanMentorId: parseInt(humanMentorId),
-        scheduledDate: parsedDate,
-        duration: parseInt(duration),
-        sessionGoals,
+        humanMentorId: validatedData.humanMentorId,
+        scheduledDate: validatedData.scheduledDate,
+        duration: validatedData.duration,
+        sessionGoals: validatedData.sessionGoals,
         status: 'confirmed' as const
       };
 
-      console.log('[SESSION_BOOKINGS] Creating booking with data:', bookingData);
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
+        ...bookingData,
+        scheduledDate: bookingData.scheduledDate.toISOString()
+      });
 
       const booking = await createIndividualSessionBooking(bookingData);
 
-      console.log('[SESSION_BOOKINGS] Booking created:', booking);
+      logLatency(context, 'Session booking creation');
 
       return res.status(201).json({
         success: true,
-        data: booking
+        data: booking,
+        requestId: context.requestId
       });
 
     } else if (req.method === 'GET') {
-      console.log('[SESSION_BOOKINGS] GET request for user:', user.id);
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for user:`, user.id);
 
       // Get user's bookings
       const bookings = await getIndividualSessionBookings(user.id);
 
-      console.log('[SESSION_BOOKINGS] Found bookings:', bookings?.length || 0);
+      logLatency(context, `Retrieved ${bookings?.length || 0} bookings`);
 
       return res.status(200).json({
         success: true,
-        data: bookings || []
+        data: bookings || [],
+        requestId: context.requestId
       });
 
     } else {
       res.setHeader('Allow', ['GET', 'POST']);
       return res.status(405).json({ 
         success: false, 
-        error: 'Method not allowed' 
+        error: 'Method not allowed',
+        requestId: context.requestId
       });
     }
 
   } catch (error) {
-    console.error('[SESSION_BOOKINGS] Handler error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    const errorResponse = createErrorResponse(error, context);
+    return res.status(errorResponse.status).json(errorResponse.body);
   }
 }
