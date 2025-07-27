@@ -203,7 +203,7 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       const hasScheduledAt = !!session.scheduledAt;
       console.log(`[DEBUG] Filtering session ${session.id}: status="${session.status}", isValidStatus=${isValidStatus}, hasScheduledAt=${hasScheduledAt}`);
       
-      // Show sessions from today onwards (including past sessions from today)
+      // Show sessions that are at least 5 minutes ago or later (grace period for clock skew)
       const sessionDate = hasScheduledAt ? (() => {
         try {
           const parsed = parseISO(session.scheduledAt);
@@ -214,10 +214,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         }
       })() : null;
       const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const isTodayOrFuture = sessionDate ? sessionDate >= startOfToday : false;
+      const gracePeriod = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+      const isWithinGracePeriod = sessionDate ? sessionDate >= gracePeriod : false;
       
-      return isValidStatus && hasScheduledAt && isTodayOrFuture;
+      console.log(`[DEBUG] Session ${session.id} date: ${sessionDate}, grace period: ${gracePeriod}, within grace: ${isWithinGracePeriod}`);
+      
+      return isValidStatus && hasScheduledAt && isWithinGracePeriod;
     })
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
