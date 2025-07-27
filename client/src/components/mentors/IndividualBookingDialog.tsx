@@ -253,7 +253,15 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
             <div className="space-y-4">
               <FormLabel>Schedule Your Session</FormLabel>
               {mentor.acuityAppointmentTypeId ? (
-                <MentorBookingIframe appointmentTypeId={mentor.acuityAppointmentTypeId} />
+                <div className="space-y-4">
+                  <MentorBookingIframe appointmentTypeId={mentor.acuityAppointmentTypeId} />
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800 text-sm">
+                      <strong>After booking:</strong> Your appointment will appear in "My Sessions" within a few minutes. 
+                      If it doesn't appear, please refresh the page or contact support.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-yellow-800">

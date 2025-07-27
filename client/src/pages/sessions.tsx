@@ -53,19 +53,28 @@ export default function Sessions() {
                 }
               </p>
             </div>
-            <Button onClick={handleBookNewSession}>
-              {user?.subscriptionPlan === 'council' ? (
-                <>
-                  <Users className="h-4 w-4 mr-2" />
-                  Book Council Session
-                </>
-              ) : (
-                <>
-                  <User className="h-4 w-4 mr-2" />
-                  Book Individual Session
-                </>
+            <div className="flex items-center space-x-2">
+              {process.env.NODE_ENV === 'development' && (
+                <Link href="/test-acuity-sync.html" target="_blank">
+                  <Button variant="outline" size="sm">
+                    Debug Acuity
+                  </Button>
+                </Link>
               )}
-            </Button>
+              <Button onClick={handleBookNewSession}>
+                {user?.subscriptionPlan === 'council' ? (
+                  <>
+                    <Users className="h-4 w-4 mr-2" />
+                    Book Council Session
+                  </>
+                ) : (
+                  <>
+                    <User className="h-4 w-4 mr-2" />
+                    Book Individual Session
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 

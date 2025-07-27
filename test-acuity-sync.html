@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Acuity Sync</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        input, textarea { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #007cba; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px 0; 
+        }
+        button:hover { background: #005a8b; }
+        .results { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Acuity Appointment Sync</h1>
+        <p>Use this form to manually sync an Acuity appointment to your database.</p>
+        
+        <form id="syncForm">
+            <div class="form-group">
+                <label for="acuityAppointmentId">Acuity Appointment ID:</label>
+                <input type="text" id="acuityAppointmentId" required placeholder="12345">
+            </div>
+            
+            <div class="form-group">
+                <label for="appointmentTypeId">Appointment Type ID:</label>
+                <input type="number" id="appointmentTypeId" required placeholder="67890">
+            </div>
+            
+            <div class="form-group">
+                <label for="datetime">Date & Time:</label>
+                <input type="datetime-local" id="datetime" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="duration" value="60" min="15" max="180">
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Session Notes:</label>
+                <textarea id="notes" rows="3" placeholder="Session goals or notes..."></textarea>
+            </div>
+            
+            <button type="submit">Sync Appointment</button>
+        </form>
+        
+        <div id="results" class="results" style="display: none;"></div>
+        
+        <hr style="margin: 30px 0;">
+        
+        <h2>Quick Actions</h2>
+        <button onclick="checkExistingBookings()">Check My Existing Bookings</button>
+        <button onclick="fillSampleData()">Fill Sample Data</button>
+    </div>
+
+    <script>
+        // Fill form with sample data for testing
+        function fillSampleData() {
+            document.getElementById('acuityAppointmentId').value = 'test-' + Date.now();
+            document.getElementById('appointmentTypeId').value = '67890'; // Update with actual ID
+            
+            // Set datetime to tomorrow at 2 PM
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            document.getElementById('datetime').value = tomorrow.toISOString().slice(0, 16);
+            
+            document.getElementById('duration').value = '60';
+            document.getElementById('notes').value = 'Test session - discuss career goals';
+        }
+
+        // Check existing bookings
+        async function checkExistingBookings() {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.className = 'results';
+            results.textContent = 'Loading existing bookings...';
+            
+            try {
+                // Get Clerk token
+                let token = null;
+                if (window.Clerk?.session) {
+                    token = await window.Clerk.session.getToken();
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/api/session-bookings', {
+                    method: 'GET',
+                    headers,
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                results.className = 'results success';
+                results.textContent = `Existing bookings (${data.data?.length || 0}):\n\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                results.className = 'results error';
+                results.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('syncForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.className = 'results';
+            results.textContent = 'Syncing appointment...';
+            
+            try {
+                // Get form data
+                const formData = {
+                    acuityAppointmentId: document.getElementById('acuityAppointmentId').value,
+                    appointmentTypeId: parseInt(document.getElementById('appointmentTypeId').value),
+                    datetime: document.getElementById('datetime').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    notes: document.getElementById('notes').value
+                };
+
+                // Get Clerk token
+                let token = null;
+                if (window.Clerk?.session) {
+                    token = await window.Clerk.session.getToken();
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/api/sync-acuity-appointments', {
+                    method: 'POST',
+                    headers,
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                results.className = 'results success';
+                results.textContent = `Success!\n\n${JSON.stringify(data, null, 2)}`;
+                
+                // Clear form
+                document.getElementById('syncForm').reset();
+                
+            } catch (error) {
+                results.className = 'results error';
+                results.textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
