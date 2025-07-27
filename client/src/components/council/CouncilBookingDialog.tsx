@@ -12,6 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { CalendarAvailability } from "@/components/calendar-availability";
 import { addDays } from "date-fns";
 import { fetchWithTokenAndProcess } from "@/lib/api-utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 const councilBookingSchema = z.object({
   selectedMentorIds: z.array(z.number()).min(3, "Select at least 3 mentors").max(5, "Maximum 5 mentors allowed"),
@@ -22,6 +25,18 @@ const councilBookingSchema = z.object({
 });
 
 type CouncilBookingData = z.infer<typeof councilBookingSchema>;
+
+interface HumanMentor {
+  id: number;
+  user: {
+    firstName: string;
+    lastName: string;
+  };
+  expertise: string;
+  bio: string;
+  rating: string | null;
+  hourlyRate: string;
+}
 
 interface CouncilBookingDialogProps {
   open: boolean;
@@ -77,10 +92,33 @@ export default function CouncilBookingDialog({
         preferredTimeSlot: data.preferredTime,
       };
 
-      return fetchWithTokenAndProcess(getToken, '/api/council-sessions/book', {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch('/api/council-sessions/book', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(requestBody),
       });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const parsedError = JSON.parse(errorData);
+          errorMessage = parsedError.error || errorMessage;
+        } catch {
+          errorMessage = errorData || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
     },
     onSuccess: (response: any) => {
       toast({
@@ -94,6 +132,8 @@ export default function CouncilBookingDialog({
       onBookingSuccess();
     },
     onError: (error: Error) => {
+      console.error('Council booking error:', error);
+      
       const isSessionExpired = error.message.includes('Session expired') || 
                               error.message.includes('TOKEN_EXPIRED') ||
                               error.message.includes('401');
@@ -104,11 +144,12 @@ export default function CouncilBookingDialog({
           description: "Please sign in again",
           variant: "destructive",
         });
-        navigate('/sign-in');
+        // Use window.location for navigation fallback
+        window.location.href = '/sign-in';
       } else {
         toast({
           title: "Booking Failed",
-          description: error.message,
+          description: error.message || "Failed to book council session",
           variant: "destructive",
         });
       }
