@@ -102,21 +102,46 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Validate and parse scheduledDate
+    let parsedDate;
+    try {
+      parsedDate = new Date(scheduledDate);
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error('Invalid date');
+      }
+    } catch (error) {
+      console.error('[DEBUG] Invalid scheduledDate:', scheduledDate, error);
+      return res.status(400).json({
+        success: false,
+        error: `Invalid scheduled date: ${scheduledDate}`
+      });
+    }
+
     // Create the individual session booking
     const sessionData = {
       menteeId: user.id, // This connects the session to the user
       humanMentorId,
       sessionType: 'individual' as const,
       duration,
-      scheduledDate: new Date(scheduledDate),
+      scheduledDate: parsedDate,
       sessionGoals,
       meetingType: 'video' as const,
       status: 'scheduled' as const
     };
 
-    console.log('[DEBUG] Creating session with data:', sessionData);
+    console.log('[DEBUG] Creating session with validated data:', {
+      ...sessionData,
+      scheduledDate: sessionData.scheduledDate.toISOString(),
+      timestamp: sessionData.scheduledDate.getTime()
+    });
+    
     const newSession = await storage.createSessionBooking(sessionData);
-    console.log('[DEBUG] Session created successfully:', newSession);
+    console.log('[DEBUG] Session created successfully:', {
+      id: newSession.id,
+      menteeId: newSession.menteeId,
+      scheduledDate: newSession.scheduledDate,
+      status: newSession.status
+    });
 
     return res.status(200).json({
       success: true,

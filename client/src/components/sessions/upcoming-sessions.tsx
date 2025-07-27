@@ -197,32 +197,75 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   
   console.log('[DEBUG] All sessions combined:', allSessions);
 
+  // Enhanced filtering with detailed debugging
+  const now = new Date();
+  const gracePeriod = new Date(now.getTime() - 15 * 60 * 1000); // Extended to 15 minutes for safety
+  
+  console.log('[SESSIONS] Starting filter process:', {
+    totalSessions: allSessions.length,
+    currentTime: now.toISOString(),
+    graceTime: gracePeriod.toISOString()
+  });
+
   const upcomingSessions = allSessions
-    .filter(session => {
+    .map((session, index) => {
+      // Add debugging info to each session
+      const debug = {
+        originalIndex: index,
+        id: session.id,
+        status: session.status,
+        scheduledAt: session.scheduledAt,
+        type: session.type
+      };
+      
+      // Validate status
       const isValidStatus = session.status === 'scheduled' || session.status === 'confirmed';
       const hasScheduledAt = !!session.scheduledAt;
-      console.log(`[DEBUG] Filtering session ${session.id}: status="${session.status}", isValidStatus=${isValidStatus}, hasScheduledAt=${hasScheduledAt}`);
       
-      // Show sessions that are at least 5 minutes ago or later (grace period for clock skew)
-      const sessionDate = hasScheduledAt ? (() => {
+      // Parse date with better error handling
+      let sessionDate = null;
+      let dateParseError = null;
+      
+      if (hasScheduledAt) {
         try {
           const parsed = parseISO(session.scheduledAt);
-          return isValid(parsed) ? parsed : null;
+          if (isValid(parsed)) {
+            sessionDate = parsed;
+          } else {
+            dateParseError = 'Invalid parsed date';
+          }
         } catch (error) {
-          console.warn('Invalid date format:', session.scheduledAt, error);
-          return null;
+          dateParseError = error.message;
         }
-      })() : null;
-      const now = new Date();
-      const gracePeriod = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+      }
+      
+      // Time-based filtering (more lenient)
       const isWithinGracePeriod = sessionDate ? sessionDate >= gracePeriod : false;
+      const hoursFromNow = sessionDate ? (sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60) : null;
       
-      console.log(`[DEBUG] Session ${session.id} date: ${sessionDate}, grace period: ${gracePeriod}, within grace: ${isWithinGracePeriod}`);
+      const passes = isValidStatus && hasScheduledAt && sessionDate && isWithinGracePeriod;
       
-      return isValidStatus && hasScheduledAt && isWithinGracePeriod;
+      console.log(`[SESSIONS] Session ${session.id}:`, {
+        ...debug,
+        isValidStatus,
+        hasScheduledAt,
+        sessionDate: sessionDate?.toISOString(),
+        dateParseError,
+        hoursFromNow: hoursFromNow?.toFixed(2),
+        isWithinGracePeriod,
+        passes
+      });
+      
+      return { ...session, _debug: debug, _passes: passes };
     })
+    .filter(session => session._passes)
     .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, compact ? 2 : 10);
+    
+  console.log('[SESSIONS] Filter results:', {
+    totalFiltered: upcomingSessions.length,
+    sessionIds: upcomingSessions.map(s => s.id)
+  });
     
   console.log('[DEBUG] Final upcoming sessions:', upcomingSessions);
   console.log('[DEBUG] Total sessions found:', allSessions.length);
@@ -242,6 +285,24 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
   }
 
   if (upcomingSessions.length === 0) {
+    // Debug info for when no sessions show
+    const debugInfo = {
+      totalSessions: allSessions.length,
+      sessionsWithDate: allSessions.filter(s => !!s.scheduledAt).length,
+      validStatuses: allSessions.filter(s => s.status === 'scheduled' || s.status === 'confirmed').length,
+      futureOnly: allSessions.filter(s => {
+        if (!s.scheduledAt) return false;
+        try {
+          const date = parseISO(s.scheduledAt);
+          return isValid(date) && date >= gracePeriod;
+        } catch {
+          return false;
+        }
+      }).length
+    };
+    
+    console.log('[SESSIONS] No upcoming sessions found:', debugInfo);
+    
     return (
       <div className="text-center py-8">
         <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-3" />
@@ -249,6 +310,14 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
         <div className="text-sm text-slate-400 mt-1">
           Book a session with an experienced guide to get started
         </div>
+        {import.meta.env.DEV && allSessions.length > 0 && (
+          <details className="mt-4 text-xs text-left bg-gray-100 p-2 rounded">
+            <summary className="cursor-pointer">Debug Info (Dev Only)</summary>
+            <pre className="mt-2 text-left overflow-auto">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </details>
+        )}
       </div>
     );
   }
