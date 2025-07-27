@@ -23,7 +23,7 @@ export interface User {
 
 export interface HumanMentor {
   id: number;
-  userId?: number;
+  userId: number;
   organizationId?: number;
   title?: string;
   bio?: string;
@@ -36,6 +36,7 @@ export interface HumanMentor {
   videoCallLink?: string;
   rating?: string;
   totalSessions?: number;
+  acuityAppointmentTypeId?: number;
   isActive?: boolean;
   applicationStatus?: string;
   createdAt?: string;

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { HumanMentor } from "@/types";
 import { CalendarAvailability } from "@/components/calendar-availability";
 import { format } from "date-fns";
+import MentorBookingIframe from "@/components/MentorBookingIframe";
 
 const individualBookingSchema = z.object({
   humanMentorId: z.number().min(1, "Please select a mentor"),
@@ -248,34 +249,18 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
               )}
             />
 
-            {/* Calendar Availability */}
+            {/* Acuity Scheduling Iframe */}
             <div className="space-y-4">
-              <FormLabel>Select Date & Time</FormLabel>
-              <CalendarAvailability
-                selectedMentorIds={[mentor.id]}
-                mentors={[mentor]}
-                onTimeSelect={handleTimeSelect}
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
-                sessionDuration={form.watch("duration")}
-                isCouncilMode={false}
-              />
-              {selectedDate && selectedTime && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800">
-                    Selected: {format(selectedDate, 'PPP')} at {selectedTime}
+              <FormLabel>Schedule Your Session</FormLabel>
+              {mentor.acuityAppointmentTypeId ? (
+                <MentorBookingIframe appointmentTypeId={mentor.acuityAppointmentTypeId} />
+              ) : (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800">
+                    This mentor's scheduling is not yet configured. Please contact support.
                   </p>
                 </div>
               )}
-              <FormField
-                control={form.control}
-                name="scheduledDate"
-                render={() => (
-                  <FormItem>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
