@@ -36,7 +36,7 @@ export function MentorBookingIframe({ appointmentTypeId }: MentorBookingIframePr
     );
   }
 
-  const acuityUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&ref=embedded_csp`;
+  const acuityUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}`;
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
