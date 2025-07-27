@@ -1,13 +1,13 @@
 
 -- Add the acuityAppointmentTypeId column (if not already added by schema update)
-ALTER TABLE human_mentors ADD COLUMN IF NOT EXISTS acuity_appointment_type_id INTEGER;
+ALTER TABLE human_mentors ADD COLUMN IF NOT EXISTS acuityAppointmentTypeId INTEGER;
 
 -- Update mentors with their specific Acuity appointment type IDs
 -- Based on the mentor names from your AI mentor selector
 
 -- John Mark - ID: 81495198
 UPDATE human_mentors 
-SET acuity_appointment_type_id = 81495198 
+SET acuityAppointmentTypeId = 81495198 
 WHERE EXISTS (
   SELECT 1 FROM users 
   WHERE users.id = human_mentors.user_id 
@@ -16,7 +16,7 @@ WHERE EXISTS (
 
 -- David - ID: 81496327
 UPDATE human_mentors 
-SET acuity_appointment_type_id = 81496327 
+SET acuityAppointmentTypeId = 81496327 
 WHERE EXISTS (
   SELECT 1 FROM users 
   WHERE users.id = human_mentors.user_id 
@@ -25,7 +25,7 @@ WHERE EXISTS (
 
 -- Frank Slootman - ID: 81496344
 UPDATE human_mentors 
-SET acuity_appointment_type_id = 81496344 
+SET acuityAppointmentTypeId = 81496344 
 WHERE EXISTS (
   SELECT 1 FROM users 
   WHERE users.id = human_mentors.user_id 
@@ -34,7 +34,7 @@ WHERE EXISTS (
 
 -- Gregg Dedrick - ID: 81496362
 UPDATE human_mentors 
-SET acuity_appointment_type_id = 81496362 
+SET acuityAppointmentTypeId = 81496362 
 WHERE EXISTS (
   SELECT 1 FROM users 
   WHERE users.id = human_mentors.user_id 
@@ -46,7 +46,7 @@ SELECT
   hm.id,
   u.firstName,
   u.lastName,
-  hm.acuity_appointment_type_id
+  hm.acuityAppointmentTypeId
 FROM human_mentors hm
 LEFT JOIN users u ON hm.user_id = u.id
-WHERE hm.acuity_appointment_type_id IS NOT NULL;
+WHERE hm.acuityAppointmentTypeId IS NOT NULL;
