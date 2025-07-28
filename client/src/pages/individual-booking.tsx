@@ -105,7 +105,9 @@ function IndividualSessionsList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sessions.map((booking: SessionBooking) => (
+          {sessions
+            .filter(b => new Date(b.scheduledDate).getTime() > Date.now() - 5 * 60 * 1000) // 5-min grace
+            .map((booking: SessionBooking) => (
             <Card key={booking.id}>
               <CardHeader>
                 <CardTitle className="text-lg">

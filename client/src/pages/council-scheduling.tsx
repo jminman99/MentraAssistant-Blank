@@ -84,7 +84,9 @@ function CouncilSessionsList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sessions.map((booking: any) => (
+          {sessions
+            .filter(b => new Date(b.scheduledDate).getTime() > Date.now() - 5 * 60 * 1000) // 5-min grace
+            .map((booking: any) => (
             <Card key={booking.sessionId || booking.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -151,7 +153,7 @@ export default function CouncilScheduling() {
       if (!isSignedIn) {
         throw new Error('Not authenticated');
       }
-      
+
       return fetchWithTokenAndProcess(getToken, '/api/human-mentors');
     },
   });
@@ -176,7 +178,7 @@ export default function CouncilScheduling() {
     );
   }
 
-  
+
 
   const toggleMentorSelection = (mentorId: number) => {
     setSelectedMentors(prev => {
