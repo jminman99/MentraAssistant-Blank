@@ -10,6 +10,7 @@ import PlanUsagePage from "./pages/plan-usage";
 import SessionsPage from "./pages/sessions";
 import IndividualBooking from "./pages/individual-booking";
 import CouncilScheduling from "./pages/council-scheduling";
+import Debug from "./pages/debug";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function Redirect({ to }: { to: string }) {
@@ -57,6 +58,7 @@ function Router() {
         <Route path="/test" component={TestPage} />
         <Route path="/sign-in" component={DevSignInPage} />
         <Route path="/dashboard" component={Dashboard} />
+        <Route path="/debug" component={Debug} />
         <Route path="/" component={DevSignInPage} />
         <Route path="*">
           <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
@@ -86,6 +88,7 @@ function Router() {
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />
       <Route path="/individual-booking" component={() => <PrivateRoute component={IndividualBooking} />} />
       <Route path="/council-scheduling" component={() => <PrivateRoute component={CouncilScheduling} />} />
+      <Route path="/debug" component={() => <PrivateRoute component={Debug} />} />
       <Route path="/">
         {() => (isSignedIn ? <Dashboard /> : <Redirect to="/sign-in" />)}
       </Route>
