@@ -1,5 +1,6 @@
 
 import { useEffect } from 'react';
+import { useAuth } from '../lib/auth-hook';
 
 interface MentorBookingIframeProps {
   appointmentTypeId: number;
@@ -36,7 +37,13 @@ export function MentorBookingIframe({ appointmentTypeId }: MentorBookingIframePr
     );
   }
 
-  const acuityUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}`;
+  // Get user info from auth context
+  const { user } = useAuth(); // You'll need to import this
+  
+  // Pre-fill user information in Acuity URL
+  const acuityUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}${
+    user ? `&firstName=${encodeURIComponent(user.firstName || '')}&lastName=${encodeURIComponent(user.lastName || '')}&email=${encodeURIComponent(user.email || '')}` : ''
+  }`;
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
