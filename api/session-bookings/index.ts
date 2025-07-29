@@ -89,7 +89,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         scheduledDate: bookingData.scheduledDate.toISOString()
       });
 
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] About to call storage.createIndividualSessionBooking`);
+      
       const booking = await storage.createIndividualSessionBooking(bookingData);
+      
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Booking created successfully:`, {
+        id: booking.id,
+        menteeId: booking.menteeId,
+        humanMentorId: booking.humanMentorId,
+        status: booking.status
+      });
 
       logLatency(context, 'Session booking creation');
 

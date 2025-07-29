@@ -32,14 +32,21 @@ export function createRequestContext(): RequestContext {
 }
 
 export async function authenticateRequest(req: VercelRequest, context: RequestContext): Promise<any> {
-  // Import storage here to avoid circular dependency issues
-  const { storage } = await import('./storage.js');
-  
+  console.log(`[AUTH:${context.requestId}] Attempting authentication...`);
+  console.log(`[AUTH:${context.requestId}] Headers:`, {
+    authorization: req.headers.authorization ? 'Bearer [REDACTED]' : 'Missing',
+    cookie: req.headers.cookie ? 'Present' : 'Missing'
+  });
+
   const clerkUser = await verifyToken(req);
   if (!clerkUser) {
+    console.log(`[AUTH:${context.requestId}] Authentication failed - no user returned`);
     throw new Error('Authentication required');
   }
-  
+
+  // Get user from database using Clerk ID
+  const { storage } = await import('./storage.js');
+
   // Get user from database using Clerk ID
   const dbUser = await storage.getUserByClerkId(clerkUser.clerkUserId || clerkUser.id);
   if (!dbUser) {
@@ -58,10 +65,7 @@ export async function authenticateRequest(req: VercelRequest, context: RequestCo
     organizationId: dbUser.organizationId,
     createdAt: dbUser.createdAt
   };
-
-  // Log successful authentication
-  console.log(`[AUTH:${context.requestId}] User authenticated with database ID:`, authenticatedUser.id);
-
+  console.log(`[AUTH:${context.requestId}] Authentication successful for user:`, authenticatedUser.id);
   return authenticatedUser;
 }
 

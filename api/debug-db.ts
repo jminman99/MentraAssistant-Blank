@@ -1,37 +1,49 @@
+
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { applyCorsHeaders } from './_lib/middleware.js';
-import { db } from './_lib/db.js';
+import { storage } from './_lib/storage.js';
+import { applyCorsHeaders, handlePreflight } from './_lib/middleware.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCorsHeaders(res);
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  
+  if (handlePreflight(req, res)) {
+    return;
   }
 
   try {
-    const { query } = req.body;
+    console.log('[DEBUG_DB] Testing database connection...');
+    
+    // Test basic database connectivity
+    const testQuery = await storage.db.execute('SELECT 1 as test');
+    console.log('[DEBUG_DB] Basic connectivity test passed');
 
-    if (!query) {
-      return res.status(400).json({ error: 'Query is required' });
-    }
+    // Test users table
+    const userCount = await storage.db.execute('SELECT COUNT(*) as count FROM users');
+    console.log('[DEBUG_DB] User count:', userCount.rows[0]);
 
-    console.log('[DEBUG_DB] Executing query:', query);
+    // Test session_bookings table
+    const bookingCount = await storage.db.execute('SELECT COUNT(*) as count FROM session_bookings');
+    console.log('[DEBUG_DB] Booking count:', bookingCount.rows[0]);
 
-    // Execute the raw SQL query
-    const result = await db.execute(query);
+    // Test human_mentors table
+    const mentorCount = await storage.db.execute('SELECT COUNT(*) as count FROM human_mentors');
+    console.log('[DEBUG_DB] Mentor count:', mentorCount.rows[0]);
 
     return res.status(200).json({
       success: true,
-      rowCount: result.rowCount || 0,
-      data: result.rows || result
+      results: {
+        connectivity: 'OK',
+        userCount: userCount.rows[0],
+        bookingCount: bookingCount.rows[0],
+        mentorCount: mentorCount.rows[0]
+      }
     });
 
   } catch (error) {
-    console.error('[DEBUG_DB] Query error:', error);
-    return res.status(500).json({ 
-      error: 'Database query failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    console.error('[DEBUG_DB] Database test failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown database error'
     });
   }
 }

@@ -457,7 +457,31 @@ export class VercelStorage {
 
   // Individual Session Booking methods
   async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
-    return this.createSessionBooking(data);
+    try {
+      console.log('📝 Creating individual session booking with data:', data);
+      console.log('📝 Database connection status:', db ? 'Connected' : 'Not connected');
+
+      // Validate data before insertion
+      if (!data.menteeId || !data.humanMentorId) {
+        throw new Error('Missing required menteeId or humanMentorId');
+      }
+
+      console.log('📝 About to insert into sessionBookings table...');
+      const [session] = await db.insert(sessionBookings).values(data).returning();
+
+      console.log('✅ Individual session booking created successfully:', {
+        id: session.id,
+        menteeId: session.menteeId,
+        humanMentorId: session.humanMentorId,
+        scheduledDate: session.scheduledDate,
+        status: session.status
+      });
+
+      return session;
+    } catch (error) {
+      console.error('Error creating session booking:', error);
+      throw error;
+    }
   }
 
   async getIndividualSessionBookings(userId: number): Promise<SessionBooking[]> {
