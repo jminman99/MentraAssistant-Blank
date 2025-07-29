@@ -1,6 +1,8 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyToken } from "@clerk/backend";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { clerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from "../_lib/storage.js";
+import { getSessionToken } from "../_lib/auth.js";
+import { applyCorsHeaders, handlePreflight, createRequestContext } from "../_lib/middleware.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
@@ -19,50 +21,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
+  const context = createRequestContext();
+
   try {
-    // Token from Authorization or __session cookie (fallback)
-    const auth = req.headers.authorization || "";
-    let token: string | undefined;
-    if (auth.startsWith("Bearer ")) token = auth.slice(7);
-    if (!token && req.headers.cookie) {
-      const m = req.headers.cookie.match(/(?:^|;\s*)__session=([^;]+)/);
-      if (m) token = decodeURIComponent(m[1]);
-    }
+    // Extract and verify Clerk JWT token (using same pattern as working endpoints)
+    const token = getSessionToken(req);
     if (!token) {
-      console.error("No token provided");
-      return res.status(401).json({
-        success: false,
-        code: "UNAUTHENTICATED",
-        message: "Missing bearer token",
-      });
+      return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    // Verify Clerk JWT
-    let clerkUserId: string;
+    // Verify the token with Clerk and get user ID
+    let userId;
     try {
-      const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY as string,
-      });
-      clerkUserId = payload.sub as string;
-      console.log("✅ Clerk user verified:", clerkUserId);
-    } catch (verifyError: any) {
-      const msg = verifyError?.message || "verify failed";
-      const code = /expired/i.test(msg) ? "TOKEN_EXPIRED" : "INVALID_TOKEN";
-      console.error("Token verification failed:", msg);
-      return res.status(401).json({
-        success: false,
-        code,
-        message: msg,
-      });
+      const verifiedToken = await clerkClient.verifyToken(token);
+      userId = verifiedToken.sub;
+      console.log("✅ Clerk user verified:", userId);
+    } catch (verifyError) {
+      console.error("Token verification failed:", verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
     }
 
-    // Map Clerk user -> app user
-    const user = await storage.getUserByClerkId(clerkUserId);
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        code: "USER_NOT_FOUND",
-        message: "User not found in database. Please sync your account.",
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
       });
     }
 

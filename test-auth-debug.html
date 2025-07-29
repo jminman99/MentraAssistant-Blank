@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Debug Test</title>
+</head>
+<body>
+    <h1>Authentication Debug Test</h1>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function testAuth() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test the debug database endpoint
+                const dbResponse = await fetch('/api/debug-db', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                const dbData = await dbResponse.text();
+                results.innerHTML += `<h3>Database Debug (${dbResponse.status}):</h3><pre>${dbData}</pre><br>`;
+                
+                // Test the debug mentors endpoint
+                const mentorsResponse = await fetch('/api/debug-mentors', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                const mentorsData = await mentorsResponse.text();
+                results.innerHTML += `<h3>Mentors Debug (${mentorsResponse.status}):</h3><pre>${mentorsData}</pre><br>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run the test when page loads
+        testAuth();
+    </script>
+</body>
+</html>

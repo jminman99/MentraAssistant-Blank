@@ -1,23 +1,15 @@
-
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { applyCorsHeaders, handlePreflight, createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
 import { storage } from '../_lib/storage.js';
-import { 
-  applyCorsHeaders, 
-  handlePreflight, 
-  createRequestContext, 
-  authenticateRequest, 
-  parseJsonBody, 
-  logLatency, 
-  createErrorResponse,
-  applyRateLimit 
-} from '../_lib/middleware.js';
 import { validateSessionBooking } from '../_lib/validation.js';
+import { clerkClient } from "@clerk/clerk-sdk-node";
+import { getSessionToken } from "../_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
-  
+
   applyCorsHeaders(res);
-  
+
   if (handlePreflight(req, res)) {
     return;
   }
@@ -28,8 +20,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse JSON body if needed
     parseJsonBody(req, context);
 
-    // Verify authentication
-    const user = await authenticateRequest(req, context);
+    // Extract and verify Clerk JWT token (using same pattern as working endpoints)
+    const token = getSessionToken(req);
+    if (!token) {
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] No token found in request`);
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    // Verify the token with Clerk and get user ID
+    let userId;
+    try {
+      const verifiedToken = await clerkClient.verifyToken(token);
+      userId = verifiedToken.sub;
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Clerk user verified:`, userId);
+    } catch (verifyError) {
+      console.error(`[SESSION_BOOKINGS:${context.requestId}] Token verification failed:`, verifyError);
+      return res.status(401).json({ success: false, error: "Invalid token" });
+    }
+
+    // Get user from our database using Clerk ID
+    const user = await storage.getUserByClerkId(userId);
+    if (!user) {
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] User not found in database for Clerk ID:`, userId);
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found in database. Please sync your account." 
+      });
+    }
+
     console.log(`[SESSION_BOOKINGS:${context.requestId}] User authenticated:`, user.id);
 
     if (req.method === 'POST') {
@@ -37,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!applyRateLimit(req, res, context, { windowMs: 300000, maxRequests: 3 })) {
         return; // Rate limit exceeded, response already sent
       }
-      
+
       console.log(`[SESSION_BOOKINGS:${context.requestId}] POST request body:`, req.body);
 
       // Validate request data
@@ -57,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Create the booking with validated data
       // Ensure we have the database user ID, not the Clerk ID
       let databaseUserId = user.id;
-      
+
       // If user.id is a string (Clerk ID), we need to look up the database user
       if (typeof user.id === 'string' && user.id.startsWith('user_')) {
         console.log(`[SESSION_BOOKINGS:${context.requestId}] Converting Clerk ID to database ID:`, user.id);
@@ -90,9 +108,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] About to call storage.createIndividualSessionBooking`);
-      
+
       const booking = await storage.createIndividualSessionBooking(bookingData);
-      
+
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Booking created successfully:`, {
         id: booking.id,
         menteeId: booking.menteeId,
@@ -111,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (req.method === 'GET') {
       // Ensure we have the database user ID for GET requests too
       let databaseUserId = user.id;
-      
+
       if (typeof user.id === 'string' && user.id.startsWith('user_')) {
         const dbUser = await storage.getUserByClerkId(user.id);
         if (!dbUser) {
