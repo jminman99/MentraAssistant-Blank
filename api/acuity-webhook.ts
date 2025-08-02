@@ -48,17 +48,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const user = await storage.getUserByEmail(email);
     if (!user) {
       console.log('[ACUITY_WEBHOOK] User not found for email:', email);
-      return res.status(404).json({ error: 'User not found' });
+      console.log('[ACUITY_WEBHOOK] Available appointment data:', {
+        id: acuityAppointmentId,
+        appointmentTypeID,
+        datetime,
+        email,
+        firstName,
+        lastName
+      });
+      return res.status(404).json({ error: 'User not found. Please ensure you are registered with this email address.' });
     }
+
+    console.log('[ACUITY_WEBHOOK] Found user:', { id: user.id, email: user.email });
 
     // Find the mentor by appointment type ID
     const mentors = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
+    console.log('[ACUITY_WEBHOOK] Available mentors:', mentors.map(m => ({ 
+      id: m.id, 
+      name: m.name, 
+      acuityId: m.acuityAppointmentTypeId 
+    })));
+    
     const mentor = mentors.find(m => m.acuityAppointmentTypeId === parseInt(appointmentTypeID));
 
     if (!mentor) {
       console.log('[ACUITY_WEBHOOK] Mentor not found for appointment type:', appointmentTypeID);
-      return res.status(404).json({ error: 'Mentor not found' });
+      console.log('[ACUITY_WEBHOOK] Searching for appointment type ID:', parseInt(appointmentTypeID));
+      return res.status(404).json({ 
+        error: 'Mentor not found for this appointment type',
+        appointmentTypeID,
+        availableMentors: mentors.map(m => ({ id: m.id, acuityId: m.acuityAppointmentTypeId }))
+      });
     }
+
+    console.log('[ACUITY_WEBHOOK] Found mentor:', { id: mentor.id, name: mentor.name });
 
     // Create session booking record
     const bookingData = {

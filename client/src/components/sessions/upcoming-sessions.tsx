@@ -151,12 +151,12 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
       sessionId: session.id,
       participantId: session.id,
       type: 'individual' as const,
-      scheduledAt: session.scheduledDate,
+      scheduledAt: session.scheduledDate || session.scheduled_date,
       status: session.status,
       title: 'Individual Session',
-      duration: session.duration || 30,
-      sessionGoals: session.sessionGoals,
-      mentorName: session.humanMentorName || 'Mentor',
+      duration: session.duration || 60,
+      sessionGoals: session.sessionGoals || session.session_goals || 'Individual mentoring session',
+      mentorName: session.humanMentorName || session.human_mentor_name || 'Your Mentor',
     })),
     // Council sessions  
     ...councilSessions.map((session: any) => {
