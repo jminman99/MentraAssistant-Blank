@@ -637,6 +637,25 @@ export class VercelStorage {
     }
   }
 
+  async getUserByClerkId(clerkId: string): Promise<User | null> {
+    try {
+      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkId)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error fetching user by Clerk ID:', error);
+      return null;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    try {
+      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
+      return null;
+    }
+  }
   // Additional methods can be added as needed for specific API routes
 }
 

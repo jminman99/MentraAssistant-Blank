@@ -1,4 +1,3 @@
-
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from './_lib/storage.js';
 import { applyCorsHeaders } from './_lib/middleware.js';
@@ -55,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Find the mentor by appointment type ID
     const mentors = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
     const mentor = mentors.find(m => m.acuityAppointmentTypeId === parseInt(appointmentTypeID));
-    
+
     if (!mentor) {
       console.log('[ACUITY_WEBHOOK] Mentor not found for appointment type:', appointmentTypeID);
       return res.status(404).json({ error: 'Mentor not found' });
