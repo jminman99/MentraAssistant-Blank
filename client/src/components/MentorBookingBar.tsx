@@ -1,27 +1,34 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface MentorBookingBarProps {
   appointmentTypeId: string | number;
 }
 
 export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
+  useEffect(() => {
+    // Load the Acuity embed script only once
+    if (!document.querySelector('script[src="https://embed.acuityscheduling.com/js/embed.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://embed.acuityscheduling.com/js/embed.js';
+      script.type = 'text/javascript';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <p className="text-gray-700">
-          Booking interface for appointment type: {appointmentTypeId}
-        </p>
-        <p className="text-sm text-gray-600 mt-2">
-          This would integrate with Acuity Scheduling or similar booking system.
-        </p>
-      </div>
-      
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-blue-800 text-sm">
-          <strong>After booking:</strong> Your appointment will automatically sync to "My Sessions" within a few minutes. 
-          If it doesn't appear, please refresh the page or contact support.
-        </p>
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <iframe
+          src={`https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&ref=embedded_csp`}
+          title="Schedule Appointment"
+          width="100%"
+          height="800"
+          frameBorder="0"
+          allow="payment"
+          className="w-full min-h-[600px]"
+        />
       </div>
     </div>
   );
