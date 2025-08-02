@@ -12,7 +12,7 @@ import { z } from "zod";
 import { HumanMentor } from "@/types";
 import { CalendarAvailability } from "@/components/calendar-availability";
 import { format } from "date-fns";
-import MentorBookingIframe from "@/components/MentorBookingIframe";
+import { MentorBookingBar } from "@/components/MentorBookingBar";
 
 const individualBookingSchema = z.object({
   humanMentorId: z.number().min(1, "Please select a mentor"),
@@ -254,7 +254,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
               <FormLabel>Schedule Your Session</FormLabel>
               {mentor.acuityAppointmentTypeId ? (
                 <div className="space-y-4">
-                  <MentorBookingIframe appointmentTypeId={mentor.acuityAppointmentTypeId} />
+                  <MentorBookingBar appointmentTypeId={mentor.acuityAppointmentTypeId} />
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-blue-800 text-sm">
                       <strong>After booking:</strong> Your appointment will appear in "My Sessions" within a few minutes. 
