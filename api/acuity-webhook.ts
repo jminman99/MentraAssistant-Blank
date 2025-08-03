@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Handle webhook formats
     let appointment, action;
-    
+
     if (body.appointment) {
       // Standard Acuity webhook format
       ({ action, appointment } = body);
@@ -124,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       acuityId: m.acuityAppointmentTypeId,
       acuityIdString: String(m.acuityAppointmentTypeId)
     })));
-    
+
     const mentor = mentors.find(m => String(m.acuityAppointmentTypeId) === normalizedAppointmentTypeID);
 
     if (!mentor) {
@@ -167,7 +167,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Insert individual session booking
     const booking = await storage.createIndividualSessionBooking(bookingData);
-    
+
     console.log('[ACUITY_WEBHOOK] Storage function returned:', booking);
 
     console.log('[ACUITY_WEBHOOK] Booking created successfully:', {
@@ -185,7 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', userBookings.length);
       const newBooking = userBookings.find(b => b.id === booking.id);
       console.log('[ACUITY_WEBHOOK] New booking exists in database:', !!newBooking);
-      
+
       if (!newBooking) {
         console.error('[ACUITY_WEBHOOK] WARNING: Booking not found in verification check');
       }
