@@ -48,14 +48,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[ACUITY_WEBHOOK] Parsed body:', body);
 
-    // Handle both direct appointment data and webhook format
+    // Handle webhook formats
     let appointment, action;
     
     if (body.appointment) {
-      // Standard webhook format
+      // Standard Acuity webhook format
       ({ action, appointment } = body);
     } else if (body.id) {
-      // Direct appointment data (for testing)
+      // Direct testing payload format
       appointment = body;
       action = 'appointment.scheduled';
     } else {
@@ -63,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid webhook format' });
     }
 
-    // Only process appointment confirmations
+    // Only process appointment.scheduled events
     if (action !== 'appointment.scheduled') {
       console.log('[ACUITY_WEBHOOK] Ignoring action:', action);
       return res.status(200).json({ message: 'Ignored' });
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'No appointment data' });
     }
 
-    // Extract appointment details
+    // Extract appointment fields
     const {
       id: acuityAppointmentId,
       appointmentTypeID,
@@ -93,61 +93,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email
     });
 
+    // Normalize data for DB insert
+    const normalizedDatetime = new Date(datetime).toISOString();
+    const normalizedDuration = duration || 60;
+    const normalizedAppointmentTypeID = String(appointmentTypeID);
+
+    console.log('[ACUITY_WEBHOOK] Normalized data:', {
+      datetime: normalizedDatetime,
+      duration: normalizedDuration,
+      appointmentTypeID: normalizedAppointmentTypeID
+    });
+
     // Find the user by email
     const user = await storage.getUserByEmail(email);
     if (!user) {
       console.log('[ACUITY_WEBHOOK] User not found for email:', email);
-      console.log('[ACUITY_WEBHOOK] Available appointment data:', {
-        id: acuityAppointmentId,
-        appointmentTypeID,
-        datetime,
-        email,
-        firstName,
-        lastName
+      return res.status(404).json({ 
+        error: 'User not found. Please ensure you are registered with this email address.',
+        email 
       });
-      return res.status(404).json({ error: 'User not found. Please ensure you are registered with this email address.' });
     }
 
     console.log('[ACUITY_WEBHOOK] Found user:', { id: user.id, email: user.email });
 
-    // Find the mentor by appointment type ID
+    // Find the mentor by matching string appointmentTypeID
     const mentors = await storage.getHumanMentorsByOrganization(user.organizationId || 1);
     console.log('[ACUITY_WEBHOOK] Available mentors:', mentors.map(m => ({ 
       id: m.id, 
       name: m.name, 
-      acuityId: m.acuityAppointmentTypeId 
+      acuityId: m.acuityAppointmentTypeId,
+      acuityIdString: String(m.acuityAppointmentTypeId)
     })));
     
-    const mentor = mentors.find(m => m.acuityAppointmentTypeId === parseInt(appointmentTypeID));
+    const mentor = mentors.find(m => String(m.acuityAppointmentTypeId) === normalizedAppointmentTypeID);
 
     if (!mentor) {
-      console.log('[ACUITY_WEBHOOK] Mentor not found for appointment type:', appointmentTypeID);
-      console.log('[ACUITY_WEBHOOK] Searching for appointment type ID:', parseInt(appointmentTypeID));
+      console.log('[ACUITY_WEBHOOK] Mentor not found for appointment type:', normalizedAppointmentTypeID);
       return res.status(404).json({ 
         error: 'Mentor not found for this appointment type',
-        appointmentTypeID,
-        availableMentors: mentors.map(m => ({ id: m.id, acuityId: m.acuityAppointmentTypeId }))
+        appointmentTypeID: normalizedAppointmentTypeID,
+        availableMentors: mentors.map(m => ({ 
+          id: m.id, 
+          name: m.name,
+          acuityId: String(m.acuityAppointmentTypeId) 
+        }))
       });
     }
 
     console.log('[ACUITY_WEBHOOK] Found mentor:', { id: mentor.id, name: mentor.name });
 
-    // Create session booking record
+    // Create session booking record with normalized data
     const bookingData = {
       menteeId: user.id,
       humanMentorId: mentor.id,
-      sessionType: 'individual',
-      scheduledDate: new Date(datetime),
-      duration: duration || 60,
+      sessionType: 'individual' as const,
+      scheduledDate: normalizedDatetime,
+      duration: normalizedDuration,
       timezone: 'America/New_York',
-      meetingType: 'video',
+      meetingType: 'video' as const,
       sessionGoals: notes || 'Scheduled via Acuity',
-      status: 'confirmed',
-      calendlyEventId: acuityAppointmentId.toString()
+      status: 'confirmed' as const,
+      calendlyEventId: String(acuityAppointmentId)
     };
 
     console.log('[ACUITY_WEBHOOK] Creating booking:', bookingData);
 
+    // Insert individual session booking
     const booking = await storage.createIndividualSessionBooking(bookingData);
 
     console.log('[ACUITY_WEBHOOK] Booking created successfully:', {
@@ -159,12 +170,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       calendlyEventId: booking.calendlyEventId
     });
 
-    // Verify the booking was actually inserted
+    // Verify the booking was inserted by checking user's bookings
     try {
-      const verifyBooking = await storage.getIndividualSessionBookings(user.id);
-      console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', verifyBooking.length);
-      const newBooking = verifyBooking.find(b => b.id === booking.id);
+      const userBookings = await storage.getIndividualSessionBookings(user.id);
+      console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', userBookings.length);
+      const newBooking = userBookings.find(b => b.id === booking.id);
       console.log('[ACUITY_WEBHOOK] New booking exists in database:', !!newBooking);
+      
+      if (!newBooking) {
+        console.error('[ACUITY_WEBHOOK] WARNING: Booking not found in verification check');
+      }
     } catch (verifyError) {
       console.error('[ACUITY_WEBHOOK] Database verification failed:', verifyError);
     }
