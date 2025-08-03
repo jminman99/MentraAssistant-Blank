@@ -2,49 +2,64 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from './_lib/storage.js';
 import { applyCorsHeaders } from './_lib/middleware.js';
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCorsHeaders(res);
-
-  // Log environment info for debugging
-  console.log('[ACUITY_WEBHOOK] Environment:', {
-    NODE_ENV: process.env.NODE_ENV,
-    VERCEL_URL: process.env.VERCEL_URL,
-    host: req.headers.host,
-    origin: req.headers.origin
-  });
-
-  console.log('[ACUITY_WEBHOOK] Received request:', {
-    method: req.method,
-    headers: {
-      'content-type': req.headers['content-type'],
-      'user-agent': req.headers['user-agent'],
-      'origin': req.headers.origin,
-      'referer': req.headers.referer,
-      'authorization': req.headers.authorization ? 'present' : 'missing'
-    },
-    body: req.body,
-    url: req.url
-  });
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    console.log('[ACUITY_WEBHOOK] Received webhook:', req.body);
+    console.log('[ACUITY_WEBHOOK] Received webhook');
+    console.log('[ACUITY_WEBHOOK] Headers:', req.headers);
+
+    // Parse raw body to handle different content types
+    let rawBody = '';
+    await new Promise((resolve) => {
+      req.on('data', (chunk) => (rawBody += chunk));
+      req.on('end', resolve);
+    });
+
+    console.log('[ACUITY_WEBHOOK] Raw body:', rawBody);
+
+    const contentType = req.headers['content-type'] || '';
+    let body;
+
+    if (contentType.includes('application/json')) {
+      body = JSON.parse(rawBody);
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const { parse } = await import('querystring');
+      body = parse(rawBody);
+    } else {
+      // Try to parse as JSON first, fallback to form data
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        const { parse } = await import('querystring');
+        body = parse(rawBody);
+      }
+    }
+
+    console.log('[ACUITY_WEBHOOK] Parsed body:', body);
 
     // Handle both direct appointment data and webhook format
     let appointment, action;
     
-    if (req.body.appointment) {
+    if (body.appointment) {
       // Standard webhook format
-      ({ action, appointment } = req.body);
-    } else if (req.body.id) {
+      ({ action, appointment } = body);
+    } else if (body.id) {
       // Direct appointment data (for testing)
-      appointment = req.body;
+      appointment = body;
       action = 'appointment.scheduled';
     } else {
-      console.log('[ACUITY_WEBHOOK] Invalid webhook format:', req.body);
+      console.log('[ACUITY_WEBHOOK] Invalid webhook format:', body);
       return res.status(400).json({ error: 'Invalid webhook format' });
     }
 
