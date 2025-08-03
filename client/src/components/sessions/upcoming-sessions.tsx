@@ -100,8 +100,10 @@ export function UpcomingSessions({ compact = false }: UpcomingSessionsProps) {
     .filter((session: any) => session.status !== 'cancelled')
     .map((session: any) => ({ ...session, type: 'individual' }));
 
-  console.log('[DEBUG] Individual sessions:', sessions.length);
-  console.log('[DEBUG] Council sessions:', councilSessions.length);
+  console.log('[DEBUG] Individual sessions:', sessions.length, sessions);
+  console.log('[DEBUG] Council sessions:', councilSessions.length, councilSessions);
+  console.log('[DEBUG] Raw individual sessions data:', individualSessions);
+  console.log('[DEBUG] Raw council sessions data:', rawCouncilSessions);
 
   const isLoading = Boolean(sessionsLoading || councilLoading);
 

@@ -13,6 +13,7 @@ import { HumanMentor } from "@/types";
 import { CalendarAvailability } from "@/components/calendar-availability";
 import { format } from "date-fns";
 import { MentorBookingBar } from "@/components/MentorBookingBar";
+import { AcuityDebugPanel } from '../AcuityDebugPanel';
 
 const individualBookingSchema = z.object({
   humanMentorId: z.number().min(1, "Please select a mentor"),

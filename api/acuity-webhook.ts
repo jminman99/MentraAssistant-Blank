@@ -5,6 +5,13 @@ import { applyCorsHeaders } from './_lib/middleware.js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCorsHeaders(res);
 
+  console.log('[ACUITY_WEBHOOK] Received request:', {
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+    url: req.url
+  });
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,7 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log('[ACUITY_WEBHOOK] Received webhook:', req.body);
 
-    const { action, appointment } = req.body;
+    // Handle both direct appointment data and webhook format
+    let appointment, action;
+    
+    if (req.body.appointment) {
+      // Standard webhook format
+      ({ action, appointment } = req.body);
+    } else if (req.body.id) {
+      // Direct appointment data (for testing)
+      appointment = req.body;
+      action = 'appointment.scheduled';
+    } else {
+      console.log('[ACUITY_WEBHOOK] Invalid webhook format:', req.body);
+      return res.status(400).json({ error: 'Invalid webhook format' });
+    }
 
     // Only process appointment confirmations
     if (action !== 'appointment.scheduled') {

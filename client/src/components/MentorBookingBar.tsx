@@ -1,11 +1,13 @@
 
 import React, { useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 
 interface MentorBookingBarProps {
   appointmentTypeId: string | number;
 }
 
 export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
+  const { user } = useUser();
   useEffect(() => {
     // Load the Acuity embed script only once
     if (!document.querySelector('script[src="https://embed.acuityscheduling.com/js/embed.js"]')) {
@@ -21,7 +23,7 @@ export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
     <div className="space-y-4">
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <iframe
-          src={`https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&ref=embedded_csp`}
+          src={`https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&email=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}&firstName=${encodeURIComponent(user?.firstName || '')}&lastName=${encodeURIComponent(user?.lastName || '')}&ref=embedded_csp`}
           title="Schedule Appointment"
           width="100%"
           height="800"
