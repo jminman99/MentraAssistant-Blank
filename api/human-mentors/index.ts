@@ -24,30 +24,51 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
 
   try {
-    // Extract and verify Clerk JWT token (using same pattern as working endpoints)
-    const token = getSessionToken(req);
-    if (!token) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
-    }
+    // Check if we're in development mode without Clerk keys
+    const hasClerkSecret = !!process.env.CLERK_SECRET_KEY;
+    const hasClerkPublishable = !!process.env.CLERK_PUBLISHABLE_KEY;
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isDevMode = isDevelopment && (!hasClerkSecret || !hasClerkPublishable);
 
-    // Verify the token with Clerk and get user ID
-    let userId;
-    try {
-      const verifiedToken = await clerkClient.verifyToken(token);
-      userId = verifiedToken.sub;
-      console.log("✅ Clerk user verified:", userId);
-    } catch (verifyError) {
-      console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
-    }
+    let user;
 
-    // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(userId);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "User not found in database. Please sync your account." 
-      });
+    if (isDevMode) {
+      console.log('[DEV MODE] Bypassing Clerk authentication, using default user');
+      // In dev mode without Clerk, create a simple default user object
+      user = {
+        id: 1,
+        clerkId: 'dev-user',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        organizationId: 1
+      };
+    } else {
+      // Production mode - use Clerk authentication
+      const token = getSessionToken(req);
+      if (!token) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      // Verify the token with Clerk and get user ID
+      let userId;
+      try {
+        const verifiedToken = await clerkClient.verifyToken(token);
+        userId = verifiedToken.sub;
+        console.log("✅ Clerk user verified:", userId);
+      } catch (verifyError) {
+        console.error("Token verification failed:", verifyError);
+        return res.status(401).json({ success: false, error: "Invalid token" });
+      }
+
+      // Get user from our database using Clerk ID
+      user = await storage.getUserByClerkId(userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "User not found in database. Please sync your account." 
+        });
+      }
     }
 
     const orgId = user.organizationId || 1;
