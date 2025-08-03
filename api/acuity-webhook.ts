@@ -5,9 +5,23 @@ import { applyCorsHeaders } from './_lib/middleware.js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCorsHeaders(res);
 
+  // Log environment info for debugging
+  console.log('[ACUITY_WEBHOOK] Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL_URL: process.env.VERCEL_URL,
+    host: req.headers.host,
+    origin: req.headers.origin
+  });
+
   console.log('[ACUITY_WEBHOOK] Received request:', {
     method: req.method,
-    headers: req.headers,
+    headers: {
+      'content-type': req.headers['content-type'],
+      'user-agent': req.headers['user-agent'],
+      'origin': req.headers.origin,
+      'referer': req.headers.referer,
+      'authorization': req.headers.authorization ? 'present' : 'missing'
+    },
     body: req.body,
     url: req.url
   });

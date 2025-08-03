@@ -22,8 +22,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Extract and verify Clerk JWT token (using same pattern as working endpoints)
     const token = getSessionToken(req);
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] Token extraction attempt:`, {
+      hasAuthHeader: !!req.headers.authorization,
+      hasCookie: !!req.headers.cookie,
+      tokenFound: !!token,
+      tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
+    });
+    
     if (!token) {
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] No token found in request`);
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] No token found in request headers:`, {
+        authorization: req.headers.authorization,
+        cookie: req.headers.cookie?.substring(0, 100) + '...' || 'none'
+      });
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 

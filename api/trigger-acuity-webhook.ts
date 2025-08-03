@@ -33,8 +33,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[TRIGGER_WEBHOOK] Sending mock webhook:', mockWebhookPayload);
 
-    // Call our own webhook endpoint
-    const webhookResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:5000'}/api/acuity-webhook`, {
+    // Call our own webhook endpoint with proper URL construction
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:5000';
+    
+    console.log('[TRIGGER_WEBHOOK] Using base URL:', baseUrl);
+    
+    const webhookResponse = await fetch(`${baseUrl}/api/acuity-webhook`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
