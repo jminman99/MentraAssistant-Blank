@@ -135,7 +135,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const booking = await storage.createIndividualSessionBooking(bookingData);
 
-    console.log('[ACUITY_WEBHOOK] Booking created successfully:', booking.id);
+    console.log('[ACUITY_WEBHOOK] Booking created successfully:', {
+      bookingId: booking.id,
+      menteeId: booking.menteeId,
+      humanMentorId: booking.humanMentorId,
+      scheduledDate: booking.scheduledDate,
+      status: booking.status,
+      calendlyEventId: booking.calendlyEventId
+    });
+
+    // Verify the booking was actually inserted
+    try {
+      const verifyBooking = await storage.getIndividualSessionBookings(user.id);
+      console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', verifyBooking.length);
+      const newBooking = verifyBooking.find(b => b.id === booking.id);
+      console.log('[ACUITY_WEBHOOK] New booking exists in database:', !!newBooking);
+    } catch (verifyError) {
+      console.error('[ACUITY_WEBHOOK] Database verification failed:', verifyError);
+    }
 
     return res.status(200).json({ 
       success: true, 
