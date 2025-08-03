@@ -548,7 +548,7 @@ export class VercelStorage {
 
   async getIndividualSessionBookings(userId: number): Promise<SessionBooking[]> {
     try {
-      console.log('Fetching individual session bookings for user:', userId);
+      console.log('🔍 [STORAGE] Fetching individual session bookings for user:', userId);
 
       const bookings = await db.execute(sql`
         SELECT 
@@ -561,33 +561,52 @@ export class VercelStorage {
           sb.session_goals as "sessionGoals",
           sb.meeting_type as "meetingType",
           sb.video_link as "videoLink",
-          sb.created_at as "createdAt"
+          sb.calendly_event_id as "calendlyEventId",
+          sb.created_at as "createdAt",
+          sb.session_type as "sessionType"
         FROM session_bookings sb
         WHERE sb.mentee_id = ${userId}
         ORDER BY sb.scheduled_date DESC
       `);
 
-      return bookings.rows.map((booking: any) => ({
-        id: booking.id,
-        menteeId: booking.menteeId,
-        humanMentorId: booking.humanMentorId,
-        scheduledDate: booking.scheduledDate,
-        duration: booking.duration || 60,
-        status: booking.status,
-        sessionGoals: booking.sessionGoals,
-        meetingType: booking.meetingType || 'video',
-        videoLink: booking.videoLink,
-        createdAt: booking.createdAt
-      }));
+      console.log('🔍 [STORAGE] Retrieved booking records:', bookings.rows.length);
+      console.log('🔍 [STORAGE] Raw booking data:', bookings.rows);
+
+      const transformedBookings = bookings.rows.map((booking: any, index: number) => {
+        console.log(`🔍 [STORAGE] Processing booking ${index + 1}:`, {
+          id: booking.id,
+          scheduledDate: booking.scheduledDate,
+          status: booking.status,
+          calendlyEventId: booking.calendlyEventId
+        });
+
+        return {
+          id: booking.id,
+          menteeId: booking.menteeId,
+          humanMentorId: booking.humanMentorId,
+          scheduledDate: booking.scheduledDate,
+          duration: booking.duration || 60,
+          status: booking.status || 'scheduled',
+          sessionGoals: booking.sessionGoals || 'Individual mentoring session',
+          meetingType: booking.meetingType || 'video',
+          videoLink: booking.videoLink,
+          calendlyEventId: booking.calendlyEventId,
+          sessionType: booking.sessionType || 'individual',
+          createdAt: booking.createdAt
+        };
+      });
+
+      console.log('✅ [STORAGE] Transformed bookings:', transformedBookings);
+      return transformedBookings;
     } catch (error) {
-      console.error('Error fetching individual session bookings:', error);
+      console.error('🚨 [STORAGE] Error fetching individual session bookings:', error);
       return [];
     }
   }
 
   async getMentoringSessions(userId: number): Promise<any[]> {
     try {
-      console.log('Fetching individual sessions for user:', userId);
+      console.log('🔍 [STORAGE] Fetching individual sessions for user:', userId);
 
       const sessions = await db.execute(sql`
         SELECT 
@@ -598,12 +617,14 @@ export class VercelStorage {
           sb.meeting_type as "meetingType",
           sb.video_link as "videoLink",
           sb.session_goals as "sessionGoals",
+          sb.calendly_event_id as "calendlyEventId",
+          sb.created_at as "createdAt",
           hm.id as "mentorId",
           u."firstName" as "mentorFirstName",
           u."lastName" as "mentorLastName",
           u."profilePictureUrl" as "mentorProfileImage",
           hm.expertise_areas as "mentorExpertise",
-          '4.8' as "mentorRating"
+          hm.bio as "mentorBio"
         FROM session_bookings sb
         LEFT JOIN human_mentors hm ON sb.human_mentor_id = hm.id
         LEFT JOIN users u ON hm.user_id = u.id
@@ -611,33 +632,53 @@ export class VercelStorage {
         ORDER BY sb.scheduled_date DESC
       `);
 
-      // Transform to match SessionBooking interface
-      const transformedSessions = sessions.rows.map((session: any) => ({
-        id: session.id,
-        scheduledDate: session.scheduledDate,
-        duration: session.duration || 30,
-        status: session.status,
-        meetingType: session.meetingType || 'video',
-        videoLink: session.videoLink,
-        sessionGoals: session.sessionGoals,
-        humanMentor: {
-          id: session.mentorId || 0,
-          user: {
-            firstName: session.mentorFirstName || 'Mentor',
-            lastName: session.mentorLastName || 'Session',
-            profileImage: session.mentorProfileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces'
-          },
-          expertise: Array.isArray(session.mentorExpertise) 
-            ? session.mentorExpertise.join(', ') 
-            : (session.mentorExpertise || 'General Mentoring'),
-          rating: session.mentorRating || '4.8'
-        }
-      }));
+      console.log('🔍 [STORAGE] Raw session data from DB:', sessions.rows);
 
-      console.log(`Found ${transformedSessions.length} individual sessions for user ${userId}`);
+      // Transform to match SessionBooking interface with detailed logging
+      const transformedSessions = sessions.rows.map((session: any, index: number) => {
+        console.log(`🔍 [STORAGE] Transforming session ${index + 1}:`, {
+          id: session.id,
+          scheduledDate: session.scheduledDate,
+          mentorFirstName: session.mentorFirstName,
+          mentorLastName: session.mentorLastName,
+          status: session.status
+        });
+
+        const transformed = {
+          id: session.id,
+          scheduledDate: session.scheduledDate,
+          duration: session.duration || 60,
+          status: session.status || 'scheduled',
+          meetingType: session.meetingType || 'video',
+          videoLink: session.videoLink,
+          sessionGoals: session.sessionGoals || 'Individual mentoring session',
+          calendlyEventId: session.calendlyEventId,
+          createdAt: session.createdAt,
+          humanMentor: {
+            id: session.mentorId || 0,
+            user: {
+              firstName: session.mentorFirstName || 'Unknown',
+              lastName: session.mentorLastName || 'Mentor',
+              profileImage: session.mentorProfileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces'
+            },
+            expertise: Array.isArray(session.mentorExpertise) 
+              ? session.mentorExpertise.join(', ') 
+              : (session.mentorExpertise || 'General Mentoring'),
+            bio: session.mentorBio || 'Experienced mentor',
+            rating: '4.8'
+          }
+        };
+
+        console.log(`✅ [STORAGE] Transformed session ${index + 1}:`, transformed);
+        return transformed;
+      });
+
+      console.log(`✅ [STORAGE] Successfully transformed ${transformedSessions.length} individual sessions for user ${userId}`);
+      console.log('✅ [STORAGE] Final transformed data:', JSON.stringify(transformedSessions, null, 2));
+      
       return transformedSessions;
     } catch (error) {
-      console.error('Error fetching individual sessions:', error);
+      console.error('🚨 [STORAGE] Error fetching individual sessions:', error);
       return [];
     }
   }
