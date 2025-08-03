@@ -45,29 +45,7 @@ function PrivateRoute({ component: Component }: { component: React.ComponentType
 function Router() {
   const { isLoaded, isSignedIn } = useAuth();
 
-  const clerkPublishableKey = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY;
-  const SignInComponent = clerkPublishableKey ? SignInPage : DevSignInPage;
-  
-  console.log('App Router - isLoaded:', isLoaded, 'isSignedIn:', isSignedIn, 'hasClerkKey:', !!clerkPublishableKey);
-  
-  // For development mode without Clerk, bypass authentication
-  if (!clerkPublishableKey) {
-    console.log('Development mode - bypassing auth checks, showing dev sign-in');
-    return (
-      <Switch>
-        <Route path="/test" component={TestPage} />
-        <Route path="/sign-in" component={DevSignInPage} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/debug" component={Debug} />
-        <Route path="/" component={DevSignInPage} />
-        <Route path="*">
-          <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
-            404 - Page not found
-          </div>
-        </Route>
-      </Switch>
-    );
-  }
+  console.log('App Router - isLoaded:', isLoaded, 'isSignedIn:', isSignedIn);
 
   if (!isLoaded) {
     return (
@@ -80,7 +58,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/test" component={TestPage} />
-      <Route path="/sign-in" component={SignInComponent} />
+      <Route path="/sign-in" component={SignInPage} />
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/login" component={() => <Redirect to="/sign-in" />} />
       <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />

@@ -23,47 +23,36 @@ const env = (import.meta as any).env ?? {};
 const PUBLISHABLE_KEY: string | undefined = env.VITE_CLERK_PUBLISHABLE_KEY;
 const IS_DEV = !!env.DEV;
 
-if (!PUBLISHABLE_KEY && !IS_DEV) {
-  throw new Error("Clerk publishable key is missing in production.");
-}
-if (!PUBLISHABLE_KEY && IS_DEV) {
-  console.warn("⚠️ Clerk publishable key is missing. Running app without authentication.");
+if (!PUBLISHABLE_KEY) {
+  throw new Error("Clerk publishable key is missing.");
 }
 
-// Wrap with Clerk only when configured; otherwise pass children through.
-const MaybeClerkProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
-  PUBLISHABLE_KEY ? (
-    <ClerkProvider
-      publishableKey={PUBLISHABLE_KEY}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignInUrl="/"
-      afterSignUpUrl="/"
-    >
-      {children}
-    </ClerkProvider>
-  ) : (
-    <>{children}</>
-  );
-
-// Use a typed alias so TS is happy when swapping between a component and Fragment.
-const MaybeClerkTokenProvider: React.ComponentType<{ children: React.ReactNode }> =
-  PUBLISHABLE_KEY ? ClerkTokenProvider : React.Fragment;
+const ClerkAppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ClerkProvider
+    publishableKey={PUBLISHABLE_KEY}
+    signInUrl="/sign-in"
+    signUpUrl="/sign-up"
+    afterSignInUrl="/"
+    afterSignUpUrl="/"
+  >
+    {children}
+  </ClerkProvider>
+);
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root not found");
 
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
-    <MaybeClerkProvider>
+    <ClerkAppProvider>
       <QueryClientProvider client={queryClient}>
-        <MaybeClerkTokenProvider>
+        <ClerkTokenProvider>
           <Suspense fallback={<div>Loading...</div>}>
             <App />
           </Suspense>
           <Toaster />
-        </MaybeClerkTokenProvider>
+        </ClerkTokenProvider>
       </QueryClientProvider>
-    </MaybeClerkProvider>
+    </ClerkAppProvider>
   </React.StrictMode>
 );
