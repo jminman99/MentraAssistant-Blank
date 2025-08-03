@@ -156,10 +156,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       calendlyEventId: String(acuityAppointmentId)
     };
 
-    console.log('[ACUITY_WEBHOOK] Creating booking:', bookingData);
+    console.log('[ACUITY_WEBHOOK] Creating booking with data:', {
+      ...bookingData,
+      scheduledDate: bookingData.scheduledDate,
+      scheduledDateType: typeof bookingData.scheduledDate,
+      scheduledDateValid: bookingData.scheduledDate instanceof Date ? !isNaN(bookingData.scheduledDate.getTime()) : 'not a Date object'
+    });
+
+    console.log('[ACUITY_WEBHOOK] Calling storage.createIndividualSessionBooking...');
 
     // Insert individual session booking
     const booking = await storage.createIndividualSessionBooking(bookingData);
+    
+    console.log('[ACUITY_WEBHOOK] Storage function returned:', booking);
 
     console.log('[ACUITY_WEBHOOK] Booking created successfully:', {
       bookingId: booking.id,

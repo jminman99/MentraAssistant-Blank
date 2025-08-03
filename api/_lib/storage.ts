@@ -458,28 +458,90 @@ export class VercelStorage {
   // Individual Session Booking methods
   async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
     try {
-      console.log('📝 Creating individual session booking with data:', data);
-      console.log('📝 Database connection status:', db ? 'Connected' : 'Not connected');
+      console.log('📝 [STORAGE] Creating individual session booking with data:', {
+        ...data,
+        scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+      });
+      console.log('📝 [STORAGE] Database connection status:', db ? 'Connected' : 'Not connected');
 
       // Validate data before insertion
       if (!data.menteeId || !data.humanMentorId) {
         throw new Error('Missing required menteeId or humanMentorId');
       }
 
-      console.log('📝 About to insert into sessionBookings table...');
-      const [session] = await db.insert(sessionBookings).values(data).returning();
+      // Validate scheduledDate specifically
+      if (!data.scheduledDate) {
+        throw new Error('Missing required scheduledDate');
+      }
 
-      console.log('✅ Individual session booking created successfully:', {
+      // Ensure scheduledDate is a valid Date object or ISO string
+      let validatedDate: string;
+      if (data.scheduledDate instanceof Date) {
+        if (isNaN(data.scheduledDate.getTime())) {
+          throw new Error('Invalid scheduledDate: Date object contains invalid time value');
+        }
+        validatedDate = data.scheduledDate.toISOString();
+      } else if (typeof data.scheduledDate === 'string') {
+        const parsedDate = new Date(data.scheduledDate);
+        if (isNaN(parsedDate.getTime())) {
+          throw new Error(`Invalid scheduledDate string: ${data.scheduledDate}`);
+        }
+        validatedDate = parsedDate.toISOString();
+      } else {
+        throw new Error(`Invalid scheduledDate type: ${typeof data.scheduledDate}`);
+      }
+
+      console.log('📝 [STORAGE] Validated date:', validatedDate);
+      console.log('📝 [STORAGE] About to execute INSERT query...');
+
+      // Prepare the validated data object
+      const validatedData = {
+        ...data,
+        scheduledDate: validatedDate
+      };
+
+      console.log('📝 [STORAGE] Final data for insert:', validatedData);
+
+      // Execute the insert with detailed logging
+      console.log('📝 [STORAGE] Calling db.insert(sessionBookings).values(...).returning()');
+      const insertResult = await db.insert(sessionBookings).values(validatedData).returning();
+      console.log('📝 [STORAGE] Insert query executed, raw result:', insertResult);
+
+      if (!insertResult || insertResult.length === 0) {
+        throw new Error('Insert operation returned no results');
+      }
+
+      const [session] = insertResult;
+      console.log('✅ [STORAGE] Individual session booking created successfully:', {
         id: session.id,
         menteeId: session.menteeId,
         humanMentorId: session.humanMentorId,
         scheduledDate: session.scheduledDate,
-        status: session.status
+        status: session.status,
+        calendlyEventId: session.calendlyEventId
       });
+
+      // Immediately verify the insert by querying back
+      console.log('🔍 [STORAGE] Verifying insert by querying back...');
+      const verifyResult = await db.select().from(sessionBookings).where(eq(sessionBookings.id, session.id)).limit(1);
+      console.log('🔍 [STORAGE] Verification query result:', verifyResult);
+
+      if (verifyResult.length === 0) {
+        console.error('🚨 [STORAGE] WARNING: Insert succeeded but verification query found no record');
+      } else {
+        console.log('✅ [STORAGE] Verification successful - record exists in database');
+      }
 
       return session;
     } catch (error) {
-      console.error('Error creating session booking:', error);
+      console.error('🚨 [STORAGE] Error creating session booking:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        data: {
+          ...data,
+          scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+        }
+      });
       throw error;
     }
   }
