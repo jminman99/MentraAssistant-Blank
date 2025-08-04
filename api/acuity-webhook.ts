@@ -1,6 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from './_lib/storage.js';
-import { applyCorsHeaders } from './_lib/middleware.js';
 
 export const config = {
   api: {
@@ -9,8 +8,8 @@ export const config = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  applyCorsHeaders(res);
-
+  // No CORS headers for webhooks - they're server-to-server calls
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
