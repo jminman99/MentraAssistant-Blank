@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User, Users } from "lucide-react";
 import { SessionsContent } from "@/components/sessions/sessions-content";
+import { AcuitySync } from '@/components/AcuitySync';
 
 export default function Sessions() {
   const { user } = useAuth();
