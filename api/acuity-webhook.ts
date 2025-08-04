@@ -9,7 +9,7 @@ export const config = {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // No CORS headers for webhooks - they're server-to-server calls
-  
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Extract appointment fields
-    const {
+    let {
       id: acuityAppointmentId,
       appointmentTypeID,
       datetime,
@@ -91,6 +91,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       datetime,
       email
     });
+
+    // If we're missing critical data (lightweight webhook), fetch from Acuity API
+    if (!datetime || !email) {
+      console.log('[ACUITY_WEBHOOK] Missing appointment details, fetching from Acuity API...');
+
+      try {
+        const acuityUserId = process.env.ACUITY_USER_ID;
+        const acuityApiKey = process.env.ACUITY_API_KEY;
+
+        if (!acuityUserId || !acuityApiKey) {
+          throw new Error('Missing Acuity API credentials');
+        }
+
+        const auth = Buffer.from(`${acuityUserId}:${acuityApiKey}`).toString('base64');
+        const acuityResponse = await fetch(`https://acuityscheduling.com/api/v1/appointments/${acuityAppointmentId}`, {
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!acuityResponse.ok) {
+          throw new Error(`Acuity API error: ${acuityResponse.status}`);
+        }
+
+        const fullAppointment = await acuityResponse.json();
+        console.log('[ACUITY_WEBHOOK] Fetched full appointment from Acuity:', fullAppointment);
+
+        // Update appointment data with fetched details
+        datetime = fullAppointment.datetime;
+        duration = fullAppointment.duration;
+        email = fullAppointment.email;
+        firstName = fullAppointment.firstName;
+        lastName = fullAppointment.lastName;
+        notes = fullAppointment.notes;
+        appointmentTypeID = fullAppointment.appointmentTypeID;
+
+      } catch (fetchError) {
+        console.error('[ACUITY_WEBHOOK] Failed to fetch appointment details:', fetchError);
+        return res.status(500).json({ 
+          error: 'Could not retrieve appointment details from Acuity',
+          details: fetchError instanceof Error ? fetchError.message : 'Unknown error'
+        });
+      }
+    }
+
+    // Validate that we now have the required data
+    if (!datetime || !email) {
+      console.error('[ACUITY_WEBHOOK] Still missing required appointment data after fetch attempt');
+      return res.status(400).json({ 
+        error: 'Missing required appointment data (datetime or email)',
+        receivedData: { datetime, email, appointmentTypeID, acuityAppointmentId }
+      });
+    }
 
     // Normalize data for DB insert
     const normalizedDatetime = new Date(datetime).toISOString();
@@ -212,10 +266,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const userBookings = await storage.getIndividualSessionBookings(user.id);
       console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', userBookings.length);
       console.log('[ACUITY_WEBHOOK] All user booking IDs:', userBookings.map(b => b.id));
-      
+
       const newBooking = userBookings.find(b => b.id === booking.id);
       console.log('[ACUITY_WEBHOOK] New booking exists in database:', !!newBooking);
-      
+
       if (newBooking) {
         console.log('[ACUITY_WEBHOOK] Verified booking details:', {
           id: newBooking.id,
