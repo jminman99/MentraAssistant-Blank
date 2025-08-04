@@ -147,7 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       menteeId: user.id,
       humanMentorId: mentor.id,
       sessionType: 'individual' as const,
-      scheduledDate: normalizedDatetime,
+      scheduledDate: new Date(datetime),
       duration: normalizedDuration,
       timezone: 'America/New_York',
       meetingType: 'video' as const,
@@ -158,17 +158,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[ACUITY_WEBHOOK] Creating booking with data:', {
       ...bookingData,
-      scheduledDate: bookingData.scheduledDate,
+      scheduledDate: bookingData.scheduledDate.toISOString(),
       scheduledDateType: typeof bookingData.scheduledDate,
-      scheduledDateValid: bookingData.scheduledDate instanceof Date ? !isNaN(bookingData.scheduledDate.getTime()) : 'not a Date object'
+      scheduledDateValid: !isNaN(bookingData.scheduledDate.getTime())
     });
+
+    // Log appointment type matching for debugging
+    console.log('[ACUITY_WEBHOOK] Appointment type matching debug:');
+    console.log('[ACUITY_WEBHOOK] Received appointmentTypeID:', normalizedAppointmentTypeID);
+    console.log('[ACUITY_WEBHOOK] All mentor acuity IDs:', mentors.map(m => ({
+      id: m.id,
+      name: m.user?.firstName + ' ' + m.user?.lastName,
+      acuityId: m.acuityAppointmentTypeId,
+      acuityIdString: String(m.acuityAppointmentTypeId)
+    })));
 
     console.log('[ACUITY_WEBHOOK] Calling storage.createIndividualSessionBooking...');
 
-    // Insert individual session booking
-    const booking = await storage.createIndividualSessionBooking(bookingData);
-
-    console.log('[ACUITY_WEBHOOK] Storage function returned:', booking);
+    // Wrap DB insert in try/catch with detailed error logging
+    let booking;
+    try {
+      booking = await storage.createIndividualSessionBooking(bookingData);
+      console.log('[ACUITY_WEBHOOK] Storage function returned:', {
+        id: booking.id,
+        menteeId: booking.menteeId,
+        humanMentorId: booking.humanMentorId,
+        scheduledDate: booking.scheduledDate,
+        status: booking.status,
+        calendlyEventId: booking.calendlyEventId
+      });
+    } catch (dbError) {
+      console.error('[ACUITY_WEBHOOK] Database insert failed:', {
+        error: dbError instanceof Error ? dbError.message : dbError,
+        stack: dbError instanceof Error ? dbError.stack : undefined,
+        bookingData: {
+          ...bookingData,
+          scheduledDate: bookingData.scheduledDate.toISOString()
+        }
+      });
+      throw dbError;
+    }
 
     console.log('[ACUITY_WEBHOOK] Booking created successfully:', {
       bookingId: booking.id,
@@ -179,18 +208,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       calendlyEventId: booking.calendlyEventId
     });
 
-    // Verify the booking was inserted by checking user's bookings
+    // Enhanced database verification with detailed logging
     try {
       const userBookings = await storage.getIndividualSessionBookings(user.id);
       console.log('[ACUITY_WEBHOOK] Database verification - total bookings for user:', userBookings.length);
+      console.log('[ACUITY_WEBHOOK] All user booking IDs:', userBookings.map(b => b.id));
+      
       const newBooking = userBookings.find(b => b.id === booking.id);
       console.log('[ACUITY_WEBHOOK] New booking exists in database:', !!newBooking);
-
-      if (!newBooking) {
+      
+      if (newBooking) {
+        console.log('[ACUITY_WEBHOOK] Verified booking details:', {
+          id: newBooking.id,
+          scheduledDate: newBooking.scheduledDate,
+          status: newBooking.status,
+          calendlyEventId: newBooking.calendlyEventId
+        });
+      } else {
         console.error('[ACUITY_WEBHOOK] WARNING: Booking not found in verification check');
+        console.error('[ACUITY_WEBHOOK] Expected booking ID:', booking.id);
+        console.error('[ACUITY_WEBHOOK] Existing booking IDs:', userBookings.map(b => b.id));
       }
     } catch (verifyError) {
-      console.error('[ACUITY_WEBHOOK] Database verification failed:', verifyError);
+      console.error('[ACUITY_WEBHOOK] Database verification failed:', {
+        error: verifyError instanceof Error ? verifyError.message : verifyError,
+        stack: verifyError instanceof Error ? verifyError.stack : undefined,
+        userId: user.id,
+        bookingId: booking?.id
+      });
     }
 
     return res.status(200).json({ 
