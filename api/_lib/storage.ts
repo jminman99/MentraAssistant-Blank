@@ -788,7 +788,7 @@ export class VercelStorage {
     menteeId: number;
     timezone: string;
     humanMentorId: number;
-    scheduledAt: Date;
+    scheduledDate: Date;
     duration: number;
     sessionType: string;
     meetingType: string;
@@ -798,29 +798,20 @@ export class VercelStorage {
       const db = getDatabase();
 
       // Check for conflicting bookings (same mentor, overlapping time)
-      const startTime = new Date(bookingData.scheduledAt);
-      const endTime = new Date(bookingData.scheduledAt.getTime() + bookingData.duration * 60000);
+      const startTime = new Date(bookingData.scheduledDate);
+      const endTime = new Date(bookingData.scheduledDate.getTime() + bookingData.duration * 60000);
 
-      const conflictingBookings = await db
-        .select()
-        .from(sessionBookings)
-        .where(
-          and(
-            eq(sessionBookings.humanMentorId, bookingData.humanMentorId),
-            or(
-              and(
-                gte(sessionBookings.scheduledAt, startTime),
-                lt(sessionBookings.scheduledAt, endTime)
-              ),
-              and(
-                gt(new Date(bookingData.scheduledAt), sessionBookings.scheduledAt),
-                lt(new Date(bookingData.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${bookingData.duration} minutes'`)
-              )
-            )
-          )
-        );
+      const conflictingBookings = await db.execute(sql`
+        SELECT id FROM session_bookings 
+        WHERE human_mentor_id = ${bookingData.humanMentorId}
+        AND (
+          (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
+          OR 
+          (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${bookingData.duration} minutes' > ${startTime.toISOString()})
+        )
+      `);
 
-      if (conflictingBookings.length > 0) {
+      if (conflictingBookings.rows.length > 0) {
         throw new Error('Time slot conflicts with existing booking');
       }
 
@@ -830,7 +821,7 @@ export class VercelStorage {
       const insertData = {
         menteeId: bookingData.menteeId,
         humanMentorId: bookingData.humanMentorId,
-        scheduledAt: startTime,
+        scheduledDate: startTime,
         duration: bookingData.duration,
         sessionType: bookingData.sessionType,
         meetingType: bookingData.meetingType,
@@ -855,34 +846,25 @@ export class VercelStorage {
       const db = getDatabase();
 
       // If updating scheduled time, check for conflicts
-      if (updates.scheduledAt) {
+      if (updates.scheduledDate) {
         const booking = await this.getSessionBookingById(id);
         if (!booking) return null;
 
-        const startTime = new Date(updates.scheduledAt);
-        const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || booking.duration) * 60000);
+        const startTime = new Date(updates.scheduledDate);
+        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || booking.duration) * 60000);
 
-        const conflictingBookings = await db
-          .select()
-          .from(sessionBookings)
-          .where(
-            and(
-              ne(sessionBookings.id, id), // Exclude current booking
-              eq(sessionBookings.humanMentorId, updates.humanMentorId || booking.humanMentorId),
-              or(
-                and(
-                  gte(sessionBookings.scheduledAt, startTime),
-                  lt(sessionBookings.scheduledAt, endTime)
-                ),
-                and(
-                  gt(new Date(updates.scheduledAt), sessionBookings.scheduledAt),
-                  lt(new Date(updates.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${booking.duration} minutes'`)
-                )
-              )
-            )
-          );
+        const conflictingBookings = await db.execute(sql`
+          SELECT id FROM session_bookings 
+          WHERE id != ${id}
+          AND human_mentor_id = ${updates.humanMentorId || booking.humanMentorId}
+          AND (
+            (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
+            OR 
+            (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${booking.duration} minutes' > ${startTime.toISOString()})
+          )
+        `);
 
-        if (conflictingBookings.length > 0) {
+        if (conflictingBookings.rows.length > 0) {
           throw new Error('Updated time slot conflicts with existing booking');
         }
       }
@@ -923,7 +905,7 @@ export class VercelStorage {
         .select()
         .from(sessionBookings)
         .where(eq(sessionBookings.menteeId, menteeId))
-        .orderBy(desc(sessionBookings.scheduledAt));
+        .orderBy(desc(sessionBookings.scheduledDate));
       return bookings;
     } catch (error) {
       console.error('Failed to get session bookings:', error);
@@ -964,50 +946,34 @@ export class VercelStorage {
 
       const bookingToUpdate = existingBooking[0];
 
-      // Check if the booking is already associated with this Acuity ID
-      if (bookingToUpdate.acuityAppointmentId === acuityAppointmentId) {
-        // If updating scheduled time, check for conflicts
-        if (updates.scheduledAt) {
-          const startTime = new Date(updates.scheduledAt);
-          const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+      // If updating scheduled time, check for conflicts
+      if (updates.scheduledDate) {
+        const startTime = new Date(updates.scheduledDate);
+        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
 
-          const conflictingBookings = await db
-            .select()
-            .from(sessionBookings)
-            .where(
-              and(
-                ne(sessionBookings.id, bookingToUpdate.id), // Exclude current booking
-                eq(sessionBookings.humanMentorId, updates.humanMentorId || bookingToUpdate.humanMentorId),
-                or(
-                  and(
-                    gte(sessionBookings.scheduledAt, startTime),
-                    lt(sessionBookings.scheduledAt, endTime)
-                  ),
-                  and(
-                    gt(new Date(updates.scheduledAt), sessionBookings.scheduledAt),
-                    lt(new Date(updates.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${bookingToUpdate.duration} minutes'`)
-                  )
-                )
-              )
-            );
+        const conflictingBookings = await db.execute(sql`
+          SELECT id FROM session_bookings 
+          WHERE id != ${bookingToUpdate.id}
+          AND human_mentor_id = ${updates.humanMentorId || bookingToUpdate.humanMentorId}
+          AND (
+            (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
+            OR 
+            (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${bookingToUpdate.duration} minutes' > ${startTime.toISOString()})
+          )
+        `);
 
-          if (conflictingBookings.length > 0) {
-            throw new Error('Updated time slot conflicts with existing booking');
-          }
+        if (conflictingBookings.rows.length > 0) {
+          throw new Error('Updated time slot conflicts with existing booking');
         }
-
-        const [updatedBooking] = await db
-          .update(sessionBookings)
-          .set({ ...updates, updatedAt: new Date() })
-          .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
-          .returning();
-
-        return updatedBooking || null;
-      } else {
-        // This case should ideally not happen if acuityAppointmentId is unique and correctly managed
-        console.warn(`Booking found with Acuity ID ${acuityAppointmentId}, but it's not the one expected.`);
-        return null;
       }
+
+      const [updatedBooking] = await db
+        .update(sessionBookings)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
+        .returning();
+
+      return updatedBooking || null;
     } catch (error) {
       console.error(`Failed to update session booking by Acuity ID ${acuityAppointmentId}:`, error);
       throw new Error('Failed to update session booking');
