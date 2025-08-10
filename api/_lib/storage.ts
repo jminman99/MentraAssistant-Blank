@@ -75,7 +75,8 @@ export class VercelStorage {
   // Get current database timestamp
   async getNow(): Promise<Date | null> {
     const rows = await db.execute(sql`select now() as now`);
-    return rows.rows?.[0]?.now ?? null;
+    const result = rows.rows?.[0]?.now;
+    return result instanceof Date ? result : (result ? new Date(result) : null);
   }
 
   // User methods
@@ -507,18 +508,7 @@ export class VercelStorage {
         ...data,
         scheduledDate: validatedDate
       })
-      .onConflictDoUpdate({
-        target: [sessionBookings.acuityAppointmentId], // Use acuityAppointmentId as target if unique
-        set: {
-          scheduledDate: validatedDate,
-          duration: data.duration,
-          status: data.status,
-          sessionGoals: data.sessionGoals,
-          humanMentorId: data.humanMentorId,
-          menteeId: data.menteeId,
-          updatedAt: new Date()
-        },
-      })
+      .onConflictDoNothing()
       .returning();
 
       console.log('✅ [STORAGE] Individual session booking upserted successfully:', {
@@ -662,7 +652,7 @@ export class VercelStorage {
       console.log('🔍 [STORAGE] Retrieved booking records:', bookings.rows.length);
       console.log('🔍 [STORAGE] Raw booking data:', bookings.rows);
 
-      const transformedBookings = bookings.rows.map((booking: any, index: number) => {
+      const transformedBookings: SessionBooking[] = bookings.rows.map((booking: any, index: number) => {
         console.log(`🔍 [STORAGE] Processing booking ${index + 1}:`, {
           id: booking.id,
           scheduledDate: booking.scheduledDate,
@@ -692,9 +682,12 @@ export class VercelStorage {
           reminderSent: booking.reminderSent,
           noShowReported: booking.noShowReported,
           cancellationReason: booking.cancellationReason,
-          acuityAppointmentId: booking.acuityAppointmentId,
+          calendlyEventUrl: booking.calendlyEventUrl || null,
+          preparationNotes: booking.preparationNotes || null,
+          menteeQuestions: booking.menteeQuestions || null,
+          sessionNotes: booking.sessionNotes || null,
           confirmationSent: booking.confirmationSent,
-        };
+        } as SessionBooking;
       });
 
       console.log('✅ [STORAGE] Transformed bookings:', transformedBookings);
@@ -932,11 +925,11 @@ export class VercelStorage {
     try {
       const db = getDatabase();
 
-      // Fetch the existing booking to check conditions and get current data
+      // Since acuityAppointmentId column doesn't exist in schema, use calendlyEventId as fallback
       const existingBooking = await db
         .select()
         .from(sessionBookings)
-        .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
+        .where(eq(sessionBookings.calendlyEventId, acuityAppointmentId))
         .limit(1);
 
       if (!existingBooking || existingBooking.length === 0) {
@@ -970,7 +963,7 @@ export class VercelStorage {
       const [updatedBooking] = await db
         .update(sessionBookings)
         .set({ ...updates, updatedAt: new Date() })
-        .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
+        .where(eq(sessionBookings.calendlyEventId, acuityAppointmentId))
         .returning();
 
       return updatedBooking || null;
