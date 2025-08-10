@@ -17,7 +17,7 @@ import {
   mentorAvailability,
   brandingConfigurations
 } from '../shared/schema.js';
-import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, sql, ne, gt, lt, or } from 'drizzle-orm';
 import type {
   User,
   Organization,
@@ -44,6 +44,14 @@ import type {
   InsertMentorLifeStory,
   InsertMentorAvailability
 } from '../shared/schema.js';
+
+// Helper function to get the database instance (assuming db is already imported and configured)
+function getDatabase() {
+  // In a real scenario, this would return the initialized db instance.
+  // For this example, we'll assume 'db' is directly available.
+  return db;
+}
+
 
 export class VercelStorage {
   // Error handling helper
@@ -482,7 +490,7 @@ export class VercelStorage {
         scheduledDate: validatedDate
       })
       .onConflictDoUpdate({
-        target: [sessionBookings.externalProvider, sessionBookings.externalEventId],
+        target: [sessionBookings.acuityAppointmentId], // Use acuityAppointmentId as target if unique
         set: {
           scheduledDate: validatedDate,
           duration: data.duration,
@@ -499,8 +507,7 @@ export class VercelStorage {
         id: session.id,
         menteeId: session.menteeId,
         humanMentorId: session.humanMentorId,
-        externalProvider: session.externalProvider,
-        externalEventId: session.externalEventId
+        acuityAppointmentId: session.acuityAppointmentId
       });
 
       return session;
@@ -617,7 +624,18 @@ export class VercelStorage {
           sb.video_link as "videoLink",
           sb.calendly_event_id as "calendlyEventId",
           sb.created_at as "createdAt",
-          sb.session_type as "sessionType"
+          sb.session_type as "sessionType",
+          sb.location,
+          sb.timezone,
+          sb.updated_at as "updatedAt",
+          sb.feedback,
+          sb.rating,
+          sb.notes,
+          sb.reminder_sent as "reminderSent",
+          sb.no_show_reported as "noShowReported",
+          sb.cancellation_reason as "cancellationReason",
+          sb.acuity_appointment_id as "acuityAppointmentId",
+          sb.confirmation_sent as "confirmationSent"
         FROM session_bookings sb
         WHERE sb.mentee_id = ${userId}
         ORDER BY sb.scheduled_date DESC
@@ -646,7 +664,18 @@ export class VercelStorage {
           videoLink: booking.videoLink,
           calendlyEventId: booking.calendlyEventId,
           sessionType: booking.sessionType || 'individual',
-          createdAt: booking.createdAt
+          createdAt: booking.createdAt,
+          location: booking.location,
+          timezone: booking.timezone,
+          updatedAt: booking.updatedAt,
+          feedback: booking.feedback,
+          rating: booking.rating,
+          notes: booking.notes,
+          reminderSent: booking.reminderSent,
+          noShowReported: booking.noShowReported,
+          cancellationReason: booking.cancellationReason,
+          acuityAppointmentId: booking.acuityAppointmentId,
+          confirmationSent: booking.confirmationSent,
         };
       });
 
@@ -748,40 +777,52 @@ export class VercelStorage {
     sessionGoals?: string | null;
   }): Promise<SessionBooking> {
     try {
-      if (!bookingData.scheduledAt) {
-        throw new Error('scheduledAt is required');
+      const db = getDatabase();
+
+      // Check for conflicting bookings (same mentor, overlapping time)
+      const startTime = new Date(bookingData.scheduledAt);
+      const endTime = new Date(bookingData.scheduledAt.getTime() + bookingData.duration * 60000);
+
+      const conflictingBookings = await db
+        .select()
+        .from(sessionBookings)
+        .where(
+          and(
+            eq(sessionBookings.humanMentorId, bookingData.humanMentorId),
+            or(
+              and(
+                gte(sessionBookings.scheduledAt, startTime),
+                lt(sessionBookings.scheduledAt, endTime)
+              ),
+              and(
+                gt(new Date(bookingData.scheduledAt), sessionBookings.scheduledAt),
+                lt(new Date(bookingData.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${bookingData.duration} minutes'`)
+              )
+            )
+          )
+        );
+
+      if (conflictingBookings.length > 0) {
+        throw new Error('Time slot conflicts with existing booking');
       }
 
-      if (!bookingData.menteeId) {
-        throw new Error('menteeId is required');
-      }
-
-      const scheduledDate = bookingData.scheduledAt;
-      const startTime = new Date(scheduledDate);
-      const endTime = new Date(scheduledDate);
-      const duration = bookingData.duration || 60;
-
-      const meetingType = bookingData.meetingType || 'video';
-      const sessionType = bookingData.sessionType || 'individual';
-
-      const calEventId = `session_${Date.now()}_${scheduledDate.getTime()}`;
-
+      const calEventId = `session_${Date.now()}_${startTime.getTime()}`;
       const calLink = `https://meet.google.com/${calEventId}`;
 
       const insertData = {
         menteeId: bookingData.menteeId,
-        scheduledDate: new Date(bookingData.scheduledAt),
-        timezone: bookingData.timezone,
         humanMentorId: bookingData.humanMentorId,
-        duration: duration,
-        sessionType: sessionType,
-        meetingType: meetingType,
+        scheduledAt: startTime,
+        duration: bookingData.duration,
+        sessionType: bookingData.sessionType,
+        meetingType: bookingData.meetingType,
         sessionGoals: bookingData.sessionGoals,
         status: 'confirmed' as const,
+        timezone: bookingData.timezone,
         videoLink: calLink,
         calendlyEventId: calEventId,
       };
-      
+
       const [session] = await db.insert(sessionBookings).values(insertData).returning();
       console.log(`✅ Created individual session booking for user ${bookingData.menteeId}`);
       return session;
@@ -791,18 +832,53 @@ export class VercelStorage {
     }
   }
 
-  async updateSessionBooking(id: number, data: Partial<InsertSessionBooking>): Promise<SessionBooking | null> {
+  async updateSessionBooking(id: number, updates: Partial<SessionBooking>): Promise<SessionBooking | null> {
     try {
-      const [session] = await db
+      const db = getDatabase();
+
+      // If updating scheduled time, check for conflicts
+      if (updates.scheduledAt) {
+        const booking = await getSessionBookingById(id);
+        if (!booking) return null;
+
+        const startTime = new Date(updates.scheduledAt);
+        const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || booking.duration) * 60000);
+
+        const conflictingBookings = await db
+          .select()
+          .from(sessionBookings)
+          .where(
+            and(
+              ne(sessionBookings.id, id), // Exclude current booking
+              eq(sessionBookings.humanMentorId, updates.humanMentorId || booking.humanMentorId),
+              or(
+                and(
+                  gte(sessionBookings.scheduledAt, startTime),
+                  lt(sessionBookings.scheduledAt, endTime)
+                ),
+                and(
+                  gt(new Date(updates.scheduledAt), sessionBookings.scheduledAt),
+                  lt(new Date(updates.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${booking.duration} minutes'`)
+                )
+              )
+            )
+          );
+
+        if (conflictingBookings.length > 0) {
+          throw new Error('Updated time slot conflicts with existing booking');
+        }
+      }
+
+      const [updatedBooking] = await db
         .update(sessionBookings)
-        .set(data)
+        .set({ ...updates, updatedAt: new Date() })
         .where(eq(sessionBookings.id, id))
         .returning();
 
-      return session || null;
+      return updatedBooking || null;
     } catch (error) {
-      console.error('Error updating session booking:', error);
-      throw error;
+      console.error('Failed to update session booking:', error);
+      throw new Error('Failed to update session booking');
     }
   }
 
@@ -856,7 +932,105 @@ export class VercelStorage {
       return null;
     }
   }
-  // Additional methods can be added as needed for specific API routes
+  
+  // Helper functions for session bookings (these were duplicated and are now removed from global scope)
+  async getSessionBookings(menteeId: number): Promise<SessionBooking[]> {
+    try {
+      const db = getDatabase();
+      const bookings = await db
+        .select()
+        .from(sessionBookings)
+        .where(eq(sessionBookings.menteeId, menteeId))
+        .orderBy(desc(sessionBookings.scheduledAt));
+      return bookings;
+    } catch (error) {
+      console.error('Failed to get session bookings:', error);
+      throw new Error('Failed to retrieve session bookings');
+    }
+  }
+
+  async getSessionBookingById(id: number): Promise<SessionBooking | null> {
+    try {
+      const db = getDatabase();
+      const booking = await db
+        .select()
+        .from(sessionBookings)
+        .where(eq(sessionBookings.id, id))
+        .limit(1);
+      return booking[0] || null;
+    } catch (error) {
+      console.error('Failed to get session booking by ID:', error);
+      throw new Error('Failed to retrieve session booking');
+    }
+  }
+
+  async updateSessionBookingByAcuityId(acuityAppointmentId: string, updates: Partial<SessionBooking>): Promise<SessionBooking | null> {
+    try {
+      const db = getDatabase();
+
+      // Fetch the existing booking to check conditions and get current data
+      const existingBooking = await db
+        .select()
+        .from(sessionBookings)
+        .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
+        .limit(1);
+
+      if (!existingBooking || existingBooking.length === 0) {
+        console.warn(`No booking found with Acuity ID: ${acuityAppointmentId}`);
+        return null;
+      }
+
+      const bookingToUpdate = existingBooking[0];
+
+      // Check if the booking is already associated with this Acuity ID
+      if (bookingToUpdate.acuityAppointmentId === acuityAppointmentId) {
+        // If updating scheduled time, check for conflicts
+        if (updates.scheduledAt) {
+          const startTime = new Date(updates.scheduledAt);
+          const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+
+          const conflictingBookings = await db
+            .select()
+            .from(sessionBookings)
+            .where(
+              and(
+                ne(sessionBookings.id, bookingToUpdate.id), // Exclude current booking
+                eq(sessionBookings.humanMentorId, updates.humanMentorId || bookingToUpdate.humanMentorId),
+                or(
+                  and(
+                    gte(sessionBookings.scheduledAt, startTime),
+                    lt(sessionBookings.scheduledAt, endTime)
+                  ),
+                  and(
+                    gt(new Date(updates.scheduledAt), sessionBookings.scheduledAt),
+                    lt(new Date(updates.scheduledAt), sql`${sessionBookings.scheduledAt} + INTERVAL '${bookingToUpdate.duration} minutes'`)
+                  )
+                )
+              )
+            );
+
+          if (conflictingBookings.length > 0) {
+            throw new Error('Updated time slot conflicts with existing booking');
+          }
+        }
+
+        const [updatedBooking] = await db
+          .update(sessionBookings)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(eq(sessionBookings.acuityAppointmentId, acuityAppointmentId))
+          .returning();
+
+        return updatedBooking || null;
+      } else {
+        // This case should ideally not happen if acuityAppointmentId is unique and correctly managed
+        console.warn(`Booking found with Acuity ID ${acuityAppointmentId}, but it's not the one expected.`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Failed to update session booking by Acuity ID ${acuityAppointmentId}:`, error);
+      throw new Error('Failed to update session booking');
+    }
+  }
 }
 
 export const storage = new VercelStorage();
@@ -878,5 +1052,8 @@ export const {
   getMentoringSessions,
   createSessionBooking,
   updateSessionBooking,
-  cancelSessionBooking
+  cancelSessionBooking,
+  getIndividualSessionBookings,
+  upsertIndividualSessionBooking,
+  updateSessionBookingByAcuityId
 } = storage;
