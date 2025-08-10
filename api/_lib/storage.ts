@@ -729,7 +729,7 @@ export class VercelStorage {
 
       console.log(`✅ [STORAGE] Successfully transformed ${transformedSessions.length} individual sessions for user ${userId}`);
       console.log('✅ [STORAGE] Final transformed data:', JSON.stringify(transformedSessions, null, 2));
-      
+
       return transformedSessions;
     } catch (error) {
       console.error('🚨 [STORAGE] Error fetching individual sessions:', error);
@@ -737,10 +737,53 @@ export class VercelStorage {
     }
   }
 
-  async createSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
+  async createSessionBooking(bookingData: {
+    menteeId: number;
+    timezone: string;
+    humanMentorId: number;
+    scheduledAt: Date;
+    duration: number;
+    sessionType: string;
+    meetingType: string;
+    sessionGoals?: string | null;
+  }): Promise<SessionBooking> {
     try {
-      const [session] = await db.insert(sessionBookings).values(data).returning();
-      console.log(`✅ Created individual session booking for user ${data.menteeId}`);
+      if (!bookingData.scheduledAt) {
+        throw new Error('scheduledAt is required');
+      }
+
+      if (!bookingData.menteeId) {
+        throw new Error('menteeId is required');
+      }
+
+      const scheduledDate = bookingData.scheduledAt;
+      const startTime = new Date(scheduledDate);
+      const endTime = new Date(scheduledDate);
+      const duration = bookingData.duration || 60;
+
+      const meetingType = bookingData.meetingType || 'video';
+      const sessionType = bookingData.sessionType || 'individual';
+
+      const calEventId = `session_${Date.now()}_${scheduledDate.getTime()}`;
+
+      const calLink = `https://meet.google.com/${calEventId}`;
+
+      const insertData = {
+        menteeId: bookingData.menteeId,
+        scheduledDate: new Date(bookingData.scheduledAt),
+        timezone: bookingData.timezone,
+        humanMentorId: bookingData.humanMentorId,
+        duration: duration,
+        sessionType: sessionType,
+        meetingType: meetingType,
+        sessionGoals: bookingData.sessionGoals,
+        status: 'confirmed' as const,
+        videoLink: calLink,
+        calendlyEventId: calEventId,
+      };
+      
+      const [session] = await db.insert(sessionBookings).values(insertData).returning();
+      console.log(`✅ Created individual session booking for user ${bookingData.menteeId}`);
       return session;
     } catch (error) {
       console.error('Error creating session booking:', error);

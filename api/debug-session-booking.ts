@@ -1,7 +1,7 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyToken } from './_lib/auth.js';
 import { storage } from './_lib/storage.js';
+import crypto from 'crypto';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
@@ -25,8 +25,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`[DEBUG_BOOKING:${requestId}] Testing auth...`);
     const user = await verifyToken(req);
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
+      return res.status(401).json({
+        success: false,
         error: 'Authentication failed',
         test: 'auth'
       });
@@ -46,8 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Test 4: Check session_bookings table structure
     console.log(`[DEBUG_BOOKING:${requestId}] Checking session_bookings table...`);
     const tableTest = await storage.db.execute(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
+      SELECT column_name, data_type
+      FROM information_schema.columns
       WHERE table_name = 'session_bookings'
       ORDER BY ordinal_position
     `);
@@ -57,10 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { testBooking } = req.body;
     if (testBooking) {
       console.log(`[DEBUG_BOOKING:${requestId}] Testing booking creation...`);
-      
+
       const mockBooking = {
-        menteeId: user.id,
-        humanMentorId: 1, // Use first mentor if exists
+        menteeId: user.id, // Use user's ID from auth
+        humanMentorId: mentorsTest.rows.length > 0 ? Number(mentorsTest.rows[0].id) : 1, // Use first mentor if exists, default to 1
         scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
         duration: 60,
         sessionGoals: 'Debug test booking',
@@ -68,7 +68,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       try {
-        const result = await storage.createIndividualSessionBooking(mockBooking);
+        // The intention was to fix the booking creation, specifically the parameters for createSessionBooking.
+        // Based on the context, it's likely createIndividualSessionBooking is the correct function.
+        // The menteeId should be the user.id, and scheduledDate is used instead of scheduledAt.
+        const result = await storage.createIndividualSessionBooking({
+          menteeId: user.id,
+          humanMentorId: mentorsTest.rows.length > 0 ? Number(mentorsTest.rows[0].id) : 1,
+          scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          duration: 60,
+          sessionGoals: 'Debug test booking',
+          status: 'confirmed'
+        });
         console.log(`[DEBUG_BOOKING:${requestId}] Test booking created:`, result);
       } catch (bookingError) {
         console.error(`[DEBUG_BOOKING:${requestId}] Booking creation failed:`, bookingError);

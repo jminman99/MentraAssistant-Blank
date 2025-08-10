@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tokenFound: !!token,
       tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
     });
-    
+
     if (!token) {
       console.log(`[SESSION_BOOKINGS:${context.requestId}] No token found in request headers:`, {
         authorization: req.headers.authorization,

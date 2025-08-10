@@ -11,11 +11,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   try {
     console.log('🚀 AI response endpoint called');
-    
+
     // Authentication check
     const token = getSessionToken(req);
     console.log('🔍 Token extraction:', token ? 'Token found' : 'No token found');
-    
+
     if (!token) {
       console.log('❌ Authentication failed: No token provided');
       return res.status(401).json({
@@ -32,20 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     } catch (verifyError) {
       console.error('Token verification failed:', verifyError);
-      
-      // Check if this is a token expiration error
-      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
-        return res.status(401).json({
-          success: false,
-          error: "Token expired",
-          message: "Session expired. Please sign in again.",
-          code: "TOKEN_EXPIRED"
-        });
-      }
-      
-      return res.status(401).json({
-        success: false,
-        error: 'Token expired or invalid - please refresh and try again'
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        details: verifyError instanceof Error ? verifyError.message : 'Token verification failed' 
       });
     }
 
@@ -92,10 +81,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get conversation history for context using database user ID
     const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
-    
+
     // Get mentor info to retrieve custom prompt from database
     const aiMentor = await storage.getAiMentor(aiMentorId);
-    
+
     if (!aiMentor) {
       console.error(`AI Mentor with ID ${aiMentorId} not found`);
       return res.status(404).json({
@@ -138,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`🤖 Using temperature: ${temperature} for mentor: ${aiMentor.name}`);
     console.log('🤖 Calling OpenAI API...');
-    
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: messages,

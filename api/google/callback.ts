@@ -41,7 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Update user with Google tokens
     await storage.updateUser(user.id, {
-      googleRefreshToken: tokenData.refresh_token,
       googleAccessToken: tokenData.access_token,
       googleTokenExpiry: new Date(Date.now() + tokenData.expires_in * 1000),
     });

@@ -1,7 +1,7 @@
 import { storage } from './storage.js';
-import type { VercelRequest } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 import { verifyToken } from '@clerk/backend';
-import { VercelRequest } from '@vercel/node';
 
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 

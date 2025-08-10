@@ -18,7 +18,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     // Extract and verify Clerk JWT token
     const token = req.headers.authorization?.replace('Bearer ', '') ||
                   req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
-    
+
     if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
@@ -34,21 +34,9 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      
-      // Check if this is a token expiration error
-      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
-        return res.status(401).json({
-          success: false,
-          error: "Token expired",
-          message: "Session expired. Please sign in again.",
-          code: "TOKEN_EXPIRED"
-        });
-      }
-      
       return res.status(401).json({ 
-        success: false, 
-        error: "Invalid token",
-        message: "Authentication token is invalid"
+        error: 'Unauthorized', 
+        details: verifyError instanceof Error ? verifyError.message : 'Token verification failed' 
       });
     }
 
@@ -65,7 +53,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const url = new URL(req.url || '', `${protocol}://${req.headers.host}`);
     const aiMentorId = url.searchParams.get("aiMentorId");
-    
+
     if (!aiMentorId) {
       return res.status(400).json({
         success: false,
@@ -99,7 +87,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     // Extract and verify Clerk JWT token
     const token = req.headers.authorization?.replace('Bearer ', '') ||
                   req.headers.cookie?.split(';').find(c => c.trim().startsWith('__session='))?.split('=')[1];
-    
+
     if (!token) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
@@ -115,21 +103,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       console.log("✅ Clerk user verified:", userId);
     } catch (verifyError) {
       console.error("Token verification failed:", verifyError);
-      
-      // Check if this is a token expiration error
-      if (verifyError.message?.includes('expired') || verifyError.message?.includes('JWT is expired')) {
-        return res.status(401).json({
-          success: false,
-          error: "Token expired",
-          message: "Session expired. Please sign in again.",
-          code: "TOKEN_EXPIRED"
-        });
-      }
-      
       return res.status(401).json({ 
-        success: false, 
-        error: "Invalid token",
-        message: "Authentication token is invalid"
+        error: 'Unauthorized', 
+        details: verifyError instanceof Error ? verifyError.message : 'Token verification failed' 
       });
     }
 

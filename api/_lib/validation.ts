@@ -1,4 +1,3 @@
-
 export interface ValidationError {
   field: string;
   message: string;
@@ -17,7 +16,7 @@ export function validateSessionBooking(data: any): ValidationResult<{
   sessionGoals: string;
 }> {
   const errors: ValidationError[] = [];
-  
+
   // Validate humanMentorId
   const mentorIdNum = Number(data.humanMentorId);
   if (!data.humanMentorId || !Number.isInteger(mentorIdNum) || mentorIdNum <= 0) {
@@ -50,12 +49,12 @@ export function validateSessionBooking(data: any): ValidationResult<{
     if (!data.scheduledDate) {
       throw new Error('scheduledDate is required');
     }
-    
+
     parsedDate = new Date(data.scheduledDate);
     if (isNaN(parsedDate.getTime())) {
       throw new Error('Invalid date format');
     }
-    
+
     // Ensure date is in the future
     if (parsedDate <= new Date()) {
       throw new Error('Date must be in the future');
@@ -89,7 +88,7 @@ export function validateCouncilBooking(data: any): ValidationResult<{
   sessionGoals: string;
 }> {
   const errors: ValidationError[] = [];
-  
+
   // Validate selectedMentors
   if (!data.selectedMentors || !Array.isArray(data.selectedMentors)) {
     errors.push({
@@ -120,12 +119,12 @@ export function validateCouncilBooking(data: any): ValidationResult<{
     if (!data.preferredDate) {
       throw new Error('preferredDate is required');
     }
-    
+
     parsedDate = new Date(data.preferredDate);
     if (isNaN(parsedDate.getTime())) {
       throw new Error('Invalid date format');
     }
-    
+
     // Ensure date is in the future
     if (parsedDate <= new Date()) {
       throw new Error('Date must be in the future');
@@ -151,3 +150,13 @@ export function validateCouncilBooking(data: any): ValidationResult<{
     }
   };
 }
+
+export const validateSessionBookingId = (id: any) => {
+  if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
+    return {
+      field: 'id',
+      message: 'ID must be a positive integer'
+    };
+  }
+  return null;
+};
