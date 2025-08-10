@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Create session booking record
+    // Create session booking record using upsert to prevent duplicates
     const bookingData = {
       menteeId: user.id,
       humanMentorId: mentor.id,
@@ -58,12 +58,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       meetingType: 'video' as const,
       sessionGoals: notes || 'Manually synced from Acuity',
       status: 'confirmed' as const,
-      calendlyEventId: acuityAppointmentId.toString()
+      externalProvider: 'acuity',
+      externalEventId: acuityAppointmentId.toString(),
+      calendlyEventId: acuityAppointmentId.toString() // Keep for backward compatibility
     };
 
     console.log('[SYNC_ACUITY] Creating booking:', bookingData);
 
-    const booking = await storage.createIndividualSessionBooking(bookingData);
+    const booking = await storage.upsertIndividualSessionBooking(bookingData);
 
     console.log('[SYNC_ACUITY] Booking created successfully:', booking.id);
 

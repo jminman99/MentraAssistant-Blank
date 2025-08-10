@@ -456,6 +456,60 @@ export class VercelStorage {
   }
 
   // Individual Session Booking methods
+  async upsertIndividualSessionBooking(data: any): Promise<SessionBooking> {
+    try {
+      console.log('📝 [STORAGE] Upserting individual session booking with data:', data);
+
+      // Ensure scheduledDate is a proper Date object
+      let validatedDate: Date;
+      if (data.scheduledDate instanceof Date) {
+        if (isNaN(data.scheduledDate.getTime())) {
+          throw new Error('Invalid scheduledDate: Date object contains invalid time value');
+        }
+        validatedDate = data.scheduledDate;
+      } else if (typeof data.scheduledDate === 'string') {
+        const parsedDate = new Date(data.scheduledDate);
+        if (isNaN(parsedDate.getTime())) {
+          throw new Error(`Invalid scheduledDate string: ${data.scheduledDate}`);
+        }
+        validatedDate = parsedDate;
+      } else {
+        throw new Error(`Invalid scheduledDate type: ${typeof data.scheduledDate}`);
+      }
+
+      const [session] = await db.insert(sessionBookings).values({
+        ...data,
+        scheduledDate: validatedDate
+      })
+      .onConflictDoUpdate({
+        target: [sessionBookings.externalProvider, sessionBookings.externalEventId],
+        set: {
+          scheduledDate: validatedDate,
+          duration: data.duration,
+          status: data.status,
+          sessionGoals: data.sessionGoals,
+          humanMentorId: data.humanMentorId,
+          menteeId: data.menteeId,
+          updatedAt: new Date()
+        },
+      })
+      .returning();
+
+      console.log('✅ [STORAGE] Individual session booking upserted successfully:', {
+        id: session.id,
+        menteeId: session.menteeId,
+        humanMentorId: session.humanMentorId,
+        externalProvider: session.externalProvider,
+        externalEventId: session.externalEventId
+      });
+
+      return session;
+    } catch (error) {
+      console.error('🚨 [STORAGE] Error upserting session booking:', error);
+      throw error;
+    }
+  }
+
   async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
     try {
       console.log('📝 [STORAGE] Creating individual session booking with data:', {
