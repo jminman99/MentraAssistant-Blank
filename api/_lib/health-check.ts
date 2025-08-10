@@ -39,15 +39,9 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 function toBase64(s: string) {
-  try {
-    // Node path
-    // @ts-ignore
-    if (typeof Buffer !== 'undefined') return Buffer.from(s).toString('base64');
-  } catch {}
-  // Fallback (Edge/browser)
+  try { return Buffer.from(s).toString('base64'); } catch {}
   // @ts-ignore
-  if (typeof btoa === 'function') return btoa(s);
-  return s;
+  return typeof btoa === 'function' ? btoa(s) : s;
 }
 
 async function checkEnvs(): Promise<HealthCheck> {
