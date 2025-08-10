@@ -1,3 +1,4 @@
+
 // Copy of the storage interface for Vercel API routes
 import { db } from './db.js';
 import { 
@@ -58,6 +59,23 @@ export class VercelStorage {
   private handleError(operation: string, error: unknown): never {
     console.error(`Storage operation failed: ${operation}`, error);
     throw new Error(`Database operation failed: ${operation}`);
+  }
+
+  // Health check method for database connectivity
+  async healthCheck(): Promise<void> {
+    await db.execute(sql`select 1 as ok`);
+  }
+
+  // Query method for basic database probes
+  async query(query: string): Promise<any> {
+    // Basic passthrough for simple probes. Prefer tagged template in app code.
+    return db.execute(sql.raw(query));
+  }
+
+  // Get current database timestamp
+  async getNow(): Promise<Date | null> {
+    const rows = await db.execute(sql`select now() as now`);
+    return rows.rows?.[0]?.now ?? null;
   }
 
   // User methods
@@ -838,7 +856,7 @@ export class VercelStorage {
 
       // If updating scheduled time, check for conflicts
       if (updates.scheduledAt) {
-        const booking = await getSessionBookingById(id);
+        const booking = await this.getSessionBookingById(id);
         if (!booking) return null;
 
         const startTime = new Date(updates.scheduledAt);
@@ -894,42 +912,6 @@ export class VercelStorage {
     } catch (error) {
       console.error('Error cancelling session booking:', error);
       throw error;
-    }
-  }
-
-  async cancelCouncilSession(participantId: number): Promise<any> {
-    try {
-      // Update the participant status to 'cancelled'
-      const [updatedParticipant] = await db
-        .update(councilParticipants)
-        .set({ status: 'cancelled' })
-        .where(eq(councilParticipants.id, participantId))
-        .returning();
-
-      return updatedParticipant;
-    } catch (error) {
-      console.error('Error cancelling council session:', error);
-      throw error;
-    }
-  }
-
-  async getUserByClerkId(clerkId: string): Promise<User | null> {
-    try {
-      const result = await db.select().from(users).where(eq(users.clerkUserId, clerkId)).limit(1);
-      return result[0] || null;
-    } catch (error) {
-      console.error('Error fetching user by Clerk ID:', error);
-      return null;
-    }
-  }
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    try {
-      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      return result[0] || null;
-    } catch (error) {
-      console.error('Error fetching user by email:', error);
-      return null;
     }
   }
   

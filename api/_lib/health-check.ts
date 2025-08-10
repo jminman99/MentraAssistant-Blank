@@ -117,21 +117,29 @@ async function checkAcuity(): Promise<HealthCheck> {
     };
   }
   try {
-    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
-    const url = `https://acuityscheduling.com/api/v1/appointments?minDate=${since}&max=1`;
-
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 2500);
 
-    const r = await fetch(url, {
-      method: 'GET',
+    // Identity endpoint is the simplest permission probe
+    const r = await fetch('https://acuityscheduling.com/api/v1/me', {
       headers: { Authorization: 'Basic ' + toBase64(`${userId}:${apiKey}`) },
       signal: controller.signal,
     });
     clearTimeout(timer);
 
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return { name: 'acuity', status: 'pass', latencyMs: Math.round(nowMs() - start) };
+    if (!r.ok) {
+      let body: any = null;
+      try { body = await r.text(); } catch {}
+      throw new Error(`HTTP ${r.status} ${r.statusText}${body ? ` - ${body.slice(0,200)}` : ''}`);
+    }
+
+    const me = await r.json().catch(() => ({}));
+    return { 
+      name: 'acuity', 
+      status: 'pass', 
+      latencyMs: Math.round(nowMs() - start), 
+      details: { account: me?.account_name ?? me?.email ?? 'ok' } 
+    };
   } catch (e: any) {
     return {
       name: 'acuity',
