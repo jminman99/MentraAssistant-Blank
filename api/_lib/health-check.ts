@@ -65,33 +65,21 @@ async function checkEnvs(): Promise<HealthCheck> {
 async function checkDatabase(): Promise<HealthCheck> {
   const start = nowMs();
   try {
-    // Use your existing storage adapter if available
-    const mod = await import('./storage').catch(() => null as any);
-    const storage = mod?.storage;
-
-    if (!storage) {
+    // Use Neon serverless driver directly for health checks
+    const { neon } = await import('@neondatabase/serverless');
+    const databaseUrl = process.env.DATABASE_URL;
+    
+    if (!databaseUrl) {
       return {
         name: 'database',
         status: 'fail',
         latencyMs: Math.round(nowMs() - start),
-        error: 'storage adapter not available',
+        error: 'DATABASE_URL environment variable not set',
       };
     }
 
-    if (typeof storage.healthCheck === 'function') {
-      await withTimeout(storage.healthCheck(), 3000);
-    } else if (typeof storage.query === 'function') {
-      await withTimeout(storage.query('select 1'), 3000);
-    } else if (typeof storage.getNow === 'function') {
-      await withTimeout(storage.getNow(), 3000);
-    } else {
-      return {
-        name: 'database',
-        status: 'fail',
-        latencyMs: Math.round(nowMs() - start),
-        error: 'no trivial query available',
-      };
-    }
+    const sql = neon(databaseUrl);
+    await withTimeout(sql`select 1 as ok`, 3000);
 
     return { name: 'database', status: 'pass', latencyMs: Math.round(nowMs() - start) };
   } catch (e: any) {
