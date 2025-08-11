@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from './_lib/storage.js';
 
 export const config = { 
-  runtime: 'nodejs18.x',
+  runtime: 'nodejs',
   api: {
     bodyParser: false,
   },
@@ -175,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       menteeId,
       humanMentorId: mentor.id,
       sessionType: 'individual' as const,
-      scheduledDate: new Date(a.datetime),
+      scheduledAt: new Date(a.datetime),
       duration: a.duration,
       timezone: a.timezone || 'UTC',
       meetingType: 'video' as const,
