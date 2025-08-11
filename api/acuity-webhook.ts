@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { storage } from './_lib/storage.js';
 
 export const config = { 
-  runtime: 'nodejs',
+  runtime: 'nodejs18.x',
   api: {
     bodyParser: false,
   },
@@ -11,6 +11,11 @@ export const config = {
 
 // Require a token in the query string for security
 const WEBHOOK_TOKEN = process.env.ACUITY_WEBHOOK_TOKEN || process.env.WEBHOOK_TOKEN || '';
+
+// Validate webhook token is configured
+if (!WEBHOOK_TOKEN) {
+  console.error('[ACUITY WEBHOOK] Missing ACUITY_WEBHOOK_TOKEN environment variable');
+}
 
 function bad(res: VercelResponse, code: number, msg: string) {
   // Return 200 for webhook stability - prevents Acuity from retrying forever
@@ -89,6 +94,12 @@ function normalizeAppointment(payload: any) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method !== 'POST') return bad(res, 405, 'Method not allowed');
+
+    // Check server configuration first
+    if (!WEBHOOK_TOKEN) {
+      console.error('[ACUITY WEBHOOK] Missing ACUITY_WEBHOOK_TOKEN');
+      return bad(res, 500, 'Server not configured');
+    }
 
     // Verify webhook token (required for security)
     const token = req.query.token as string;
