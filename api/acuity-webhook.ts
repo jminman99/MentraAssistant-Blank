@@ -9,7 +9,7 @@ export const config = {
   },
 };
 
-// Optional: require a token in the query string for security
+// Require a token in the query string for security
 const WEBHOOK_TOKEN = process.env.ACUITY_WEBHOOK_TOKEN || process.env.WEBHOOK_TOKEN || '';
 
 function bad(res: VercelResponse, code: number, msg: string) {
@@ -90,11 +90,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method !== 'POST') return bad(res, 405, 'Method not allowed');
 
-    // Optional webhook token validation
-    if (WEBHOOK_TOKEN) {
-      const token = String(req.query.token || '');
-      if (token !== WEBHOOK_TOKEN) return bad(res, 401, 'Unauthorized');
+    // Verify webhook token (required for security)
+    const token = req.query.token as string;
+    if (!token || token !== WEBHOOK_TOKEN) {
+      console.warn('[ACUITY WEBHOOK] Unauthorized webhook attempt', { 
+        token: token ? `${token.substring(0, 4)}...` : 'none',
+        hasToken: !!WEBHOOK_TOKEN 
+      });
+      return bad(res, 401, 'Invalid or missing token');
     }
+
+    // Log event type if provided
+    const eventType = (req.query.event as string) || 'unknown';
+    console.log(`[ACUITY WEBHOOK] Event type: ${eventType}`);
 
     const { raw, contentType } = await readRawBody(req);
 
@@ -111,9 +119,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const a = normalizeAppointment(payload);
-    console.log('[ACUITY WEBHOOK] incoming', {
-      ct: contentType, id: a.acuityAppointmentId, typeId: a.appointmentTypeId,
-      dt: a.datetime, dur: a.duration, tz: a.timezone, status: a.status
+    console.log('[ACUITY WEBHOOK] Incoming data:', {
+      eventType,
+      contentType,
+      id: a.acuityAppointmentId,
+      typeId: a.appointmentTypeId,
+      dt: a.datetime,
+      dur: a.duration,
+      tz: a.timezone,
+      status: a.status
     });
 
     // Validate required fields
