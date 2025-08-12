@@ -214,7 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       menteeId,
       humanMentorId: mentor.id,
       sessionType: 'individual' as const,
-      scheduledAt: new Date(a.datetime),
+      scheduledDate: new Date(a.datetime),
       duration: a.duration,
       timezone: a.timezone || 'UTC',
       meetingType: 'video' as const,
