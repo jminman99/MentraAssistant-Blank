@@ -140,6 +140,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tz: a.timezone,
       status: a.status
     });
+    
+    console.log('[ACUITY WEBHOOK] Full payload structure:', {
+      hasAppointment: !!payload.appointment,
+      appointmentKeys: payload.appointment ? Object.keys(payload.appointment) : [],
+      topLevelKeys: Object.keys(payload),
+      rawPayload: JSON.stringify(payload, null, 2)
+    });
 
     // Validate required fields
     if (!a.acuityAppointmentId) return bad(res, 400, 'Missing appointment id');
@@ -156,19 +163,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: false, error: 'Mentor not found for appointment type' });
     }
 
-    // If you have client info in payload, map to your menteeId here. Otherwise 0 placeholder.
-    // You could potentially look up user by email if it's in the payload
+    // Extract email from various possible locations in the payload
+    let userEmail = null;
+    
+    // Try different email locations
+    if (payload?.appointment?.email) {
+      userEmail = payload.appointment.email;
+    } else if (payload?.email) {
+      userEmail = payload.email;
+    } else if (a?.email) {
+      userEmail = a.email;
+    }
+    
+    console.log('[ACUITY WEBHOOK] Extracted email:', userEmail);
+    
     let menteeId = 0;
-    if (payload?.email || a?.email) {
+    if (userEmail) {
       try {
-        const user = await storage.getUserByEmail(payload.email || a.email);
+        const user = await storage.getUserByEmail(userEmail);
         if (user) {
           menteeId = user.id;
           console.log('[ACUITY WEBHOOK] Found user by email:', user.email, 'ID:', user.id);
+        } else {
+          console.warn('[ACUITY WEBHOOK] No user found for email:', userEmail);
+          // Return success but don't create booking - prevents infinite retries
+          return res.status(200).json({ 
+            ok: false, 
+            error: 'User not found', 
+            email: userEmail,
+            suggestion: 'User needs to register in the system first'
+          });
         }
       } catch (e) {
         console.warn('[ACUITY WEBHOOK] Failed to lookup user by email:', e);
+        return res.status(200).json({ 
+          ok: false, 
+          error: 'Database error during user lookup', 
+          details: e instanceof Error ? e.message : String(e)
+        });
       }
+    } else {
+      console.warn('[ACUITY WEBHOOK] No email found in payload');
+      return res.status(200).json({ 
+        ok: false, 
+        error: 'No email found in appointment data' 
+      });
     }
 
     const booking = {

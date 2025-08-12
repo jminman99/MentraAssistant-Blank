@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test User for Webhook</title>
+</head>
+<body>
+    <h2>Create Test User</h2>
+    <button onclick="createTestUser()">Create Test User</button>
+    <div id="result"></div>
+
+    <script>
+        async function createTestUser() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/debug-db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        operation: 'create_user',
+                        data: {
+                            email: '48kdw2rvpx@privaterelay.appleid.com',
+                            firstName: 'Test',
+                            lastName: 'User',
+                            role: 'user',
+                            subscriptionPlan: 'individual',
+                            organizationId: 1
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
