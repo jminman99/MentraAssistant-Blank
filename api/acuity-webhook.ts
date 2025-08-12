@@ -131,6 +131,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const configured = String(WEBHOOK_TOKEN).trim();
 
+    console.log('[ACUITY DEBUG VARS]', {
+      acuityEnvLen: String(process.env.ACUITY_WEBHOOK_TOKEN || '').length,
+      acuityEnvPrefix: String(process.env.ACUITY_WEBHOOK_TOKEN || '').slice(0,6),
+      webhookEnvLen: String(process.env.WEBHOOK_TOKEN || '').length,
+      webhookEnvPrefix: String(process.env.WEBHOOK_TOKEN || '').slice(0,6),
+      configuredPrefix: String(WEBHOOK_TOKEN).slice(0,6),
+      configuredLen: String(WEBHOOK_TOKEN).length,
+      inPrefix: String(incoming).slice(0,6),
+      inLen: String(incoming).length,
+      // hex helps catch invisible chars / en-dash vs hyphen issues
+      envHex: Buffer.from(String(WEBHOOK_TOKEN)).toString('hex'),
+      inHex: Buffer.from(String(incoming)).toString('hex'),
+    });
+
     console.log('[ACUITY DEBUG]', {
       vercelEnv: process.env.VERCEL_ENV,
       hasEnv: !!configured, 
