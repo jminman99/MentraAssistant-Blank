@@ -17,6 +17,16 @@ if (!WEBHOOK_TOKEN) {
   console.error('[ACUITY WEBHOOK] Missing ACUITY_WEBHOOK_TOKEN environment variable');
 }
 
+// Constant-time string comparison to prevent timing attacks
+function ctEq(a = '', b = '') {
+  if (a.length !== b.length) return false;
+  let x = 0;
+  for (let i = 0; i < a.length; i++) {
+    x |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return x === 0;
+}
+
 function bad(res: VercelResponse, code: number, msg: string) {
   // Return 200 for webhook stability - prevents Acuity from retrying forever
   return res.status(200).json({ ok: false, error: msg, httpCode: code });
@@ -101,14 +111,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return bad(res, 500, 'Server not configured');
     }
 
-    // Verify webhook token (required for security)
-    const token = req.query.token as string;
-    if (!token || token !== WEBHOOK_TOKEN) {
+    // Normalize incoming token from query/header/body
+    let incoming = req.query?.token;
+    if (Array.isArray(incoming)) incoming = incoming[0];
+    if (!incoming && req.headers['x-acuity-token']) incoming = req.headers['x-acuity-token'] as string;
+    incoming = String(incoming || '').trim();
+
+    const configured = String(WEBHOOK_TOKEN).trim();
+
+    console.log('[ACUITY DEBUG]', {
+      vercelEnv: process.env.VERCEL_ENV,
+      hasEnv: !!configured, 
+      envLen: configured.length,
+      inLen: incoming.length,
+      envPrefix: configured.slice(0, 6), 
+      inPrefix: incoming.slice(0, 6),
+      eq: ctEq(incoming, configured),
+    });
+
+    // Verify webhook token using constant-time comparison
+    if (!configured) {
+      return bad(res, 500, 'Missing ACUITY_WEBHOOK_TOKEN');
+    }
+    if (!incoming || !ctEq(incoming, configured)) {
       console.warn('[ACUITY WEBHOOK] Unauthorized webhook attempt', { 
-        token: token ? `${token.substring(0, 4)}...` : 'none',
-        hasToken: !!WEBHOOK_TOKEN 
+        hasToken: !!incoming, 
+        tokenPrefix: incoming.slice(0, 6) 
       });
-      return bad(res, 401, 'Invalid or missing token');
+      return bad(res, 401, 'Unauthorized');
     }
 
     // Log event type if provided
