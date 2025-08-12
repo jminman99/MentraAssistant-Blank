@@ -940,9 +940,9 @@ export class VercelStorage {
       const bookingToUpdate = existingBooking[0];
 
       // If updating scheduled time, check for conflicts
-      if (updates.scheduledDate) {
-        const startTime = new Date(updates.scheduledDate);
-        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+      if (updates.scheduledAt) {
+        const startTime = new Date(updates.scheduledAt);
+        const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings 

@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       menteeId: user.id,
       humanMentorId: mentor.id,
       sessionType: 'individual',
-      scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
       duration: 60,
       timezone: 'America/New_York',
       meetingType: 'video',
