@@ -44,8 +44,19 @@ async function readRawBody(req: VercelRequest): Promise<{ raw: string; contentTy
   }
 
   const chunks: Buffer[] = [];
+  const MAX = 256 * 1024; // 256 KB
+  let total = 0;
+  
   await new Promise((resolve, reject) => {
-    req.on('data', (c) => chunks.push(Buffer.from(c)));
+    req.on('data', (c) => {
+      const b = Buffer.from(c);
+      total += b.length;
+      if (total > MAX) { 
+        reject(new Error('payload-too-large')); 
+        return; 
+      }
+      chunks.push(b);
+    });
     req.on('end', () => resolve(undefined));
     req.on('error', reject);
   });
@@ -103,7 +114,8 @@ function normalizeAppointment(payload: any) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    if (req.method !== 'POST') return bad(res, 405, 'Method not allowed');
+    if (!['POST', 'HEAD'].includes(req.method!)) return bad(res, 405, 'Method not allowed');
+    if (req.method === 'HEAD') return res.status(200).end();
 
     // Check server configuration first
     if (!WEBHOOK_TOKEN) {
@@ -182,6 +194,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!a.acuityAppointmentId) return bad(res, 400, 'Missing appointment id');
     if (!a.datetime) return bad(res, 400, 'Missing appointment datetime');
     if (!Number.isFinite(a.appointmentTypeId)) return bad(res, 400, 'Missing appointmentTypeId');
+    
+    // Date safety validation
+    const jsDate = new Date(a.datetime);
+    if (isNaN(jsDate.getTime())) return bad(res, 400, 'Invalid datetime');
 
     // Resolve mentor by appointment type
     const orgId = 1; // TODO: derive organization if needed
