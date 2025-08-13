@@ -10,7 +10,7 @@ export const config = {
 };
 
 // Require a token in the query string for security
-const WEBHOOK_TOKEN = process.env.ACUITY_WEBHOOK_TOKEN || process.env.WEBHOOK_TOKEN || '';
+const WEBHOOK_TOKEN = process.env.ACUITY_WEBHOOK_TOKEN || '';
 
 // Validate webhook token is configured
 if (!WEBHOOK_TOKEN) {
