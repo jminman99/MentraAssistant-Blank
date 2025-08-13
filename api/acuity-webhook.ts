@@ -112,6 +112,56 @@ function normalizeAppointment(payload: any) {
   };
 }
 
+async function hydrateFromAcuityIfNeeded(a: any, payload: any) {
+  if (a.acuityAppointmentId && a.datetime && Number.isFinite(a.appointmentTypeId)) {
+    return a; // Already complete
+  }
+
+  const apiUserId = process.env.ACUITY_USER_ID || process.env.ACUITY_API_USER_ID;
+  const apiKey = process.env.ACUITY_API_KEY;
+  if (!apiUserId || !apiKey) {
+    console.warn('[ACUITY WEBHOOK] Missing ACUITY_USER_ID / ACUITY_API_KEY; cannot hydrate');
+    return a;
+  }
+
+  try {
+    // Minimal client; Acuity v1 uses Basic auth with userId:apiKey
+    const auth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
+    const id = a.acuityAppointmentId || payload?.id || payload?.appointmentID;
+
+    if (!id) return a;
+
+    const resp = await fetch(`https://acuityscheduling.com/api/v1/appointments/${id}`, {
+      headers: { 'Authorization': `Basic ${auth}` }
+    });
+
+    if (!resp.ok) {
+      console.warn('[ACUITY WEBHOOK] Hydrate fetch failed', resp.status);
+      return a;
+    }
+    const appt = await resp.json();
+
+    // Fill in missing bits conservatively
+    a.acuityAppointmentId = a.acuityAppointmentId || String(appt?.id || '');
+    a.appointmentTypeId = Number.isFinite(a.appointmentTypeId) ? a.appointmentTypeId
+                          : Number(appt?.appointmentTypeID ?? appt?.appointmentTypeId ?? appt?.appointment_type_id);
+    a.datetime = a.datetime || String(appt?.datetime || appt?.time || appt?.startTime || '');
+    a.duration = Number.isFinite(Number(a.duration)) ? a.duration : Number(appt?.duration ?? 60);
+    a.timezone = a.timezone || appt?.timezone || 'UTC';
+
+    // Grab email/notes if missing
+    (a as any).email = (a as any).email || appt?.email || appt?.client?.email || null;
+    a.notes = a.notes || appt?.notes || '';
+
+    console.log('[ACUITY WEBHOOK] Hydrated from Acuity API', {
+      id: a.acuityAppointmentId, typeId: a.appointmentTypeId, dt: a.datetime, tz: a.timezone
+    });
+  } catch (e: any) {
+    console.warn('[ACUITY WEBHOOK] Exception during hydration', e?.message || e);
+  }
+  return a;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (!['POST', 'HEAD'].includes(req.method!)) return bad(res, 405, 'Method not allowed');
@@ -185,7 +235,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       catch { payload = parseFormEncoded(raw || ''); }
     }
 
-    const a = normalizeAppointment(payload);
+    // Handle "single JSON string as key" case
+    if (!payload?.appointment && Object.keys(payload || {}).length === 1) {
+      const onlyKey = Object.keys(payload)[0];
+      if (onlyKey?.startsWith('{') && onlyKey?.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(onlyKey);
+          payload = parsed;
+          console.log('[ACUITY WEBHOOK] Recovered JSON-from-key payload:', Object.keys(payload));
+        } catch (e) {
+          console.warn('[ACUITY WEBHOOK] Failed to parse JSON-from-key payload');
+        }
+      }
+    }
+
+    let a = normalizeAppointment(payload);
+    a = await hydrateFromAcuityIfNeeded(a, payload);
     console.log('[ACUITY WEBHOOK] Incoming data:', {
       eventType,
       contentType,
@@ -226,13 +291,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Extract email from various possible locations in the payload
     let userEmail = null;
     
-    // Try different email locations
+    // Try different email locations (including hydrated data)
     if (payload?.appointment?.email) {
       userEmail = payload.appointment.email;
     } else if (payload?.email) {
       userEmail = payload.email;
-    } else if (a?.email) {
-      userEmail = a.email;
+    } else if ((a as any)?.email) {
+      userEmail = (a as any).email;
     }
     
     console.log('[ACUITY WEBHOOK] Extracted email:', userEmail);
