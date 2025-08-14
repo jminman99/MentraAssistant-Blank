@@ -64,8 +64,14 @@ export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
         // Clear any existing content
         embedRef.current.innerHTML = '';
         
-        // Get owner ID from environment variable
-        const ownerId = import.meta.env.VITE_ACUITY_USER_ID || '36474740';
+        // Get owner ID from environment variable - must be configured
+        const ownerId = import.meta.env.VITE_ACUITY_USER_ID;
+        
+        if (!ownerId) {
+          console.error('[MENTOR_BOOKING_BAR] VITE_ACUITY_USER_ID environment variable not configured');
+          embedRef.current.innerHTML = '<div class="p-4 text-red-600">Scheduling not configured. Please contact support.</div>';
+          return;
+        }
         
         // Initialize the embed
         window.AcuityScheduling.generate({
