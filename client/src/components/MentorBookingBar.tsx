@@ -57,7 +57,7 @@ export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
   };
 
   const baseUrl = getBaseUrl();
-  const iframeUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&email=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}&firstName=${encodeURIComponent(user?.firstName || '')}&lastName=${encodeURIComponent(user?.lastName || '')}&ref=embedded_csp&domain=${encodeURIComponent(baseUrl)}`;
+  const iframeUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&embed=1&target=_parent&email=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}&firstName=${encodeURIComponent(user?.firstName || '')}&lastName=${encodeURIComponent(user?.lastName || '')}&ref=embedded_csp&domain=${encodeURIComponent(baseUrl)}`;
 
   console.log('[MENTOR_BOOKING_BAR] Using iframe URL:', iframeUrl);
 
@@ -87,7 +87,9 @@ export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
           height="800"
           frameBorder="0"
           allow="payment"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups-to-escape-sandbox allow-top-navigation"
           className="w-full min-h-[600px]"
+          style={{ display: 'block' }}
         />
       </div>
     </div>
