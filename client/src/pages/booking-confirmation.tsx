@@ -1,12 +1,12 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Calendar, ArrowLeft } from 'lucide-react';
 
 export function BookingConfirmation() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [sessionGoals, setSessionGoals] = useState<string>('');
   const [mentorId, setMentorId] = useState<string>('');
 
@@ -55,13 +55,13 @@ export function BookingConfirmation() {
           
           <div className="space-y-2">
             <Button 
-              onClick={() => navigate('/sessions')} 
+              onClick={() => setLocation('/sessions')} 
               className="w-full"
             >
               View My Sessions
             </Button>
             <Button 
-              onClick={() => navigate('/mentors')} 
+              onClick={() => setLocation('/individual-booking')} 
               variant="outline" 
               className="w-full"
             >
