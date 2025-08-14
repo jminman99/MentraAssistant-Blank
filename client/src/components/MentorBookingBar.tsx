@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { useUser } from '@clerk/clerk-react';
 
 interface MentorBookingBarProps {
@@ -34,64 +35,92 @@ function toAcuityDateTimePreserveOffset(iso: string): string {
   return `${ymd}T${hm}:${seconds}${off}`;
 }
 
-
 export function MentorBookingBar({ appointmentTypeId }: MentorBookingBarProps) {
   const { user } = useUser();
+  const embedRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // Load the Acuity embed script only once
-    if (!document.querySelector('script[src="https://embed.acuityscheduling.com/js/embed.js"]')) {
-      const script = document.createElement('script');
-      script.src = 'https://embed.acuityscheduling.com/js/embed.js';
-      script.type = 'text/javascript';
-      script.async = true;
-      document.head.appendChild(script);
+    // Load the Acuity embed script
+    const loadAcuityScript = () => {
+      return new Promise<void>((resolve) => {
+        if (window.AcuityScheduling) {
+          resolve();
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://embed.acuityscheduling.com/js/embed.js';
+        script.type = 'text/javascript';
+        script.async = true;
+        script.onload = () => resolve();
+        document.head.appendChild(script);
+      });
+    };
+
+    const initializeEmbed = async () => {
+      await loadAcuityScript();
+      
+      if (embedRef.current && window.AcuityScheduling) {
+        // Clear any existing content
+        embedRef.current.innerHTML = '';
+        
+        // Initialize the embed
+        window.AcuityScheduling.generate({
+          schedulingPage: `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}`,
+          element: embedRef.current,
+          checkAvailability: true,
+          skipHeaderFooter: true,
+          fieldValues: {
+            'email': user?.primaryEmailAddress?.emailAddress || '',
+            'firstName': user?.firstName || '',
+            'lastName': user?.lastName || ''
+          }
+        });
+      }
+    };
+
+    if (user) {
+      initializeEmbed();
     }
-  }, []);
 
-  // Get the correct base URL for webhook callbacks
-  const getBaseUrl = () => {
-    if (typeof window !== 'undefined') {
-      return window.location.origin;
-    }
-    return import.meta.env.PROD ? 'https://mentra-assistant-blank.vercel.app' : 'http://localhost:5000';
-  };
+    // Cleanup function
+    return () => {
+      if (embedRef.current) {
+        embedRef.current.innerHTML = '';
+      }
+    };
+  }, [appointmentTypeId, user]);
 
-  const baseUrl = getBaseUrl();
-  const iframeUrl = `https://app.acuityscheduling.com/schedule.php?owner=36474740&appointmentType=${appointmentTypeId}&embed=1&target=_parent&email=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}&firstName=${encodeURIComponent(user?.firstName || '')}&lastName=${encodeURIComponent(user?.lastName || '')}&ref=embedded_csp&domain=${encodeURIComponent(baseUrl)}`;
-
-  console.log('[MENTOR_BOOKING_BAR] Using iframe URL:', iframeUrl);
-
-  // This function is not used in the provided snippet but is assumed to be part of the original code.
-  // If it were intended to be used, its definition would be here.
-  // For example:
-  // function toAcuityDateTime(datetime: string): string {
-  //   // Original implementation that was replaced
-  //   const date = new Date(datetime);
-  //   const offset = date.getTimezoneOffset();
-  //   const offsetHours = Math.abs(Math.floor(offset / 60)).toString().padStart(2, '0');
-  //   const offsetMinutes = (Math.abs(offset) % 60).toString().padStart(2, '0');
-  //   const sign = offset > 0 ? '-' : '+';
-  //   const formattedOffset = `${sign}${offsetHours}${offsetMinutes}`;
-  //   const isoString = date.toISOString().replace('Z', '');
-  //   return `${isoString}${formattedOffset}`;
-  // }
-
+  console.log('[MENTOR_BOOKING_BAR] Initializing Acuity embed for appointment type:', appointmentTypeId);
 
   return (
     <div className="space-y-4">
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <iframe
-          src={iframeUrl}
-          title="Schedule Appointment"
-          width="100%"
-          height="800"
-          frameBorder="0"
-          allow="payment"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups-to-escape-sandbox allow-top-navigation"
-          className="w-full min-h-[600px]"
-          style={{ display: 'block' }}
-        />
+        <div 
+          ref={embedRef}
+          className="w-full min-h-[600px] acuity-embed-container"
+          style={{ minHeight: '600px' }}
+        >
+          <div className="flex items-center justify-center h-32">
+            <div className="text-gray-500">Loading scheduling interface...</div>
+          </div>
+        </div>
       </div>
     </div>
   );
+}
+
+// Extend Window interface to include AcuityScheduling
+declare global {
+  interface Window {
+    AcuityScheduling: {
+      generate: (options: {
+        schedulingPage: string;
+        element: HTMLElement;
+        checkAvailability?: boolean;
+        skipHeaderFooter?: boolean;
+        fieldValues?: Record<string, string>;
+      }) => void;
+    };
+  }
 }
