@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +11,7 @@ import { HumanMentor } from '@/types';
 
 const bookingSchema = z.object({
   sessionGoals: z.string().min(10, 'Please provide at least 10 characters for your session goals'),
-  selectedTime: z.string().min(1, 'Please select a time slot'),
+  selectedTime: z.string().optional(), // Make selectedTime optional
 });
 
 type BookingData = z.infer<typeof bookingSchema>;
@@ -45,21 +44,21 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
 
   const loadAvailability = async () => {
     if (!mentor.acuityAppointmentTypeId) return;
-    
+
     setLoading(true);
     try {
       const token = await getToken();
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      
+
       const response = await fetch(`/api/acuity-availability?mentorId=${mentor.id}&timezone=${timezone}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success && data.availability?.slotsByDate) {
         // Flatten the slots from { 'YYYY-MM-DD': [ISO, ...] } to [{ time, date }, ...]
         const flattenedSlots: TimeSlot[] = [];
@@ -87,13 +86,17 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
 
   const handleProceedToScheduling = async (data: BookingData) => {
     console.log('Form data:', data);
-    
+    console.log('Session goals length:', data.sessionGoals?.length);
+
     // Validate that we have session goals
     if (!data.sessionGoals || data.sessionGoals.length < 10) {
       console.error('Session goals validation failed');
+      form.setError('sessionGoals', {
+        message: 'Please provide at least 10 characters for your session goals'
+      });
       return;
     }
-    
+
     setShowScheduler(true);
   };
 
@@ -105,7 +108,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     try {
       const token = await getToken();
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      
+
       const response = await fetch('/api/acuity-booking', {
         method: 'POST',
         headers: {
@@ -122,7 +125,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         onSuccess();
         onClose();
@@ -159,7 +162,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                 <strong>Session Goals:</strong> {form.getValues('sessionGoals')}
               </p>
             </div>
-            
+
             <div className="space-y-3">
               <h3 className="font-medium">Available Time Slots</h3>
               {loading ? (
@@ -171,7 +174,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                   {availability.map((slot, index) => {
                     const slotDate = new Date(slot.time);
                     const uniqueId = `slot-${index}`;
-                    
+
                     return (
                       <div key={index} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
                         <input
@@ -220,7 +223,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
           </div>
         ) : (
           <Form {...form}>
-            <form 
+            <form
               onSubmit={form.handleSubmit(handleProceedToScheduling)}
               className="space-y-6"
             >
