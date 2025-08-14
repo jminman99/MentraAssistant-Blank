@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,7 +29,7 @@ interface TimeSlot {
 }
 
 export function IndividualBookingDialog({ mentor, onClose, onSuccess }: IndividualBookingDialogProps) {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const [showScheduler, setShowScheduler] = useState(false);
   const [availability, setAvailability] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,11 +48,27 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/get-acuity-availability?appointmentTypeId=${mentor.acuityAppointmentTypeId}`);
+      const token = await getToken();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      const response = await fetch(`/api/acuity-availability?mentorId=${mentor.id}&timezone=${timezone}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       const data = await response.json();
       
-      if (data.success && data.availability) {
-        setAvailability(data.availability);
+      if (data.success && data.availability?.slotsByDate) {
+        // Flatten the slots from { 'YYYY-MM-DD': [ISO, ...] } to [{ time, date }, ...]
+        const flattenedSlots: TimeSlot[] = [];
+        Object.entries(data.availability.slotsByDate).forEach(([date, times]) => {
+          (times as string[]).forEach(time => {
+            flattenedSlots.push({ time, date });
+          });
+        });
+        setAvailability(flattenedSlots);
       }
     } catch (error) {
       console.error('Failed to load availability:', error);
@@ -64,9 +81,19 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
     if (showScheduler) {
       loadAvailability();
     }
-  }, [showScheduler]);
+    // When availability refreshes, clear a previously selected time
+    form.setValue('selectedTime', '');
+  }, [mentor?.id, showScheduler]);
 
-  const handleProceedToScheduling = (data: BookingData) => {
+  const handleProceedToScheduling = async (data: BookingData) => {
+    console.log('Form data:', data);
+    
+    // Validate that we have session goals
+    if (!data.sessionGoals || data.sessionGoals.length < 10) {
+      console.error('Session goals validation failed');
+      return;
+    }
+    
     setShowScheduler(true);
   };
 
@@ -76,15 +103,21 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
 
     setBooking(true);
     try {
-      const response = await fetch('/api/create-acuity-appointment', {
+      const token = await getToken();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      const response = await fetch('/api/acuity-booking', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          appointmentTypeId: mentor.acuityAppointmentTypeId,
+          humanMentorId: mentor.id,
           datetime: formData.selectedTime,
+          duration: 60,
           sessionGoals: formData.sessionGoals,
+          timezone
         }),
       });
 
@@ -94,11 +127,13 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         onSuccess();
         onClose();
       } else {
-        alert('Failed to book session: ' + (result.details || result.error));
+        const msg = result.details || result.error || 'Failed to book session';
+        form.setError('root', { message: msg });
       }
-    } catch (error) {
-      console.error('Booking error:', error);
-      alert('Failed to book session. Please try again.');
+    } catch (e: any) {
+      console.error('Booking error:', e);
+      const msg = e?.message || 'Failed to book session';
+      form.setError('root', { message: msg });
     } finally {
       setBooking(false);
     }
@@ -133,22 +168,39 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                 <p>No available time slots found.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                  {availability.map((slot, index) => (
-                    <label key={index} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                      <input
-                        type="radio"
-                        value={slot.time}
-                        {...form.register('selectedTime')}
-                        className="text-blue-600"
-                      />
-                      <span className="text-sm">
-                        {new Date(slot.time).toLocaleDateString()} at {new Date(slot.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </label>
-                  ))}
+                  {availability.map((slot, index) => {
+                    const slotDate = new Date(slot.time);
+                    const uniqueId = `slot-${index}`;
+                    
+                    return (
+                      <div key={index} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input
+                          id={uniqueId}
+                          type="radio"
+                          value={slot.time}
+                          {...form.register('selectedTime')}
+                          className="text-blue-600"
+                        />
+                        <label htmlFor={uniqueId} className="text-sm cursor-pointer flex-1">
+                          <div className="text-xs text-gray-500 mb-1">
+                            {slotDate.toLocaleDateString(undefined, { weekday: 'short', month:'short', day:'numeric' })}
+                          </div>
+                          <div>
+                            {slotDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {form.formState.errors.root && (
+              <div className="text-red-600 text-sm">
+                {form.formState.errors.root.message}
+              </div>
+            )}
 
             <div className="flex justify-between">
               <Button
@@ -168,7 +220,15 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleProceedToScheduling)} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                console.log('Form submit triggered');
+                console.log('Form values:', form.getValues());
+                console.log('Form errors:', form.formState.errors);
+                form.handleSubmit(handleProceedToScheduling)(e);
+              }} 
+              className="space-y-6"
+            >
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <img
@@ -208,7 +268,14 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  onClick={() => {
+                    console.log('Proceed button clicked');
+                    console.log('Current form values:', form.getValues());
+                    console.log('Form state:', form.formState);
+                  }}
+                >
                   Proceed to Scheduling
                 </Button>
               </div>
