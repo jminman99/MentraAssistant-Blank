@@ -221,12 +221,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         ) : (
           <Form {...form}>
             <form 
-              onSubmit={(e) => {
-                console.log('Form submit triggered');
-                console.log('Form values:', form.getValues());
-                console.log('Form errors:', form.formState.errors);
-                form.handleSubmit(handleProceedToScheduling)(e);
-              }} 
+              onSubmit={form.handleSubmit(handleProceedToScheduling)}
               className="space-y-6"
             >
               <div className="space-y-4">
@@ -268,14 +263,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button 
-                  type="submit"
-                  onClick={() => {
-                    console.log('Proceed button clicked');
-                    console.log('Current form values:', form.getValues());
-                    console.log('Form state:', form.formState);
-                  }}
-                >
+                <Button type="submit">
                   Proceed to Scheduling
                 </Button>
               </div>
