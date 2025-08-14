@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,10 +8,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth-hook';
 import { HumanMentor } from '@/types';
-import { MentorBookingBar } from '@/components/MentorBookingBar';
 
 const bookingSchema = z.object({
   sessionGoals: z.string().min(10, 'Please provide at least 10 characters for your session goals'),
+  selectedTime: z.string().min(1, 'Please select a time slot'),
 });
 
 type BookingData = z.infer<typeof bookingSchema>;
@@ -22,23 +22,86 @@ interface IndividualBookingDialogProps {
   onSuccess: () => void;
 }
 
+interface TimeSlot {
+  time: string;
+  date: string;
+}
+
 export function IndividualBookingDialog({ mentor, onClose, onSuccess }: IndividualBookingDialogProps) {
   const { user } = useAuth();
   const [showScheduler, setShowScheduler] = useState(false);
+  const [availability, setAvailability] = useState<TimeSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
 
   const form = useForm<BookingData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       sessionGoals: "",
+      selectedTime: "",
     },
   });
 
-  const handleProceedToScheduling = (data: BookingData) => {
-    // Store session goals for the webhook to pick up later
-    localStorage.setItem('pendingSessionGoals', data.sessionGoals);
-    localStorage.setItem('pendingMentorId', mentor.id.toString());
+  const loadAvailability = async () => {
+    if (!mentor.acuityAppointmentTypeId) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/get-acuity-availability?appointmentTypeId=${mentor.acuityAppointmentTypeId}`);
+      const data = await response.json();
+      
+      if (data.success && data.availability) {
+        setAvailability(data.availability);
+      }
+    } catch (error) {
+      console.error('Failed to load availability:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    if (showScheduler) {
+      loadAvailability();
+    }
+  }, [showScheduler]);
+
+  const handleProceedToScheduling = (data: BookingData) => {
     setShowScheduler(true);
+  };
+
+  const handleBooking = async () => {
+    const formData = form.getValues();
+    if (!formData.selectedTime || !formData.sessionGoals) return;
+
+    setBooking(true);
+    try {
+      const response = await fetch('/api/create-acuity-appointment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appointmentTypeId: mentor.acuityAppointmentTypeId,
+          datetime: formData.selectedTime,
+          sessionGoals: formData.sessionGoals,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        onSuccess();
+        onClose();
+      } else {
+        alert('Failed to book session: ' + (result.details || result.error));
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      alert('Failed to book session. Please try again.');
+    } finally {
+      setBooking(false);
+    }
   };
 
   if (!user) {
@@ -50,7 +113,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {showScheduler ? 'Schedule Your Session' : `Book Session with ${mentor.user?.firstName} ${mentor.user?.lastName}`}
+            {showScheduler ? 'Select Time Slot' : `Book Session with ${mentor.user?.firstName} ${mentor.user?.lastName}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -61,13 +124,45 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
                 <strong>Session Goals:</strong> {form.getValues('sessionGoals')}
               </p>
             </div>
-            <MentorBookingBar appointmentTypeId={mentor.acuityAppointmentTypeId || 0} />
-            <div className="flex justify-start">
+            
+            <div className="space-y-3">
+              <h3 className="font-medium">Available Time Slots</h3>
+              {loading ? (
+                <p>Loading available times...</p>
+              ) : availability.length === 0 ? (
+                <p>No available time slots found.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                  {availability.map((slot, index) => (
+                    <label key={index} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="radio"
+                        value={slot.time}
+                        {...form.register('selectedTime')}
+                        className="text-blue-600"
+                      />
+                      <span className="text-sm">
+                        {new Date(slot.time).toLocaleDateString()} at {new Date(slot.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between">
               <Button
                 onClick={() => setShowScheduler(false)}
                 variant="outline"
+                disabled={booking}
               >
                 Back to Goals
+              </Button>
+              <Button
+                onClick={handleBooking}
+                disabled={!form.getValues('selectedTime') || booking}
+              >
+                {booking ? 'Booking...' : 'Confirm Booking'}
               </Button>
             </div>
           </div>
