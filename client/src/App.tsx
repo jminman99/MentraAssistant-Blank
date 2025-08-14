@@ -12,7 +12,7 @@ import IndividualBooking from "./pages/individual-booking";
 import CouncilScheduling from "./pages/council-scheduling";
 import Debug from "./pages/debug";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { SessionDetails } from './pages/SessionDetails';
+import SessionDetails from './pages/SessionDetails';
 import { BookingConfirmation } from './pages/booking-confirmation';
 import { NotFound } from './pages/not-found';
 
@@ -70,8 +70,8 @@ function Router() {
       <Route path="/individual-booking" component={() => <PrivateRoute component={IndividualBooking} />} />
       <Route path="/council-scheduling" component={() => <PrivateRoute component={CouncilScheduling} />} />
       <Route path="/debug" component={() => <PrivateRoute component={Debug} />} />
-      <Route path="/session/:id" element={<SessionDetails />} />
-      <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+      <Route path="/session/:id" component={SessionDetails} />
+      <Route path="/booking-confirmation" component={() => <BookingConfirmation />} />
       <Route path="/">
         {() => (isSignedIn ? <Dashboard /> : <Redirect to="/sign-in" />)}
       </Route>
