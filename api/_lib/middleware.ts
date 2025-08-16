@@ -8,11 +8,15 @@ export interface RequestContext {
   user?: any;
 }
 
-export function applyCorsHeaders(res: VercelResponse) {
+export function applyCorsHeaders(res: VercelResponse, req?: VercelRequest) {
+  // For production, you may want to restrict origins based on req.headers.origin
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Vary', 'Origin');
   res.setHeader('X-Robots-Tag', 'noindex');
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
 }
 
 export function handlePreflight(req: VercelRequest, res: VercelResponse): boolean {

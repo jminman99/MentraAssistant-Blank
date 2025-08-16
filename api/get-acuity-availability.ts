@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCorsHeaders } from './_lib/middleware.js';
 
@@ -109,13 +108,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Success: normalize shape
+    // Transform raw Acuity response to expected slotsByDate format
+    const normalizeIso = (s: string) => s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+
+    const raw = bodyJson ?? bodyText;
+    let slotsByDate: Record<string, string[]> = {};
+
+    if (Array.isArray(raw)) {
+      for (const slot of raw) {
+        const t = slot?.time || slot?.datetime;
+        if (!t) continue;
+        const norm = normalizeIso(String(t));
+        const day = new Date(norm).toISOString().split('T')[0];
+        (slotsByDate[day] ||= []).push(norm);
+      }
+    }
+
+    // Cache headers for dynamic data
+    res.setHeader('Cache-Control', 'no-store');
+
     return res.status(200).json({
       success: true,
       date: targetDate,
       timezone,
       appointmentTypeId,
-      availability: bodyJson ?? bodyText, // prefer JSON
+      availability: slotsByDate, // Return slotsByDate directly, not wrapped in availability
     });
 
   } catch (error: any) {
