@@ -34,9 +34,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format datetime for Acuity
     const acuityDateTime = new Date(datetime).toISOString().replace(/\.\d{3}Z$/, '');
 
+    // Helper function for API calls with retry logic
+    const makeAcuityRequest = async (url: string, options: any, retries = 2): Promise<Response> => {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const response = await fetch(url, options);
+        
+        if (response.status === 429 && attempt < retries) {
+          // Rate limited - wait before retry
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        return response;
+      }
+      throw new Error('Max retries exceeded');
+    };
+
     // First, validate the time slot is available
     const auth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
-    const validationResponse = await fetch('https://acuityscheduling.com/api/v1/availability/check-times', {
+    const validationResponse = await makeAcuityRequest('https://acuityscheduling.com/api/v1/availability/check-times', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -70,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Create appointment via Acuity API
-    const acuityResponse = await fetch('https://acuityscheduling.com/api/v1/appointments', {
+    const acuityResponse = await makeAcuityRequest('https://acuityscheduling.com/api/v1/appointments', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,

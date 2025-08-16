@@ -93,16 +93,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!response.ok) {
-      // Surface upstream status; include upstream body for debugging
+      // Handle specific Acuity API error codes
+      let errorMessage = 'Failed to fetch availability';
+      switch (response.status) {
+        case 401:
+          errorMessage = 'Invalid Acuity API credentials';
+          break;
+        case 403:
+          errorMessage = 'Acuity API access denied';
+          break;
+        case 404:
+          errorMessage = 'Appointment type not found';
+          break;
+        case 429:
+          errorMessage = 'Rate limit exceeded - please try again later';
+          break;
+        case 500:
+          errorMessage = 'Acuity server error';
+          break;
+      }
+
       console.error('[ACUITY_AVAILABILITY] Non-OK', {
         status: response.status,
         statusText: response.statusText,
         url,
-        // DO NOT log secrets
         body: bodyText?.slice(0, 1000),
       });
+      
       return res.status(response.status).json({
-        error: 'Failed to fetch availability',
+        error: errorMessage,
         upstreamStatus: response.status,
         details: bodyJson || bodyText || null,
       });

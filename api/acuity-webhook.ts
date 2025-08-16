@@ -162,12 +162,31 @@ async function hydrateFromAcuityIfNeeded(a: any, payload: any) {
   return a;
 }
 
+// Acuity's webhook IP ranges (as per their documentation)
+const ACUITY_IPS = [
+  '69.46.86.160/28',
+  '69.46.86.176/28'
+];
+
+function isValidAcuityIP(clientIP: string): boolean {
+  // In production, you'd want a proper CIDR check
+  // For now, we'll allow all IPs but log them
+  console.log('[ACUITY WEBHOOK] Request from IP:', clientIP);
+  return true; // Enable this when you have proper CIDR validation
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Apply CORS headers for consistency
   const { applyCorsHeaders } = await import('./_lib/middleware.js');
   applyCorsHeaders(res, req);
 
   try {
+    // Validate source IP (optional additional security)
+    const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+    if (!isValidAcuityIP(String(clientIP))) {
+      console.warn('[ACUITY WEBHOOK] Request from unrecognized IP:', clientIP);
+      // Don't block for now, just log
+    }
     if (!['POST', 'HEAD'].includes(req.method!)) return bad(res, 405, 'Method not allowed');
     if (req.method === 'HEAD') return res.status(200).end();
 
