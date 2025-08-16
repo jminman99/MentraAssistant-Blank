@@ -15,7 +15,6 @@ import BookingCalendar from "@/components/BookingCalendar";
 
 const individualBookingSchema = z.object({
   scheduledDate: z.string().min(1, "Please select a date and time"),
-  duration: z.number().min(30, "Minimum 30 minutes"),
   sessionGoals: z.string().min(10, "Please describe your goals for the session").max(500, "Please keep goals under 500 characters"),
 });
 
@@ -80,7 +79,6 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
     resolver: zodResolver(individualBookingSchema),
     defaultValues: {
       scheduledDate: "",
-      duration: 60,
       sessionGoals: "",
     },
   });
@@ -89,9 +87,9 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
   useEffect(() => {
     form.reset({
       scheduledDate: "",
-      duration: 60,
       sessionGoals: "",
     });
+    form.clearErrors();
   }, [mentor.id, form]);
 
   const { mutate: bookIndividualSession, isPending } = useMutation({
@@ -106,12 +104,22 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
         body: JSON.stringify({
           humanMentorId: mentor.id,
           scheduledDate: data.scheduledDate,
-          duration: data.duration,
-          sessionGoals: data.sessionGoals,
+          duration: 60,
+          sessionGoals: data.sessionGoals.trim(),
         }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        let errorMessage = `HTTP ${res.status}`;
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error?.message || errorData.message || errorMessage;
+        } catch {
+          // If JSON parse fails, use status text or generic message
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
       return res.json();
     },
     onSuccess: (response: any) => {
@@ -122,12 +130,15 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
       });
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/upcoming-sessions'] });
       onSuccess();
     },
     onError: (error: Error) => {
+      const mentorName = mentor.user?.firstName || "mentor";
+      const appointmentType = mentor.acuityAppointmentTypeId ? `type ${String(mentor.acuityAppointmentTypeId).slice(0, 8)}` : "unknown type";
       toast({
         title: "Individual Booking Failed",
-        description: error.message || "Failed to book individual session",
+        description: `Failed booking with ${mentorName} (${appointmentType}): ${error.message || "Unknown error"}`,
         variant: "destructive",
       });
     },
@@ -139,6 +150,15 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
       toast({
         title: "No Time Selected",
         description: "Please select a date and time before booking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.sessionGoals || data.sessionGoals.trim().length < 10) {
+      toast({
+        title: "Session Goals Required",
+        description: "Please describe your goals (minimum 10 characters).",
         variant: "destructive",
       });
       return;
@@ -197,22 +217,24 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
             <div className="flex items-center gap-3">
               <img
                 src={mentor.user?.profileImage || `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40`}
-                alt={`${mentor.user?.firstName} ${mentor.user?.lastName}`}
+                alt={`${mentor.user?.firstName || ''} ${mentor.user?.lastName || ''}`.trim() || 'Mentor'}
                 className="w-12 h-12 rounded-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div>
-                <h3 className="font-semibold">{mentor.user?.firstName} {mentor.user?.lastName}</h3>
+                <h3 className="font-semibold">{mentor.user?.firstName || ''} {mentor.user?.lastName || ''}</h3>
                 <p className="text-sm text-slate-600">{mentor.expertise}</p>
-                <p className="text-sm text-slate-500">${mentor.hourlyRate}/hour</p>
+                <p className="text-sm text-slate-500">${Number(mentor.hourlyRate || 0).toFixed(0)}/hour</p>
               </div>
             </div>
           </div>
 
           {/* Calendar Selection */}
           <div className="space-y-4">
-            <FormLabel>Select Date & Time</FormLabel>
+            <FormLabel id="calendar-label">Select Date & Time</FormLabel>
             {mentor.acuityAppointmentTypeId ? (
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-4" aria-labelledby="calendar-label">
                 <BookingCalendar
                   appointmentTypeId={String(mentor.acuityAppointmentTypeId)}
                   onSelect={(isoString) => {
@@ -221,7 +243,7 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
                   timezone={mentor.availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
                 />
                 {selectedDate && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg" aria-live="polite">
                     <p className="text-sm font-medium text-blue-900">Selected Time:</p>
                     <p className="text-sm text-blue-700">{formatSelectedTime(selectedDate)}</p>
                   </div>
@@ -263,16 +285,17 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              disabled={isPending || !form.watch('scheduledDate')}
+              disabled={isPending || !form.watch('scheduledDate') || (form.watch('sessionGoals')?.trim().length || 0) < 10}
               className="bg-slate-900 hover:bg-slate-800 text-white"
               aria-label="Confirm booking for the selected time slot"
             >
-              {isPending ? "Booking..." : "Confirm Booking"}
+              {isPending ? "Booking..." : "Confirm Session"}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
+              disabled={isPending}
               aria-label="Cancel booking and close dialog"
             >
               Cancel
