@@ -56,7 +56,7 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
 
       console.log('Loading availability for mentor:', mentor.id, 'appointmentType:', mentor.acuityAppointmentTypeId);
 
-      const response = await fetch(`/api/acuity-availability?mentorId=${mentor.id}&timezone=${timezone}`, {
+      const response = await fetch(`/api/get-acuity-availability?appointmentTypeId=${mentor.acuityAppointmentTypeId}&timezone=${timezone}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
