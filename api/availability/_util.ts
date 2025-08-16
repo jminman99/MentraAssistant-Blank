@@ -1,39 +1,37 @@
 
-const ACUITY_BASE = 'https://acuityscheduling.com/api/v1';
+// app/api/availability/_util.ts
+export async function acuityFetch(path: string, init?: RequestInit) {
+  const base = process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1";
+  const user = process.env.ACUITY_USER;
+  const key  = process.env.ACUITY_KEY;
 
-export function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env ${name}`);
-  return v;
-}
-
-export async function acuityFetch(path: string, abortSignal?: AbortSignal) {
-  const user = requireEnv('ACUITY_USER_ID');
-  const key = requireEnv('ACUITY_API_KEY');
-  const auth = 'Basic ' + Buffer.from(`${user}:${key}`).toString('base64');
-
-  const r = await fetch(`${ACUITY_BASE}${path}`, {
-    headers: {
-      Authorization: auth,
-      Accept: 'application/json',
-      'User-Agent': 'Mentra/availability 1.0',
-    },
-    signal: abortSignal,
-    method: 'GET',
-  });
-
-  const text = await r.text();
-  let json: any = null;
-  try { 
-    json = text ? JSON.parse(text) : null; 
-  } catch { 
-    /* leave null */ 
+  if (!user || !key) {
+    const err = new Error("Missing ACUITY_USER/ACUITY_KEY");
+    (err as any).code = "CONFIG_MISSING";
+    throw err;
   }
 
-  if (!r.ok) {
-    const snippet = text?.slice?.(0, 240) ?? '';
-    const err = new Error(`Upstream ${r.status} ${r.statusText}: ${snippet}`);
-    (err as any).status = r.status;
+  const res = await fetch(`${base}${path}`, {
+    ...init,
+    // Force Node runtime to use standard fetch
+    cache: "no-store",
+    headers: {
+      ...(init?.headers || {}),
+      Authorization: `Basic ${Buffer.from(`${user}:${key}`).toString("base64")}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+
+  const text = await res.text();
+  let json: any = null;
+  try { json = text ? JSON.parse(text) : null; } catch { /* leave json null */ }
+
+  if (!res.ok) {
+    const msg = json?.message || json?.error || text || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    (err as any).status = res.status;
+    (err as any).body = json ?? text;
     throw err;
   }
 

@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { acuityFetch, jsonError } from './_util';
 import { z } from 'zod';
 
+export const runtime = "nodejs";
+
 const RangeQuery = z.object({
   appointmentTypeId: z.string().regex(/^\d+$/, 'appointmentTypeId must be numeric'),
   timezone: z.string().min(1, 'timezone required'),
@@ -67,12 +69,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ 
-      success: true, 
-      dates, 
-      times, 
-      cached: false, 
-      timestamp: new Date().toISOString() 
+    return res.status(200).json({
+      success: true,
+      data: { dates, times },
+      cached: false,
+      timestamp: new Date().toISOString()
     });
   } catch (e: any) {
     console.error('Range availability error:', e);

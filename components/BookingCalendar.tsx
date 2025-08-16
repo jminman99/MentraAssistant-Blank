@@ -97,12 +97,11 @@ export default function BookingCalendar({
           abortController.signal
         );
 
-        // Handle both old and new response formats
-        const monthDates = Array.isArray(result?.dates) ? result.dates : 
-                          Array.isArray(result?.data) ? result.data : [];
+        // Handle the new response format
+        const monthDates = Array.isArray(result?.data) ? result.data : [];
         
         if (!Array.isArray(monthDates)) {
-          throw new Error('Unexpected availability payload - dates not an array');
+          throw new Error('Unexpected availability payload - data not an array');
         }
 
         // Filter to current month only and cache
@@ -161,12 +160,11 @@ export default function BookingCalendar({
         abortController.signal
       );
 
-      // Handle both old and new response formats
-      const dayTimes = Array.isArray(result?.times) ? result.times : 
-                      Array.isArray(result?.data) ? result.data : [];
+      // Handle the new response format
+      const dayTimes = Array.isArray(result?.data) ? result.data : [];
       
       if (!Array.isArray(dayTimes)) {
-        throw new Error('Unexpected availability payload - times not an array');
+        throw new Error('Unexpected availability payload - data not an array');
       }
       
       setTimes(prev => ({
@@ -206,10 +204,9 @@ export default function BookingCalendar({
         abortController.signal
       );
 
-      // Handle both old and new response formats
-      const rangeDates = Array.isArray(result?.dates) ? result.dates : 
-                        Array.isArray(result?.data?.dates) ? result.data.dates : [];
-      const rangeTimeMap = result?.times || result?.data?.times || {};
+      // Handle the new response format
+      const rangeDates = Array.isArray(result?.data?.dates) ? result.data.dates : [];
+      const rangeTimeMap = result?.data?.times || {};
       
       if (!Array.isArray(rangeDates) || typeof rangeTimeMap !== 'object') {
         throw new Error('Unexpected availability payload');

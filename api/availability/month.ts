@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { acuityFetch, jsonError } from './_util';
 import { z } from 'zod';
 
+export const runtime = "nodejs";
+
 const MonthQuery = z.object({
   appointmentTypeId: z.string().regex(/^\d+$/, 'appointmentTypeId must be numeric'),
   timezone: z.string().min(1, 'timezone required'),
@@ -44,12 +46,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Normalize Acuity response to an array of YYYY-MM-DD strings
+    const normalized: string[] = Array.isArray(data) ? data : (Array.isArray(data?.dates) ? data.dates : []);
+    
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ 
-      success: true, 
-      dates: data || [], 
-      cached: false, 
-      timestamp: new Date().toISOString() 
+    return res.status(200).json({
+      success: true,
+      data: normalized,
+      cached: false,
+      timestamp: new Date().toISOString(),
     });
   } catch (e: any) {
     console.error('Month availability error:', e);
