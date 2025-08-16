@@ -4,16 +4,19 @@ import {
   Compass,
   MessageCircle,
   Sparkles,
-  Heart,
   Star,
   Crown,
   Settings,
+  MessageSquare,
+  Calendar,
+  Users,
+  TrendingUp,
+  ChevronRight,
+  User
 } from "lucide-react";
-import { zButton } from "../components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-hook";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
-import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
-import { UsageCard } from "@/components/subscription/usage-card";
 import { SessionsContent } from "@/components/sessions/sessions-content";
 import { WelcomeModal } from "@/components/subscription/upgrade-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,9 +35,8 @@ import { useOrganizationLabels } from "@/hooks/use-organization-labels";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Calendar, Users, TrendingUp, ChevronRight, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import IndividualBookingDialog from "@/components/mentors/IndividualBookingDialog";
 
 // Council booking form schema
 const councilBookingSchema = z.object({
@@ -504,6 +506,8 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
 export default function Dashboard() {
   const { user, logout, isLoaded, getToken } = useAuth();
   const { branding, isLoading: brandingLoading, mentorTerminology } = useOrganizationLabels();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("ai-mentors");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [, setLocation] = useLocation();
@@ -834,8 +838,7 @@ export default function Dashboard() {
                 <UsageCard user={user} />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <div className="flex items-center```
- gap-3 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
                             <User className="h-6 w-6 text-slate-700" />
                             <h2 className="text-xl font-semibold text-slate-900">
                                 Individual Sessions
@@ -971,12 +974,13 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Guides</span>
             </button>
           </Link>
-          <Link href="/dashboard">
-            <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600">
-              <Crown className="h-5 w-5" />
-              <span className="text-xs font-medium">Council</span>
-            </button>
-          </Link>
+          <button
+            onClick={() => setSelectedTab("council")}
+            className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-slate-600"
+          >
+            <Crown className="h-5 w-5" />
+            <span className="text-xs font-medium">Council</span>
+          </button>
           <button 
             onClick={() => setSelectedTab("sessions")}
             className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
