@@ -1,10 +1,8 @@
-
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
 import App from "./App";
 import "./index.css";
-import { ClerkTokenProvider } from "./components/ClerkTokenProvider";
 import { Toaster } from "./components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -46,12 +44,10 @@ ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <ClerkAppProvider>
       <QueryClientProvider client={queryClient}>
-        <ClerkTokenProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <App />
-          </Suspense>
-          <Toaster />
-        </ClerkTokenProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+          <App />
+        </Suspense>
+        <Toaster />
       </QueryClientProvider>
     </ClerkAppProvider>
   </React.StrictMode>
