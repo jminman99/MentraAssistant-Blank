@@ -61,19 +61,29 @@ export default function AcuityCalendar({
         timezone: tz
       });
 
+      const fullUrl = `/api/get-acuity-calendar?${params}`;
+      console.log('AcuityCalendar - Full URL being called:', fullUrl);
+      console.log('AcuityCalendar - Parameters:', { appointmentTypeId, month: monthKey, timezone: tz });
       const response = await fetch(`/api/get-acuity-calendar?${params}`);
       const data = await response.json();
+      
+      console.log('Calendar API response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      if (data.success && data.availability) {
+      // Verify we're getting the calendar response format (should have startDate/endDate, not date)
+      if (data.success && data.availability && !data.date) {
         // Extract available dates from the availability map
         const availableDates = new Set(Object.keys(data.availability));
         setMonthDates(availableDates);
         setTimesByDate(prev => ({ ...prev, ...data.availability }));
         monthCache.current.set(monthKey, availableDates);
+      } else if (data.date) {
+        // This means we're getting the wrong response (from availability endpoint)
+        console.error('ERROR: Received single-date response instead of calendar response:', data);
+        throw new Error('Received wrong API response format');
       } else {
         setMonthDates(new Set());
       }
