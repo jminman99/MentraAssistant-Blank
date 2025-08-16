@@ -18,7 +18,10 @@ export class VercelApiClient {
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
     if (!this.tokenProvider) {
-      console.warn('No token provider set for VercelApiClient');
+      // Only warn in development
+      if (import.meta.env.DEV) {
+        console.warn('No token provider set for VercelApiClient');
+      }
       return {};
     }
 

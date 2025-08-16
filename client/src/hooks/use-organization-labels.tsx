@@ -1,26 +1,9 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-hook';
 import { setOrganizationLabels, DefaultFeatureDisplayLabels, type LabelKey } from '@/lib/constants';
 import { useEffect } from 'react';
-
-// Helper function to get Clerk token
-async function getClerkToken(getToken: any): Promise<string> {
-  if (!getToken) throw new Error('No authentication available');
-
-  let token: string | null = null;
-  try {
-    token = await getToken({ template: 'mentra-api' });
-  } catch {
-    try {
-      token = await getToken({ template: 'default' });
-    } catch {
-      token = await getToken();
-    }
-  }
-
-  if (!token) throw new Error('No Clerk token available');
-  return token;
-}
+import { getBearer } from '@/lib/auth/getBearer';
 
 export interface OrganizationBranding {
   id: number;
@@ -43,33 +26,41 @@ export interface OrganizationBranding {
 
 // Hook to load and apply organization-specific UI labels
 export function useOrganizationLabels() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, getToken } = useAuth();
 
   // Fetch organization branding configuration
   const { data: branding, isLoading, error } = useQuery({
     queryKey: ['/api/branding', user?.organizationId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!user?.organizationId) return null;
+      
+      try {
+        const token = await getBearer(getToken);
+        const response = await fetch(`/api/branding/${user.organizationId}`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          signal,
+        });
 
-      const token = await getClerkToken(getToken);
-      const response = await fetch(`/api/branding/${user.organizationId}`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // No custom branding configuration found, use defaults
-          return null;
+        if (!response.ok) {
+          if (response.status === 404) {
+            // No custom branding configuration found, use defaults
+            return null;
+          }
+          throw new Error('Failed to fetch organization branding');
         }
-        throw new Error('Failed to fetch organization branding');
-      }
 
-      const result = await response.json();
-      return result.data as OrganizationBranding;
+        const result = await response.json();
+        return result.data as OrganizationBranding;
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('❌ Branding fetch failed:', error);
+        }
+        throw error;
+      }
     },
     enabled: Boolean(isAuthenticated && user?.organizationId && getToken),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes

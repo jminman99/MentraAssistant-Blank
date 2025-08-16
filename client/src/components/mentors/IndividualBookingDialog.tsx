@@ -26,21 +26,11 @@ interface IndividualBookingDialogProps {
   onSuccess: () => void;
 }
 
+import { getBearer } from "@/lib/auth/getBearer";
+
 // Helper function to get Clerk token with timeout
 async function getClerkToken(getToken: any): Promise<string> {
-  if (!getToken) throw new Error('No authentication available');
-
-  let token: string | null = null;
-  try {
-    token = await getToken({ template: 'mentra-api' });
-  } catch {
-    try {
-      token = await getToken({ template: 'default' });
-    } catch {
-      token = await getToken();
-    }
-  }
-
+  const token = await getBearer(getToken);
   if (!token) throw new Error('No Clerk token available');
   return token;
 }
