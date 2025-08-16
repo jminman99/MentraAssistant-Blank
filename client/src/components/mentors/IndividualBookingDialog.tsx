@@ -11,7 +11,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-hook";
-import BookingCalendar from "../../../../components/BookingCalendar";
+import BookingCalendar from "@/../components/BookingCalendar";
 
 const individualBookingSchema = z.object({
   scheduledDate: z.string().min(1, "Please select a date and time"),
