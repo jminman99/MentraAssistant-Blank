@@ -163,6 +163,10 @@ async function hydrateFromAcuityIfNeeded(a: any, payload: any) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Apply CORS headers for consistency
+  const { applyCorsHeaders } = await import('./_lib/middleware.js');
+  applyCorsHeaders(res, req);
+
   try {
     if (!['POST', 'HEAD'].includes(req.method!)) return bad(res, 405, 'Method not allowed');
     if (req.method === 'HEAD') return res.status(200).end();
