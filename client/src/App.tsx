@@ -57,18 +57,14 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/test" component={TestPage} />
+      <Route path="/" component={() => <PrivateRoute component={Dashboard} />} />
+      <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/sign-in" component={SignInPage} />
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/login" component={() => <Redirect to="/sign-in" />} />
-      <Route path="/dashboard" component={() => <PrivateRoute component={Dashboard} />} />
       <Route path="/plan-usage" component={() => <PrivateRoute component={PlanUsagePage} />} />
       <Route path="/sessions" component={() => <PrivateRoute component={SessionsPage} />} />
-      <Route path="/debug" component={() => <PrivateRoute component={Debug} />} />
       <Route path="/session/:id" component={SessionDetails} />
-      <Route path="/">
-        {() => (isSignedIn ? <Dashboard /> : <Redirect to="/sign-in" />)}
-      </Route>
       <Route path="*">
         <div className="min-h-screen flex items-center justify-center text-slate-600 text-lg">
           404 - Page not found
