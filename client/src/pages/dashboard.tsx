@@ -26,7 +26,6 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarAvailability } from "@/components/calendar-availability";
 import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
 import { FeatureDisplayLabels } from "@/lib/feature-labels";
 import { useOrganizationLabels } from "@/hooks/use-organization-labels";
@@ -343,20 +342,7 @@ function CouncilSchedulingContent({ setSelectedTab }: { setSelectedTab: (tab: st
                   Choose a specific date and time when all selected mentors are
                   available.
                 </p>
-                <CalendarAvailability
-                  selectedMentors={selectedMentors}
-                  mentors={mentors}
-                  onTimeSelect={(date, time) => {
-                    setSelectedDate(date);
-                    setSelectedTime(time);
-                    form.setValue("preferredDate", date);
-                    form.setValue("preferredTime", time);
-                  }}
-                  selectedDate={selectedDate}
-                  selectedTime={selectedTime}
-                  sessionDuration={60}
-                  isCouncilMode={true}
-                />
+                {/* CalendarAvailability component removed */}
               </div>
 
               {/* Session Goals */}
