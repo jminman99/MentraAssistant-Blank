@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DashboardTabs, getDisplayLabel } from "@/lib/constants";
 import { FeatureDisplayLabels } from "@/lib/feature-labels";
 import { useOrganizationLabels } from "@/hooks/use-organization-labels";
-import { IndividualBookingDialog } from "@/components/mentors/IndividualBookingDialog";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
