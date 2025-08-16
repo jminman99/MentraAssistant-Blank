@@ -36,6 +36,59 @@ export class VercelApiClient {
 
   
 
+  async sendChatMessage(content: string, aiMentorId: number) {
+    try {
+      const authHeaders = await this.getAuthHeaders();
+      
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
+        body: JSON.stringify({
+          content,
+          aiMentorId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const userMessage = await response.json();
+
+      // Get AI response
+      const aiResponse = await fetch(`${this.baseUrl}/api/chat/ai-response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        },
+        body: JSON.stringify({
+          message: content,
+          aiMentorId
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorData = await aiResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `AI response failed: HTTP ${aiResponse.status}`);
+      }
+
+      const aiMessage = await aiResponse.json();
+
+      return {
+        userMessage,
+        aiMessage
+      };
+    } catch (error) {
+      console.error("Failed to send chat message:", error);
+      throw error;
+    }
+  }
+
   async getSessionBookings() {
     try {
       const authHeaders = await this.getAuthHeaders();
