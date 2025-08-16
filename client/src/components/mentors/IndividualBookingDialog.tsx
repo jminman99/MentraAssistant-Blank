@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { HumanMentor } from "@/types";
 import { DialogWrapper } from "@/components/ui/dialog-wrapper";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-hook";
+import BookingCalendar from "@/components/BookingCalendar";
 
 const individualBookingSchema = z.object({
   scheduledDate: z.string().min(1, "Please select a date and time"),
   duration: z.number().min(30, "Minimum 30 minutes"),
-  sessionGoals: z.string().min(10, "Please describe your goals for the session"),
+  sessionGoals: z.string().min(10, "Please describe your goals for the session").max(500, "Please keep goals under 500 characters"),
 });
 
 type IndividualBookingData = z.infer<typeof individualBookingSchema>;
@@ -26,7 +27,7 @@ interface IndividualBookingDialogProps {
   onSuccess: () => void;
 }
 
-// Helper function to get Clerk token
+// Helper function to get Clerk token with timeout
 async function getClerkToken(getToken: any): Promise<string> {
   if (!getToken) throw new Error('No authentication available');
 
@@ -43,6 +44,27 @@ async function getClerkToken(getToken: any): Promise<string> {
 
   if (!token) throw new Error('No Clerk token available');
   return token;
+}
+
+// Helper function to fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw error;
+  }
 }
 
 const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
@@ -63,10 +85,19 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
     },
   });
 
+  // Reset form when mentor changes
+  useEffect(() => {
+    form.reset({
+      scheduledDate: "",
+      duration: 60,
+      sessionGoals: "",
+    });
+  }, [mentor.id, form]);
+
   const { mutate: bookIndividualSession, isPending } = useMutation({
     mutationFn: async (data: IndividualBookingData) => {
       const token = await getClerkToken(getToken);
-      const res = await fetch('/api/session-bookings', {
+      const res = await fetchWithTimeout('/api/session-bookings', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,8 +133,53 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
     },
   });
 
-  const onSubmit = (data: IndividualBookingData) => {
+  const handleSubmit = (data: IndividualBookingData) => {
+    // Extra guard checks
+    if (!data.scheduledDate || data.scheduledDate.trim() === '') {
+      toast({
+        title: "No Time Selected",
+        description: "Please select a date and time before booking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!mentor.id) {
+      toast({
+        title: "Invalid Mentor",
+        description: "Mentor information is missing. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     bookIndividualSession(data);
+  };
+
+  const selectedDate = form.watch('scheduledDate');
+  const sessionGoals = form.watch('sessionGoals');
+  const goalCharCount = sessionGoals?.length || 0;
+
+  // Format selected time in user's timezone
+  const formatSelectedTime = (isoString: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      // Use the mentor's timezone or fallback to user's local timezone
+      const timezone = mentor.availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return date.toLocaleString('en-US', {
+        timeZone: timezone,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    } catch (error) {
+      return isoString;
+    }
   };
 
   return (
@@ -115,7 +191,7 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
       size="lg"
     >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           {/* Mentor Info */}
           <div className="bg-slate-50 rounded-lg p-4">
             <div className="flex items-center gap-3">
@@ -135,20 +211,28 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
           {/* Calendar Selection */}
           <div className="space-y-4">
             <FormLabel>Select Date & Time</FormLabel>
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-slate-600 mb-4">
-                Choose an available time slot for your session with {mentor.user?.firstName}.
-              </p>
-              {mentor.acuityAppointmentTypeId && (
-                <div className="text-sm text-slate-500">
-                  Appointment Type ID: {mentor.acuityAppointmentTypeId}
-                </div>
-              )}
-              {/* TODO: Add AcuityCalendar component here */}
-              <div className="text-center py-8 text-slate-500">
-                Calendar component will be integrated here
+            {mentor.acuityAppointmentTypeId ? (
+              <div className="border rounded-lg p-4">
+                <BookingCalendar
+                  appointmentTypeId={mentor.acuityAppointmentTypeId}
+                  onSlotSelect={(isoString) => {
+                    form.setValue('scheduledDate', isoString, { shouldValidate: true });
+                  }}
+                  timezone={mentor.availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+                />
+                {selectedDate && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900">Selected Time:</p>
+                    <p className="text-sm text-blue-700">{formatSelectedTime(selectedDate)}</p>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="border rounded-lg p-4 text-center py-8 text-slate-500">
+                <p>Calendar unavailable - missing appointment type configuration</p>
+                <p className="text-xs mt-2">Please contact support for assistance</p>
+              </div>
+            )}
           </div>
 
           {/* Session Goals */}
@@ -162,10 +246,16 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
                   <Textarea
                     placeholder="Describe what you want to accomplish in this session..."
                     className="min-h-[100px]"
+                    aria-label="Describe your session goals and objectives"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage />
+                <div className="flex justify-between items-center">
+                  <FormMessage />
+                  <span className={`text-xs ${goalCharCount > 450 ? 'text-red-500' : 'text-slate-500'}`}>
+                    {goalCharCount}/500 characters
+                  </span>
+                </div>
               </FormItem>
             )}
           />
@@ -175,13 +265,15 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
               type="submit"
               disabled={isPending || !form.watch('scheduledDate')}
               className="bg-slate-900 hover:bg-slate-800 text-white"
+              aria-label="Confirm booking for the selected time slot"
             >
-              {isPending ? "Booking..." : "Book Session"}
+              {isPending ? "Booking..." : "Confirm Booking"}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
+              aria-label="Cancel booking and close dialog"
             >
               Cancel
             </Button>

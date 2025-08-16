@@ -36,7 +36,7 @@ export interface HumanMentor {
   videoCallLink?: string;
   rating?: string;
   totalSessions?: number;
-  acuityAppointmentTypeId?: number | string;
+  acuityAppointmentTypeId: number | string;
   isActive?: boolean;
   applicationStatus?: string;
   createdAt?: string;
