@@ -36,17 +36,18 @@ export default function AcuityCalendar({
   const [timesByDate, setTimesByDate] = useState<AvailabilityMap>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loadingMonth, setLoadingMonth] = useState(false);
-  const [loadingDay, setLoadingDay] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
 
   const monthCache = useRef<Map<string, Set<string>>>(new Map());
 
-  // Fetch available dates for the month
-  const fetchMonthDates = async (targetMonth: Date) => {
+  // Fetch calendar data for the entire month
+  const fetchMonthCalendar = async (targetMonth: Date) => {
     const monthKey = ym(targetMonth);
     
     if (monthCache.current.has(monthKey)) {
-      setMonthDates(monthCache.current.get(monthKey)!);
+      const cachedDates = monthCache.current.get(monthKey)!;
+      setMonthDates(cachedDates);
       return;
     }
 
@@ -60,46 +61,7 @@ export default function AcuityCalendar({
         timezone: tz
       });
 
-      const response = await fetch(`/api/get-acuity-dates?${params}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      if (data.success && data.availableDates) {
-        const datesSet = new Set(data.availableDates);
-        setMonthDates(datesSet);
-        monthCache.current.set(monthKey, datesSet);
-      } else {
-        setMonthDates(new Set());
-      }
-    } catch (err) {
-      console.error('Failed to fetch month dates:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load dates');
-      setMonthDates(new Set());
-    } finally {
-      setLoadingMonth(false);
-    }
-  };
-
-  // Fetch available times for a specific date
-  const fetchDayTimes = async (date: string) => {
-    if (timesByDate[date]) {
-      return; // Already cached
-    }
-
-    setLoadingDay(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        appointmentTypeId,
-        date,
-        timezone: tz
-      });
-
-      const response = await fetch(`/api/get-acuity-availability?${params}`);
+      const response = await fetch(`/api/get-acuity-calendar?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -107,39 +69,27 @@ export default function AcuityCalendar({
       }
 
       if (data.success && data.availability) {
-        setTimesByDate(prev => ({
-          ...prev,
-          [date]: data.availability[date] || []
-        }));
+        // Extract available dates from the availability map
+        const availableDates = new Set(Object.keys(data.availability));
+        setMonthDates(availableDates);
+        setTimesByDate(prev => ({ ...prev, ...data.availability }));
+        monthCache.current.set(monthKey, availableDates);
       } else {
-        setTimesByDate(prev => ({
-          ...prev,
-          [date]: []
-        }));
+        setMonthDates(new Set());
       }
     } catch (err) {
-      console.error('Failed to fetch day times:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load times');
-      setTimesByDate(prev => ({
-        ...prev,
-        [date]: []
-      }));
+      console.error('Failed to fetch calendar data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load calendar');
+      setMonthDates(new Set());
     } finally {
-      setLoadingDay(false);
+      setLoadingMonth(false);
     }
   };
 
-  // Load month data when month changes
+  // Load calendar data when month changes
   useEffect(() => {
-    fetchMonthDates(month);
+    fetchMonthCalendar(month);
   }, [month, appointmentTypeId, tz]);
-
-  // Load day data when date is selected
-  useEffect(() => {
-    if (selectedDate && monthDates.has(selectedDate)) {
-      fetchDayTimes(selectedDate);
-    }
-  }, [selectedDate, appointmentTypeId, tz]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) {
@@ -216,14 +166,9 @@ export default function AcuityCalendar({
         <div>
           <h3 className="text-lg font-medium text-slate-900 mb-4">
             Available Times - {format(new Date(selectedDate), 'MMMM d, yyyy')}
-            {loadingDay && <span className="text-sm text-slate-500 ml-2">(Loading...)</span>}
           </h3>
 
-          {loadingDay ? (
-            <div className="text-center py-4">
-              <p className="text-slate-600">Loading available times...</p>
-            </div>
-          ) : availableTimes.length === 0 ? (
+          {availableTimes.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600">No available time slots for this date.</p>
               <p className="text-sm text-slate-500 mt-1">Please try selecting a different date.</p>
