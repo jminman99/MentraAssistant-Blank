@@ -1,15 +1,22 @@
 
-import { useEffect, useMemo, useState } from "react";
-import { startOfMonth, endOfMonth, format, eachDayOfInterval, isSameMonth, isToday, addDays } from "date-fns";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { startOfMonth, endOfMonth, format, startOfToday } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 
 type MapDay = Record<string, string[]>;
 
-interface AvailabilityResponse {
-  data: string[] | { dates: string[], times: Record<string, string[]> };
-  cached: boolean;
-  timestamp: string;
+interface MonthResponse {
+  dates: string[];
+}
+
+interface DayResponse {
+  times: string[];
+}
+
+interface RangeResponse {
+  dates: string[];
+  times: Record<string, string[]>;
 }
 
 export default function BookingCalendar({
@@ -30,19 +37,41 @@ export default function BookingCalendar({
   const [loadingDay, setLoadingDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Caching
+  const monthCache = useRef<Map<string, Set<string>>>(new Map());
+  const dayCache = useRef<Map<string, string[]>>(new Map());
+  
   const ym = format(month, "yyyy-MM");
+  const today = startOfToday();
+
+  // Clear selected date if it's not in the new month's dates
+  useEffect(() => {
+    if (selected && !dates.has(selected)) {
+      setSelected(null);
+    }
+  }, [dates, selected]);
 
   // Load available dates for the current month
   useEffect(() => {
     async function loadMonth() {
       if (!appointmentTypeId) return;
 
+      // Check cache first
+      if (monthCache.current.has(ym)) {
+        setDates(monthCache.current.get(ym)!);
+        return;
+      }
+
+      const abortController = new AbortController();
+      let active = true;
+
       setLoadingMonth(true);
       setError(null);
 
       try {
         const response = await fetch(
-          `/api/availability/month?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&month=${encodeURIComponent(ym)}`
+          `/api/availability/month?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&month=${encodeURIComponent(ym)}`,
+          { signal: abortController.signal }
         );
 
         if (!response.ok) {
@@ -50,17 +79,40 @@ export default function BookingCalendar({
           throw new Error(errorData.error?.message || `HTTP ${response.status}`);
         }
 
-        const result: AvailabilityResponse = await response.json();
-        const monthDates = Array.isArray(result.data) ? result.data : [];
+        const result: MonthResponse = await response.json();
+        const { dates: monthDates = [] } = result;
         
-        setDates(new Set(monthDates));
+        if (!Array.isArray(monthDates)) {
+          throw new Error('Unexpected availability payload - dates not an array');
+        }
+
+        // Filter to current month only and cache
+        const filteredDates = monthDates.filter(d => d.startsWith(ym + '-'));
+        const dateSet = new Set(filteredDates);
+        
+        if (active) {
+          setDates(dateSet);
+          monthCache.current.set(ym, dateSet);
+        }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        
         console.error("Failed to load month availability:", err);
-        setError(err instanceof Error ? err.message : "Failed to load availability");
-        setDates(new Set());
+        if (active) {
+          const errorMsg = err instanceof Error ? err.message : "Failed to load availability";
+          setError(`${errorMsg} for ${ym} (type ${appointmentTypeId.slice(0, 8)})`);
+          setDates(new Set());
+        }
       } finally {
-        setLoadingMonth(false);
+        if (active) {
+          setLoadingMonth(false);
+        }
       }
+
+      return () => {
+        active = false;
+        abortController.abort();
+      };
     }
 
     loadMonth();
@@ -68,14 +120,25 @@ export default function BookingCalendar({
 
   // Load times for a specific date
   const loadTimes = async (date: string) => {
-    if (!appointmentTypeId || times[date]) return;
+    if (!appointmentTypeId) return;
 
+    // Check cache first
+    if (dayCache.current.has(date)) {
+      setTimes(prev => ({
+        ...prev,
+        [date]: dayCache.current.get(date)!
+      }));
+      return;
+    }
+
+    const abortController = new AbortController();
     setLoadingDay(true);
     setError(null);
 
     try {
       const response = await fetch(
-        `/api/availability/day?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&date=${encodeURIComponent(date)}`
+        `/api/availability/day?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&date=${encodeURIComponent(date)}`,
+        { signal: abortController.signal }
       );
 
       if (!response.ok) {
@@ -83,31 +146,47 @@ export default function BookingCalendar({
         throw new Error(errorData.error?.message || `HTTP ${response.status}`);
       }
 
-      const result: AvailabilityResponse = await response.json();
-      const dayTimes = Array.isArray(result.data) ? result.data : [];
+      const result: DayResponse = await response.json();
+      const { times: dayTimes = [] } = result;
+      
+      if (!Array.isArray(dayTimes)) {
+        throw new Error('Unexpected availability payload - times not an array');
+      }
       
       setTimes(prev => ({
         ...prev,
         [date]: dayTimes
       }));
+      
+      // Cache the result
+      dayCache.current.set(date, dayTimes);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      
       console.error("Failed to load day availability:", err);
-      setError(err instanceof Error ? err.message : "Failed to load times");
+      const errorMsg = err instanceof Error ? err.message : "Failed to load times";
+      setError(`${errorMsg} for ${date}`);
     } finally {
       setLoadingDay(false);
     }
+
+    return () => {
+      abortController.abort();
+    };
   };
 
   // Load a range of availability (for better performance)
   const loadRange = async (startDate: string, endDate: string) => {
     if (!appointmentTypeId) return;
 
+    const abortController = new AbortController();
     setLoadingMonth(true);
     setError(null);
 
     try {
       const response = await fetch(
-        `/api/availability/range?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
+        `/api/availability/range?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+        { signal: abortController.signal }
       );
 
       if (!response.ok) {
@@ -115,18 +194,35 @@ export default function BookingCalendar({
         throw new Error(errorData.error?.message || `HTTP ${response.status}`);
       }
 
-      const result: AvailabilityResponse = await response.json();
+      const result: RangeResponse = await response.json();
+      const { dates: rangeDates = [], times: rangeTimeMap = {} } = result;
       
-      if (typeof result.data === 'object' && 'dates' in result.data) {
-        setDates(new Set(result.data.dates));
-        setTimes(prev => ({ ...prev, ...result.data.times }));
+      if (!Array.isArray(rangeDates) || typeof rangeTimeMap !== 'object') {
+        throw new Error('Unexpected availability payload');
       }
+      
+      const dateSet = new Set(rangeDates);
+      setDates(dateSet);
+      setTimes(prev => ({ ...prev, ...rangeTimeMap }));
+      
+      // Cache results
+      monthCache.current.set(ym, dateSet);
+      Object.entries(rangeTimeMap).forEach(([date, times]) => {
+        dayCache.current.set(date, times);
+      });
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      
       console.error("Failed to load range availability:", err);
-      setError(err instanceof Error ? err.message : "Failed to load availability");
+      const errorMsg = err instanceof Error ? err.message : "Failed to load availability";
+      setError(errorMsg);
     } finally {
       setLoadingMonth(false);
     }
+
+    return () => {
+      abortController.abort();
+    };
   };
 
   // Handle date selection
@@ -144,13 +240,13 @@ export default function BookingCalendar({
   const modifiers = useMemo(() => ({
     available: (date: Date) => {
       const dateStr = format(date, 'yyyy-MM-dd');
-      return dates.has(dateStr);
+      return dates.has(dateStr) && date >= today;
     },
-    selected: (date: Date) => {
+    picked: (date: Date) => {
       const dateStr = format(date, 'yyyy-MM-dd');
       return selected === dateStr;
     }
-  }), [dates, selected]);
+  }), [dates, selected, today]);
 
   const modifiersStyles = {
     available: {
@@ -158,7 +254,7 @@ export default function BookingCalendar({
       color: '#1976d2',
       fontWeight: 'bold'
     },
-    selected: {
+    picked: {
       backgroundColor: '#1976d2',
       color: 'white'
     }
@@ -180,13 +276,13 @@ export default function BookingCalendar({
         modifiersStyles={modifiersStyles}
         onDayClick={(date) => {
           const dateStr = format(date, 'yyyy-MM-dd');
-          if (dates.has(dateStr)) {
+          if (dates.has(dateStr) && date >= today) {
             handleDateSelect(dateStr);
           }
         }}
         disabled={(date) => {
           const dateStr = format(date, 'yyyy-MM-dd');
-          return !dates.has(dateStr);
+          return !dates.has(dateStr) || date < today || loadingMonth;
         }}
         className="rounded-md border"
       />
@@ -209,13 +305,14 @@ export default function BookingCalendar({
               <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
               <p className="text-sm text-gray-600 mt-1">Loading times...</p>
             </div>
-          ) : times[selected] && times[selected].length > 0 ? (
+          ) : times[selected]?.length > 0 ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {times[selected].map((timeIso) => {
                 const timeObj = new Date(timeIso);
                 const timeStr = timeObj.toLocaleTimeString([], { 
-                  hour: '2-digit', 
+                  hour: 'numeric', 
                   minute: '2-digit',
+                  hour12: true,
                   timeZone: tz
                 });
                 
@@ -225,6 +322,7 @@ export default function BookingCalendar({
                     variant="outline"
                     size="sm"
                     onClick={() => handleTimeSelect(timeIso)}
+                    disabled={loadingDay}
                     className="text-xs"
                   >
                     {timeStr}
@@ -244,7 +342,7 @@ export default function BookingCalendar({
           variant="outline"
           size="sm"
           onClick={() => {
-            const start = format(month, 'yyyy-MM-dd');
+            const start = format(startOfMonth(month), 'yyyy-MM-dd');
             const end = format(endOfMonth(month), 'yyyy-MM-dd');
             loadRange(start, end);
           }}

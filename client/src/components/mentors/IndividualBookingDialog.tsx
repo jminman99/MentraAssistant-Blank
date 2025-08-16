@@ -214,8 +214,8 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
             {mentor.acuityAppointmentTypeId ? (
               <div className="border rounded-lg p-4">
                 <BookingCalendar
-                  appointmentTypeId={mentor.acuityAppointmentTypeId}
-                  onSlotSelect={(isoString) => {
+                  appointmentTypeId={String(mentor.acuityAppointmentTypeId)}
+                  onSelect={(isoString) => {
                     form.setValue('scheduledDate', isoString, { shouldValidate: true });
                   }}
                   timezone={mentor.availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
