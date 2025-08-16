@@ -52,19 +52,28 @@ export default function BookingCalendar({
   }, [dates, selected]);
 
   // Safe JSON parser helper
-  const safeParseJSON = async (response: Response): Promise<any> => {
-    const contentType = response.headers.get('content-type') || '';
-    const bodyText = await response.text();
-    
-    if (!contentType.includes('application/json')) {
-      throw new Error(`Server returned non-JSON content (${response.status}): ${bodyText.slice(0, 200)}...`);
+  const safeFetchJSON = async (url: string, signal?: AbortSignal): Promise<any> => {
+    const r = await fetch(url, { signal });
+    const ct = r.headers.get('content-type') || '';
+    const text = await r.text();
+
+    if (!r.ok) {
+      let msg = text;
+      try { 
+        const j = JSON.parse(text); 
+        msg = j.error || j.message || text; 
+      } catch {}
+      throw new Error(`HTTP ${r.status}: ${msg.slice(0, 240)}`);
     }
-    
+
+    let result: any = null;
     try {
-      return JSON.parse(bodyText);
-    } catch (parseError) {
-      throw new Error(`Invalid JSON from server: ${bodyText.slice(0, 200)}...`);
+      result = ct.includes('application/json') ? JSON.parse(text) : null;
+    } catch {
+      throw new Error('Server returned non-JSON payload');
     }
+
+    return result;
   };
 
   // Load available dates for the current month
@@ -85,17 +94,11 @@ export default function BookingCalendar({
       setError(null);
 
       try {
-        const response = await fetch(
+        const result = await safeFetchJSON(
           `/api/availability/month?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&month=${encodeURIComponent(ym)}`,
-          { signal: abortController.signal }
+          abortController.signal
         );
 
-        if (!response.ok) {
-          const errorData = await safeParseJSON(response).catch(() => ({}));
-          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result: MonthResponse = await safeParseJSON(response);
         const { dates: monthDates = [] } = result;
         
         if (!Array.isArray(monthDates)) {
@@ -152,17 +155,11 @@ export default function BookingCalendar({
     setError(null);
 
     try {
-      const response = await fetch(
+      const result = await safeFetchJSON(
         `/api/availability/day?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&date=${encodeURIComponent(date)}`,
-        { signal: abortController.signal }
+        abortController.signal
       );
 
-      if (!response.ok) {
-        const errorData = await safeParseJSON(response).catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: DayResponse = await safeParseJSON(response);
       const { times: dayTimes = [] } = result;
       
       if (!Array.isArray(dayTimes)) {
@@ -200,17 +197,11 @@ export default function BookingCalendar({
     setError(null);
 
     try {
-      const response = await fetch(
+      const result = await safeFetchJSON(
         `/api/availability/range?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&timezone=${encodeURIComponent(tz)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
-        { signal: abortController.signal }
+        abortController.signal
       );
 
-      if (!response.ok) {
-        const errorData = await safeParseJSON(response).catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: RangeResponse = await safeParseJSON(response);
       const { dates: rangeDates = [], times: rangeTimeMap = {} } = result;
       
       if (!Array.isArray(rangeDates) || typeof rangeTimeMap !== 'object') {

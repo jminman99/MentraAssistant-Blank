@@ -3,6 +3,25 @@ import { useAuth } from '@/lib/auth-hook';
 import { setOrganizationLabels, DefaultFeatureDisplayLabels, type LabelKey } from '@/lib/constants';
 import { useEffect } from 'react';
 
+// Helper function to get Clerk token
+async function getClerkToken(getToken: any): Promise<string> {
+  if (!getToken) throw new Error('No authentication available');
+
+  let token: string | null = null;
+  try {
+    token = await getToken({ template: 'mentra-api' });
+  } catch {
+    try {
+      token = await getToken({ template: 'default' });
+    } catch {
+      token = await getToken();
+    }
+  }
+
+  if (!token) throw new Error('No Clerk token available');
+  return token;
+}
+
 export interface OrganizationBranding {
   id: number;
   organizationId: number;
@@ -32,10 +51,12 @@ export function useOrganizationLabels() {
     queryFn: async () => {
       if (!user?.organizationId) return null;
 
+      const token = await getClerkToken(getToken);
       const response = await fetch(`/api/branding/${user.organizationId}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -50,7 +71,7 @@ export function useOrganizationLabels() {
       const result = await response.json();
       return result.data as OrganizationBranding;
     },
-    enabled: Boolean(isAuthenticated && user?.organizationId),
+    enabled: Boolean(isAuthenticated && user?.organizationId && getToken),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
