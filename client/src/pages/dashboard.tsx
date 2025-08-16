@@ -9,7 +9,7 @@ import {
   Crown,
   Settings,
 } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { zButton } from "../components/ui/button";
 import { useAuth } from "@/lib/auth-hook";
 import { ChatInterfaceVercel } from "@/components/chat/chat-interface-vercel";
 import { HumanMentorCard } from "@/components/mentors/human-mentor-card";
