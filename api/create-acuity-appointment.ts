@@ -34,8 +34,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format datetime for Acuity
     const acuityDateTime = new Date(datetime).toISOString().replace(/\.\d{3}Z$/, '');
 
-    // Create appointment via Acuity API
+    // First, validate the time slot is available
     const auth = Buffer.from(`${apiUserId}:${apiKey}`).toString('base64');
+    const validationResponse = await fetch('https://acuityscheduling.com/api/v1/availability/check-times', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([{
+        datetime: acuityDateTime,
+        appointmentTypeID: parseInt(appointmentTypeId),
+      }]),
+    });
+
+    if (!validationResponse.ok) {
+      const errorText = await validationResponse.text();
+      console.error('[ACUITY_VALIDATION] API error:', errorText);
+      return res.status(400).json({ 
+        error: 'Failed to validate time slot',
+        details: errorText 
+      });
+    }
+
+    const validationResults = await validationResponse.json();
+    const isValid = validationResults?.[0]?.valid;
+    
+    if (!isValid) {
+      const reason = validationResults?.[0]?.reason || 'Time slot no longer available';
+      return res.status(400).json({ 
+        error: 'Time slot validation failed',
+        reason,
+        suggestion: 'Please select a different time slot'
+      });
+    }
+
+    // Create appointment via Acuity API
     const acuityResponse = await fetch('https://acuityscheduling.com/api/v1/appointments', {
       method: 'POST',
       headers: {
