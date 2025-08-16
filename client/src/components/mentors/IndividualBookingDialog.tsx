@@ -43,12 +43,18 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
   });
 
   const loadAvailability = async () => {
-    if (!mentor.acuityAppointmentTypeId) return;
+    if (!mentor.acuityAppointmentTypeId) {
+      console.error('No acuityAppointmentTypeId for mentor:', mentor);
+      form.setError('root', { message: 'Mentor availability not configured' });
+      return;
+    }
 
     setLoading(true);
     try {
       const token = await getToken();
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      console.log('Loading availability for mentor:', mentor.id, 'appointmentType:', mentor.acuityAppointmentTypeId);
 
       const response = await fetch(`/api/acuity-availability?mentorId=${mentor.id}&timezone=${timezone}`, {
         headers: {
@@ -58,6 +64,14 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
       });
 
       const data = await response.json();
+      console.log('Availability API response:', data);
+
+      if (!response.ok) {
+        const errorMsg = data.error || data.details || `HTTP ${response.status}`;
+        console.error('Availability API error:', errorMsg);
+        form.setError('root', { message: `Failed to load availability: ${errorMsg}` });
+        return;
+      }
 
       if (data.success && data.availability?.slotsByDate) {
         // Flatten the slots from { 'YYYY-MM-DD': [ISO, ...] } to [{ time, date }, ...]
@@ -67,10 +81,19 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
             flattenedSlots.push({ time, date });
           });
         });
+        console.log('Flattened slots:', flattenedSlots);
         setAvailability(flattenedSlots);
+        
+        if (flattenedSlots.length === 0) {
+          form.setError('root', { message: 'No available time slots found. The mentor may not have set their availability yet.' });
+        }
+      } else {
+        console.error('Invalid availability response structure:', data);
+        form.setError('root', { message: data.error || 'Invalid availability response' });
       }
     } catch (error) {
       console.error('Failed to load availability:', error);
+      form.setError('root', { message: 'Network error loading availability' });
     } finally {
       setLoading(false);
     }
