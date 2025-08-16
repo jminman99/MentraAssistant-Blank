@@ -51,6 +51,22 @@ export default function BookingCalendar({
     }
   }, [dates, selected]);
 
+  // Safe JSON parser helper
+  const safeParseJSON = async (response: Response): Promise<any> => {
+    const contentType = response.headers.get('content-type') || '';
+    const bodyText = await response.text();
+    
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Server returned non-JSON content (${response.status}): ${bodyText.slice(0, 200)}...`);
+    }
+    
+    try {
+      return JSON.parse(bodyText);
+    } catch (parseError) {
+      throw new Error(`Invalid JSON from server: ${bodyText.slice(0, 200)}...`);
+    }
+  };
+
   // Load available dates for the current month
   useEffect(() => {
     async function loadMonth() {
@@ -75,11 +91,11 @@ export default function BookingCalendar({
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+          const errorData = await safeParseJSON(response).catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const result: MonthResponse = await response.json();
+        const result: MonthResponse = await safeParseJSON(response);
         const { dates: monthDates = [] } = result;
         
         if (!Array.isArray(monthDates)) {
@@ -142,11 +158,11 @@ export default function BookingCalendar({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        const errorData = await safeParseJSON(response).catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: DayResponse = await response.json();
+      const result: DayResponse = await safeParseJSON(response);
       const { times: dayTimes = [] } = result;
       
       if (!Array.isArray(dayTimes)) {
@@ -190,11 +206,11 @@ export default function BookingCalendar({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        const errorData = await safeParseJSON(response).catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: RangeResponse = await response.json();
+      const result: RangeResponse = await safeParseJSON(response);
       const { dates: rangeDates = [], times: rangeTimeMap = {} } = result;
       
       if (!Array.isArray(rangeDates) || typeof rangeTimeMap !== 'object') {

@@ -31,7 +31,7 @@ export function useOrganizationLabels() {
     queryKey: ['/api/branding', user?.organizationId],
     queryFn: async () => {
       if (!user?.organizationId) return null;
-      
+
       const response = await fetch(`/api/branding/${user.organizationId}`, {
         credentials: 'include',
         headers: {
@@ -76,7 +76,7 @@ export function useOrganizationLabels() {
 // Hook to get a specific label with organization override
 export function useLabel(key: LabelKey): string {
   const { branding } = useOrganizationLabels();
-  
+
   // Return organization-specific label if available, otherwise default
   return branding?.featureLabels?.[key] || DefaultFeatureDisplayLabels[key];
 }
@@ -84,7 +84,7 @@ export function useLabel(key: LabelKey): string {
 // Hook to get multiple labels at once
 export function useLabels(keys: LabelKey[]): Record<LabelKey, string> {
   const { branding } = useOrganizationLabels();
-  
+
   return keys.reduce((acc, key) => {
     acc[key] = branding?.featureLabels?.[key] || DefaultFeatureDisplayLabels[key];
     return acc;
