@@ -41,5 +41,11 @@ export async function acuityFetch(path: string, abortSignal?: AbortSignal) {
 }
 
 export function jsonError(res: any, status: number, message: string, details?: any) {
-  res.status(status).json({ success: false, error: message, details });
+  res.status(status).json({ 
+    success: false, 
+    error: { 
+      message, 
+      ...(details ? { details } : {}) 
+    } 
+  });
 }

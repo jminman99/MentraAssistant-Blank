@@ -53,27 +53,25 @@ export default function BookingCalendar({
 
   // Safe JSON parser helper
   const safeFetchJSON = async (url: string, signal?: AbortSignal): Promise<any> => {
-    const r = await fetch(url, { signal });
-    const ct = r.headers.get('content-type') || '';
-    const text = await r.text();
-
-    if (!r.ok) {
-      let msg = text;
-      try { 
-        const j = JSON.parse(text); 
-        msg = j.error || j.message || text; 
-      } catch {}
-      throw new Error(`HTTP ${r.status}: ${msg.slice(0, 240)}`);
+    const res = await fetch(url, { signal });
+    const text = await res.text();
+    let data: any = null;
+    
+    try { 
+      data = text ? JSON.parse(text) : null; 
+    } catch { 
+      // non-JSON response
     }
 
-    let result: any = null;
-    try {
-      result = ct.includes('application/json') ? JSON.parse(text) : null;
-    } catch {
-      throw new Error('Server returned non-JSON payload');
+    if (!res.ok) {
+      const message = data?.error?.message || data?.message || text || `HTTP ${res.status}`;
+      const err = new Error(message) as any;
+      err.status = res.status;
+      err.body = text;
+      throw err;
     }
 
-    return result;
+    return data;
   };
 
   // Load available dates for the current month
@@ -99,7 +97,9 @@ export default function BookingCalendar({
           abortController.signal
         );
 
-        const { dates: monthDates = [] } = result;
+        // Handle both old and new response formats
+        const monthDates = Array.isArray(result?.dates) ? result.dates : 
+                          Array.isArray(result?.data) ? result.data : [];
         
         if (!Array.isArray(monthDates)) {
           throw new Error('Unexpected availability payload - dates not an array');
@@ -118,8 +118,9 @@ export default function BookingCalendar({
         
         console.error("Failed to load month availability:", err);
         if (active) {
-          const errorMsg = err instanceof Error ? err.message : "Failed to load availability";
-          setError(`${errorMsg} for ${ym} (type ${appointmentTypeId.slice(0, 8)})`);
+          const errorMsg = (err as any).message || "Failed to load availability";
+          const statusMsg = (err as any).status ? ` (HTTP ${(err as any).status})` : '';
+          setError(`${errorMsg}${statusMsg} for ${ym} (type ${appointmentTypeId.slice(0, 8)})`);
           setDates(new Set());
         }
       } finally {
@@ -160,7 +161,9 @@ export default function BookingCalendar({
         abortController.signal
       );
 
-      const { times: dayTimes = [] } = result;
+      // Handle both old and new response formats
+      const dayTimes = Array.isArray(result?.times) ? result.times : 
+                      Array.isArray(result?.data) ? result.data : [];
       
       if (!Array.isArray(dayTimes)) {
         throw new Error('Unexpected availability payload - times not an array');
@@ -177,8 +180,9 @@ export default function BookingCalendar({
       if (err instanceof Error && err.name === 'AbortError') return;
       
       console.error("Failed to load day availability:", err);
-      const errorMsg = err instanceof Error ? err.message : "Failed to load times";
-      setError(`${errorMsg} for ${date}`);
+      const errorMsg = (err as any).message || "Failed to load times";
+      const statusMsg = (err as any).status ? ` (HTTP ${(err as any).status})` : '';
+      setError(`${errorMsg}${statusMsg} for ${date}`);
     } finally {
       setLoadingDay(false);
     }
@@ -202,7 +206,10 @@ export default function BookingCalendar({
         abortController.signal
       );
 
-      const { dates: rangeDates = [], times: rangeTimeMap = {} } = result;
+      // Handle both old and new response formats
+      const rangeDates = Array.isArray(result?.dates) ? result.dates : 
+                        Array.isArray(result?.data?.dates) ? result.data.dates : [];
+      const rangeTimeMap = result?.times || result?.data?.times || {};
       
       if (!Array.isArray(rangeDates) || typeof rangeTimeMap !== 'object') {
         throw new Error('Unexpected availability payload');
@@ -221,8 +228,9 @@ export default function BookingCalendar({
       if (err instanceof Error && err.name === 'AbortError') return;
       
       console.error("Failed to load range availability:", err);
-      const errorMsg = err instanceof Error ? err.message : "Failed to load availability";
-      setError(errorMsg);
+      const errorMsg = (err as any).message || "Failed to load availability";
+      const statusMsg = (err as any).status ? ` (HTTP ${(err as any).status})` : '';
+      setError(`${errorMsg}${statusMsg}`);
     } finally {
       setLoadingMonth(false);
     }
