@@ -23,8 +23,6 @@ export default function Navigation() {
   const navigationItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
     { path: '/mentors', icon: MessageCircle, label: 'AI Guides' },
-    { path: '/individual-booking', icon: Users, label: 'Human Mentors' },
-    { path: '/dashboard', icon: CalendarIcon, label: 'Council Scheduling' },
     { path: '/sessions', icon: Calendar, label: 'My Sessions' },
     { path: '/plan-usage', icon: Settings, label: 'Plan & Usage' },
   ];
@@ -54,7 +52,7 @@ export default function Navigation() {
                   Mentra
                 </span>
               </Link>
-              
+
               <div className="flex space-x-1">
                 {navigationItems.map((item) => (
                   <Link key={item.path} href={item.path}>
@@ -98,7 +96,7 @@ export default function Navigation() {
       {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-slate-200 dark:bg-slate-900/90 dark:border-slate-700 pb-safe">
         <div className="grid grid-cols-5 gap-1 p-2">
-          {navigationItems.slice(0, 5).map((item) => (
+          {navigationItems.slice(0, 4).map((item) => (
             <Link key={item.path} href={item.path}>
               <Button
                 variant={isActive(item.path) ? "default" : "ghost"}

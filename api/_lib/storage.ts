@@ -1,12 +1,11 @@
-
 // Copy of the storage interface for Vercel API routes
 import { db } from './db.js';
-import { 
-  users, 
-  organizations, 
-  aiMentors, 
-  humanMentors, 
-  chatMessages, 
+import {
+  users,
+  organizations,
+  aiMentors,
+  humanMentors,
+  chatMessages,
   sessionBookings,
   councilSessions,
   councilParticipants,
@@ -96,7 +95,7 @@ export class VercelStorage {
   async getUserByClerkId(clerkUserId: string): Promise<any> {
     const results = await db.execute(sql`
       SELECT id, email, "firstName", "lastName", "clerkUserId", role, "subscriptionPlan", "organizationId", "createdAt"
-      FROM users 
+      FROM users
       WHERE "clerkUserId" = ${clerkUserId}
     `);
 
@@ -208,8 +207,8 @@ export class VercelStorage {
     try {
       // Use raw SQL for complex queries to avoid Drizzle compatibility issues
       const result = await db.execute(sql`
-        SELECT * FROM semantic_configurations 
-        WHERE mentor_name = ${mentorName} 
+        SELECT * FROM semantic_configurations
+        WHERE mentor_name = ${mentorName}
         ${organizationId ? sql`AND organization_id = ${organizationId}` : sql``}
         ORDER BY id DESC LIMIT 1
       `);
@@ -223,8 +222,8 @@ export class VercelStorage {
   async getMentorPersonality(mentorName: string, organizationId?: number): Promise<any | null> {
     try {
       const result = await db.execute(sql`
-        SELECT * FROM mentor_personalities 
-        WHERE mentor_name = ${mentorName} 
+        SELECT * FROM mentor_personalities
+        WHERE mentor_name = ${mentorName}
         ${organizationId ? sql`AND organization_id = ${organizationId}` : sql``}
         ORDER BY id DESC LIMIT 1
       `);
@@ -285,7 +284,7 @@ export class VercelStorage {
   async getMentorLifeStories(mentorId: number): Promise<any[]> {
     try {
       const result = await db.execute(sql`
-        SELECT * FROM mentor_life_stories 
+        SELECT * FROM mentor_life_stories
         WHERE mentor_id = ${mentorId} AND is_active = true
         ORDER BY created_at
       `);
@@ -325,7 +324,7 @@ export class VercelStorage {
       try {
         console.log("[storage] Trying raw SQL fallback...");
         const result = await db.execute(sql`
-          SELECT 
+          SELECT
             hm.id,
             hm.expertise_areas as "expertiseAreas",
             hm.bio,
@@ -360,7 +359,7 @@ export class VercelStorage {
   // Council methods
   async getCouncilParticipants(userId: number): Promise<any[]> {
     const results = await db.execute(sql`
-      SELECT 
+      SELECT
         cp.id,
         cp.session_goals as "sessionGoals",
         cp.questions,
@@ -483,48 +482,6 @@ export class VercelStorage {
   }
 
   // Individual Session Booking methods
-  async upsertIndividualSessionBooking(data: any): Promise<SessionBooking> {
-    try {
-      console.log('📝 [STORAGE] Upserting individual session booking with data:', data);
-
-      // Ensure scheduledDate is a proper Date object
-      let validatedDate: Date;
-      if (data.scheduledDate instanceof Date) {
-        if (isNaN(data.scheduledDate.getTime())) {
-          throw new Error('Invalid scheduledDate: Date object contains invalid time value');
-        }
-        validatedDate = data.scheduledDate;
-      } else if (typeof data.scheduledDate === 'string') {
-        const parsedDate = new Date(data.scheduledDate);
-        if (isNaN(parsedDate.getTime())) {
-          throw new Error(`Invalid scheduledDate string: ${data.scheduledDate}`);
-        }
-        validatedDate = parsedDate;
-      } else {
-        throw new Error(`Invalid scheduledDate type: ${typeof data.scheduledDate}`);
-      }
-
-      const [session] = await db.insert(sessionBookings).values({
-        ...data,
-        scheduledDate: validatedDate
-      })
-      .onConflictDoNothing()
-      .returning();
-
-      console.log('✅ [STORAGE] Individual session booking upserted successfully:', {
-        id: session.id,
-        menteeId: session.menteeId,
-        humanMentorId: session.humanMentorId,
-        acuityAppointmentId: session.acuityAppointmentId
-      });
-
-      return session;
-    } catch (error) {
-      console.error('🚨 [STORAGE] Error upserting session booking:', error);
-      throw error;
-    }
-  }
-
   async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
     try {
       console.log('📝 [STORAGE] Creating individual session booking with data:', {
@@ -620,10 +577,10 @@ export class VercelStorage {
       console.log('🔍 [STORAGE] Fetching individual session bookings for user:', userId);
 
       const bookings = await db.execute(sql`
-        SELECT 
+        SELECT
           sb.id,
           sb.mentee_id as "menteeId",
-          sb.human_mentor_id as "humanMentorId", 
+          sb.human_mentor_id as "humanMentorId",
           sb.scheduled_date as "scheduledDate",
           sb.duration,
           sb.status,
@@ -703,7 +660,7 @@ export class VercelStorage {
       console.log('🔍 [STORAGE] Fetching individual sessions for user:', userId);
 
       const sessions = await db.execute(sql`
-        SELECT 
+        SELECT
           sb.id,
           sb.scheduled_date as "scheduledDate",
           sb.duration,
@@ -755,8 +712,8 @@ export class VercelStorage {
               lastName: session.mentorLastName || 'Mentor',
               profileImage: session.mentorProfileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces'
             },
-            expertise: Array.isArray(session.mentorExpertise) 
-              ? session.mentorExpertise.join(', ') 
+            expertise: Array.isArray(session.mentorExpertise)
+              ? session.mentorExpertise.join(', ')
               : (session.mentorExpertise || 'General Mentoring'),
             bio: session.mentorBio || 'Experienced mentor',
             rating: '4.8'
@@ -795,11 +752,11 @@ export class VercelStorage {
       const endTime = new Date(bookingData.scheduledDate.getTime() + bookingData.duration * 60000);
 
       const conflictingBookings = await db.execute(sql`
-        SELECT id FROM session_bookings 
+        SELECT id FROM session_bookings
         WHERE human_mentor_id = ${bookingData.humanMentorId}
         AND (
           (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
-          OR 
+          OR
           (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${bookingData.duration} minutes' > ${startTime.toISOString()})
         )
       `);
@@ -847,12 +804,12 @@ export class VercelStorage {
         const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || booking.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
-          SELECT id FROM session_bookings 
+          SELECT id FROM session_bookings
           WHERE id != ${id}
           AND human_mentor_id = ${updates.humanMentorId || booking.humanMentorId}
           AND (
             (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
-            OR 
+            OR
             (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${booking.duration} minutes' > ${startTime.toISOString()})
           )
         `);
@@ -889,7 +846,7 @@ export class VercelStorage {
       throw error;
     }
   }
-  
+
   // Helper functions for session bookings (these were duplicated and are now removed from global scope)
   async getSessionBookings(menteeId: number): Promise<SessionBooking[]> {
     try {
@@ -945,12 +902,12 @@ export class VercelStorage {
         const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
-          SELECT id FROM session_bookings 
+          SELECT id FROM session_bookings
           WHERE id != ${bookingToUpdate.id}
           AND human_mentor_id = ${updates.humanMentorId || bookingToUpdate.humanMentorId}
           AND (
             (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
-            OR 
+            OR
             (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${bookingToUpdate.duration} minutes' > ${startTime.toISOString()})
           )
         `);
@@ -977,9 +934,9 @@ export class VercelStorage {
 export const storage = new VercelStorage();
 
 // Export individual functions for cleaner imports
-export const { 
-  getUser, 
-  getUserByEmail, 
+export const {
+  getUser,
+  getUserByEmail,
   createUser,
   updateUser,
   getOrganizations,
@@ -995,6 +952,5 @@ export const {
   updateSessionBooking,
   cancelSessionBooking,
   getIndividualSessionBookings,
-  upsertIndividualSessionBooking,
   updateSessionBookingByAcuityId
 } = storage;

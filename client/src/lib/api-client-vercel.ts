@@ -34,65 +34,7 @@ export class VercelApiClient {
     return {};
   }
 
-  async syncAcuityAppointment(appointmentData: {
-    acuityAppointmentId: string | number;
-    appointmentTypeId: number;
-    datetime: string;
-    duration?: number;
-    notes?: string;
-  }) {
-    try {
-      const authHeaders = await this.getAuthHeaders();
-      console.log("Syncing Acuity appointment with auth headers:", authHeaders);
-
-      // CORRECT endpoint matching the actual backend file
-      const response = await fetch(`${this.baseUrl}/api/sync-acuity-appointments`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...authHeaders
-        },
-        body: JSON.stringify(appointmentData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Acuity sync successful:", result);
-      return result;
-
-    } catch (error) {
-      console.error("Acuity sync failed:", error);
-      throw error;
-    }
-  }
-
-  async syncUserAcuityAppointments() {
-    try {
-      const authHeaders = await this.getAuthHeaders();
-      
-      const response = await fetch(`${this.baseUrl}/api/sync-user-acuity-appointments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("User Acuity sync failed:", error);
-      throw error;
-    }
-  }
+  
 
   async getSessionBookings() {
     try {

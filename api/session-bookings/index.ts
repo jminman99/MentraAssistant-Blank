@@ -52,9 +52,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const user = await storage.getUserByClerkId(userId);
     if (!user) {
       console.log(`[SESSION_BOOKINGS:${context.requestId}] User not found in database for Clerk ID:`, userId);
-      return res.status(404).json({ 
-        success: false, 
-        error: "User not found in database. Please sync your account." 
+      return res.status(404).json({
+        success: false,
+        error: "User not found in database. Please sync your account."
       });
     }
 
@@ -72,8 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const validation = validateSessionBooking(req.body);
       if (!validation.success) {
         console.log(`[SESSION_BOOKINGS:${context.requestId}] Validation failed:`, validation.errors);
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           error: 'Validation failed',
           details: validation.errors,
           requestId: context.requestId
@@ -167,8 +167,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } else {
       res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ 
-        success: false, 
+      return res.status(405).json({
+        success: false,
         error: 'Method not allowed',
         requestId: context.requestId
       });
