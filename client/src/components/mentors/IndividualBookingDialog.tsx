@@ -73,10 +73,10 @@ export function IndividualBookingDialog({ mentor, onClose, onSuccess }: Individu
         return;
       }
 
-      if (data.success && data.availability?.slotsByDate) {
+      if (data.success && data.availability) {
         // Flatten the slots from { 'YYYY-MM-DD': [ISO, ...] } to [{ time, date }, ...]
         const flattenedSlots: TimeSlot[] = [];
-        Object.entries(data.availability.slotsByDate).forEach(([date, times]) => {
+        Object.entries(data.availability).forEach(([date, times]) => {
           (times as string[]).forEach(time => {
             flattenedSlots.push({ time, date });
           });
