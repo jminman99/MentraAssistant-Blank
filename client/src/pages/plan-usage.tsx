@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from "@/lib/auth-hook";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -48,7 +48,7 @@ export default function PlanUsagePage() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Plan & Usage</h1>
-      
+
       <div className="grid gap-6">
         {/* Current Plan */}
         <Card>
