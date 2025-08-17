@@ -621,7 +621,7 @@ export class VercelStorage {
           id: booking.id,
           menteeId: booking.menteeId,
           humanMentorId: booking.humanMentorId,
-          scheduledDate: booking.scheduledDate,
+          scheduledDate: booking.scheduledDate ? new Date(booking.scheduledDate) : new Date(),
           duration: booking.duration || 60,
           status: booking.status || 'scheduled',
           sessionGoals: booking.sessionGoals || 'Individual mentoring session',
@@ -697,7 +697,7 @@ export class VercelStorage {
 
         const transformed = {
           id: session.id,
-          scheduledDate: session.scheduledDate,
+          scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : new Date(),
           duration: session.duration || 60,
           status: session.status || 'scheduled',
           meetingType: session.meetingType || 'video',
@@ -734,60 +734,61 @@ export class VercelStorage {
     }
   }
 
-  async createSessionBooking(bookingData: {
-    menteeId: number;
+  async createSessionBooking(data: {
+    menteeId?: number;
     timezone: string;
     humanMentorId: number;
-    scheduledDate: Date;
+    scheduledAt: Date;
     duration: number;
     sessionType: string;
     meetingType: string;
     sessionGoals?: string | null;
   }): Promise<SessionBooking> {
+    console.log('Creating session booking with data:', data);
+
+    // Validate required fields
+    if (!data.scheduledAt) {
+      throw new Error('scheduledAt is required');
+    }
+    if (!data.humanMentorId) {
+      throw new Error('humanMentorId is required');
+    }
+    if (!data.menteeId) {
+      throw new Error('menteeId is required');
+    }
+
+    // Ensure scheduledAt is a valid Date object
+    const scheduledDate = new Date(data.scheduledAt);
+    if (isNaN(scheduledDate.getTime())) {
+      throw new Error('Invalid scheduledAt');
+    }
+
+    const sessionBooking = {
+      menteeId: data.menteeId,
+      humanMentorId: data.humanMentorId,
+      scheduledDate: scheduledDate,
+      duration: data.duration || 60,
+      status: 'confirmed',
+      sessionGoals: data.sessionGoals,
+      meetingType: data.meetingType || 'video',
+      sessionType: data.sessionType || 'individual',
+      timezone: data.timezone || 'UTC',
+      createdAt: new Date()
+    };
+
+    console.log('Inserting session booking:', sessionBooking);
+
     try {
-      const db = getDatabase();
+      const [created] = await this.db
+        .insert(sessionBookings)
+        .values(sessionBooking)
+        .returning();
 
-      // Check for conflicting bookings (same mentor, overlapping time)
-      const startTime = new Date(bookingData.scheduledDate);
-      const endTime = new Date(bookingData.scheduledDate.getTime() + bookingData.duration * 60000);
-
-      const conflictingBookings = await db.execute(sql`
-        SELECT id FROM session_bookings
-        WHERE human_mentor_id = ${bookingData.humanMentorId}
-        AND (
-          (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
-          OR
-          (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${bookingData.duration} minutes' > ${startTime.toISOString()})
-        )
-      `);
-
-      if (conflictingBookings.rows.length > 0) {
-        throw new Error('Time slot conflicts with existing booking');
-      }
-
-      const calEventId = `session_${Date.now()}_${startTime.getTime()}`;
-      const calLink = `https://meet.google.com/${calEventId}`;
-
-      const insertData = {
-        menteeId: bookingData.menteeId,
-        humanMentorId: bookingData.humanMentorId,
-        scheduledDate: startTime,
-        duration: bookingData.duration,
-        sessionType: bookingData.sessionType,
-        meetingType: bookingData.meetingType,
-        sessionGoals: bookingData.sessionGoals,
-        status: 'confirmed' as const,
-        timezone: bookingData.timezone,
-        videoLink: calLink,
-        calendlyEventId: calEventId,
-      };
-
-      const [session] = await db.insert(sessionBookings).values(insertData).returning();
-      console.log(`✅ Created individual session booking for user ${bookingData.menteeId}`);
-      return session;
+      console.log('Session booking created:', created);
+      return created;
     } catch (error) {
-      console.error('Error creating session booking:', error);
-      throw error;
+      console.error('Database error creating session booking:', error);
+      throw new Error(`Failed to create session booking: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -897,9 +898,9 @@ export class VercelStorage {
       const bookingToUpdate = existingBooking[0];
 
       // If updating scheduled time, check for conflicts
-      if (updates.scheduledAt) {
-        const startTime = new Date(updates.scheduledAt);
-        const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+      if (updates.scheduledDate) {
+        const startTime = new Date(updates.scheduledDate);
+        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings

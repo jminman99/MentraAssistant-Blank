@@ -1,9 +1,8 @@
-
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const ACUITY_BASE = process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
   const { path = "" } = req.query;
   const p = Array.isArray(path) ? path.join("/") : path;
