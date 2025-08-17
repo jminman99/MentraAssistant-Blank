@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let data: string[] = [];
     try {
       data = await acuityFetch(
-        `/availability/dates?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&month=${encodeURIComponent(month)}&timezone=${encodeURIComponent(timezone)}`
+        `/availability/dates?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&month=${encodeURIComponent(month)}&timezone=${encodeURIComponent(timezone)}`
       );
     } catch (acuityError: any) {
       console.error('Acuity API error:', acuityError);

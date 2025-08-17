@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const monthKey = startDate.slice(0, 7);
       dates = await acuityFetch(
-        `/availability/dates?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&month=${encodeURIComponent(monthKey)}&timezone=${encodeURIComponent(timezone)}`
+        `/availability/dates?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&month=${encodeURIComponent(monthKey)}&timezone=${encodeURIComponent(timezone)}`
       );
 
       const wanted = dates.filter(d => d >= startDate && d <= endDate);
@@ -49,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await Promise.all(wanted.map(async d => {
         try {
           const dayTimes: Array<{ time?: string; datetime?: string }> = await acuityFetch(
-            `/availability/times?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(d)}&timezone=${encodeURIComponent(timezone)}`
+            `/availability/times?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(d)}&timezone=${encodeURIComponent(timezone)}`
           );
           const normalizeIso = (s: string) => String(s).replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
           times[d] = (dayTimes || []).map(t => normalizeIso(t.time || t.datetime));

@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let times: Array<{ time?: string; datetime?: string }> = [];
     try {
       times = await acuityFetch(
-        `/availability/times?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(date)}&timezone=${encodeURIComponent(timezone)}`
+        `/availability/times?appointmentTypeId=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(date)}&timezone=${encodeURIComponent(timezone)}`
       );
     } catch (acuityError: any) {
       console.error('Acuity API error:', acuityError);

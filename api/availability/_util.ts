@@ -2,11 +2,11 @@
 // app/api/availability/_util.ts
 export async function acuityFetch(path: string, init?: RequestInit) {
   const base = process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1";
-  const user = process.env.ACUITY_USER;
-  const key  = process.env.ACUITY_KEY;
+  const user = process.env.ACUITY_USER_ID;
+  const key  = process.env.ACUITY_API_KEY;
 
   if (!user || !key) {
-    const err = new Error("Missing ACUITY_USER/ACUITY_KEY");
+    const err = new Error("Missing ACUITY_USER_ID/ACUITY_API_KEY");
     (err as any).code = "CONFIG_MISSING";
     throw err;
   }
