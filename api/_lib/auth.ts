@@ -1,6 +1,5 @@
 import { verifyToken } from '@clerk/backend';
 import type { VercelRequest } from '@vercel/node';
-import { storage } from './storage.js';
 
 export type AuthenticatedUser = {
   clerkUserId: string;
@@ -44,6 +43,14 @@ export async function requireUser(req: VercelRequest): Promise<AuthenticatedUser
   const clerkUserId = payload?.sub;
   if (!clerkUserId) {
     throw new HttpError(401, 'Invalid token payload');
+  }
+
+  // Lazy-import storage HERE (no top-level import)
+  let storage: any;
+  try {
+    ({ storage } = await import('./storage.js'));
+  } catch (e) {
+    throw new HttpError(500, 'Database module load failed');
   }
 
   let dbUser: any;

@@ -4,12 +4,13 @@ import { createRequestContext, logLatency, parseJsonBody, createErrorResponse, a
 import { applySimpleCors, handleOptions } from '../_lib/cors.js';
 import { validateSessionBooking } from '../_lib/validation.js';
 
-export const config = { api: { bodyParser: true } };
+export const config = { api: { bodyParser: true }, runtime: 'nodejs' };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
 
   applySimpleCors(res);
+  res.setHeader('Cache-Control', 'no-store');
 
   if (handleOptions(req, res)) {
     return;
