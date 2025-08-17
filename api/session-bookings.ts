@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === "POST") {
-      // TEMP for console testing:
+      // TEMP: higher limit during console testing
       if (!applyRateLimit(req, res, context, { windowMs: 60_000, maxRequests: 20 })) return;
 
       if (!req.body) {
