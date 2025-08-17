@@ -136,8 +136,6 @@ export function useAvailabilityRange(
 }
 
 // Hook for booking individual sessions
-import { useMutation } from "@tanstack/react-query";
-
 type SessionBookingData = {
   humanMentorId: string;
   scheduledDate: string;
@@ -156,45 +154,8 @@ type SessionBookingResponse = {
   };
 };
 
-export function useSessionBooking() {
+export function useSessionBooking(): UseMutationResult<SessionBookingResponse, Error, SessionBookingData> {
   return useMutation<SessionBookingResponse, Error, SessionBookingData>({
-    mutationFn: async (bookingData: SessionBookingData) => {
-      const response = await fetch('/api/session-bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // send Clerk cookies
-        body: JSON.stringify(bookingData),
-      });
-
-      const text = await response.text();
-      let data: any = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        /* non-JSON */
-      }
-
-      if (!response.ok) {
-        const msg =
-          data?.error?.message ||
-          data?.message ||
-          text ||
-          `HTTP ${response.status}`;
-        const err: any = new Error(msg);
-        err.status = response.status;
-        err.body = text;
-        throw err;
-      }
-
-      return data as SessionBookingResponse;
-    },
-  });
-}
-
-export function useSessionBooking(): UseMutationResult<SessionBookingResponse, Error, SessionBookingRequest> {
-  return useMutation<SessionBookingResponse, Error, SessionBookingRequest>({
     mutationFn: async (bookingData) => {
       const response = await fetch('/api/session-bookings', {
         method: 'POST',
