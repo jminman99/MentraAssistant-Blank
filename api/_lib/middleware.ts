@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyToken } from './auth.js';
+import { requireUser } from './auth.js';
 import { checkRateLimit, getRateLimitIdentifier, type RateLimitConfig } from './rate-limit.js';
 
 export interface RequestContext {
@@ -42,35 +42,13 @@ export async function authenticateRequest(req: VercelRequest, context: RequestCo
     cookie: req.headers.cookie ? 'Present' : 'Missing'
   });
 
-  const clerkUser = await verifyToken(req);
-  if (!clerkUser) {
-    console.log(`[AUTH:${context.requestId}] Authentication failed - no user returned`);
-    throw new Error('Authentication required');
-  }
-
-  // Get user from database using Clerk ID
-  const { storage } = await import('./storage.js');
-
-  // Get user from database using Clerk ID
-  const dbUser = await storage.getUserByClerkId(clerkUser.clerkUserId || clerkUser.id);
+  const { clerkUserId, dbUser } = await requireUser(req);
   if (!dbUser) {
     throw new Error('User not found in database');
   }
 
-  // Ensure the user object has the correct integer ID format
-  const authenticatedUser = {
-    id: Number(dbUser.id), // Ensure it's a number, not string
-    email: dbUser.email,
-    firstName: dbUser.firstName,
-    lastName: dbUser.lastName,
-    clerkUserId: dbUser.clerkUserId,
-    role: dbUser.role,
-    subscriptionPlan: dbUser.subscriptionPlan,
-    organizationId: dbUser.organizationId,
-    createdAt: dbUser.createdAt
-  };
-  console.log(`[AUTH:${context.requestId}] Authentication successful for user:`, authenticatedUser.id);
-  return authenticatedUser;
+  console.log(`[AUTH:${context.requestId}] Authentication successful for user:`, dbUser.id);
+  return { ...dbUser, clerkUserId };
 }
 
 export function parseJsonBody(req: VercelRequest, context: RequestContext): void {
