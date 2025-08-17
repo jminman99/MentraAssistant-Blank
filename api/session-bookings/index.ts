@@ -1,9 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../_lib/storage.js';
-import { validateSessionBooking } from '../_lib/validation.js';
 import { requireUser } from '../_lib/auth.js';
-import { applySimpleCors, handleOptions } from '../_lib/cors.js';
 import { createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
+import { applySimpleCors, handleOptions } from '../_lib/cors.js';
+import { validateSessionBooking } from '../_lib/validation.js';
 
 export const config = { api: { bodyParser: true } };
 
@@ -17,6 +16,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Lazy import so DB init errors are catchable
+    const { storage } = await import('../_lib/storage.js');
+
+    // Optional: surface DB connectivity issues eagerly
+    try { 
+      await storage.healthCheck(); 
+    } catch (e) {
+      console.error('[SESSION_BOOKINGS] DB health check failed:', e);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'DB init/connection failed',
+        details: e instanceof Error ? e.message : String(e)
+      });
+    }
+
     console.log(`[SESSION_BOOKINGS:${context.requestId}] ${req.method} request started`);
     console.log(`[SESSION_BOOKINGS:${context.requestId}] Request body:`, req.body);
 
