@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `/availability/times?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(date)}&timezone=${encodeURIComponent(timezone)}`
     );
 
-    const data: string[] = (upstream || []).map(row => normalizeIso(row.time || row.datetime));
+    const data: string[] = (upstream || []).map(row => normalizeIso(row.time || row.datetime || ""));
 
     return res.status(200).json({
       success: true,

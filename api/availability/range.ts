@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const t: Array<{ time?: string; datetime?: string }> = await acuityFetch(
           `/availability/times?appointmentTypeID=${encodeURIComponent(appointmentTypeId)}&date=${encodeURIComponent(d)}&timezone=${encodeURIComponent(timezone)}`
         );
-        times[d] = (t || []).map(row => normalizeIso(row.time || row.datetime));
+        times[d] = (t || []).map(row => normalizeIso(row.time || row.datetime || ""));
       } catch {
         times[d] = [];
       }
