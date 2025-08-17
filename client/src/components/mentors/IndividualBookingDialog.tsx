@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-hook";
 import BookingCalendar from "../../../../components/BookingCalendar";
+import { useSessionBooking } from "@/hooks/useAvailability";
 
 const individualBookingSchema = z.object({
   scheduledDate: z.string().min(1, "Please select a date and time"),
@@ -26,35 +27,7 @@ interface IndividualBookingDialogProps {
   onSuccess: () => void;
 }
 
-import { getBearer } from "@/lib/auth/getBearer";
-
-// Helper function to get Clerk token with timeout
-async function getClerkToken(getToken: any): Promise<string> {
-  const token = await getBearer(getToken);
-  if (!token) throw new Error('No Clerk token available');
-  return token;
-}
-
-// Helper function to fetch with timeout
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 10000): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out. Please check your connection and try again.');
-    }
-    throw error;
-  }
-}
+import { jsonGet } from "@/lib/fetcher";
 
 const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
   mentor,
@@ -82,57 +55,7 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
     form.clearErrors();
   }, [mentor.id, form]);
 
-  const { mutate: bookIndividualSession, isPending } = useMutation({
-    mutationFn: async (data: IndividualBookingData) => {
-      const token = await getClerkToken(getToken);
-      const res = await fetchWithTimeout('/api/session-bookings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          humanMentorId: mentor.id,
-          scheduledDate: data.scheduledDate,
-          duration: 60,
-          sessionGoals: data.sessionGoals.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        let errorMessage = `HTTP ${res.status}`;
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.error?.message || errorData.message || errorMessage;
-        } catch {
-          // If JSON parse fails, use status text or generic message
-          errorMessage = res.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-      return res.json();
-    },
-    onSuccess: (response: any) => {
-      toast({
-        title: "Individual Session Booked!",
-        description: response.message || "Your individual session has been successfully booked.",
-        duration: 5000,
-      });
-      form.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/upcoming-sessions'] });
-      onSuccess();
-    },
-    onError: (error: Error) => {
-      const mentorName = mentor.user?.firstName || "mentor";
-      const appointmentType = mentor.acuityAppointmentTypeId ? `type ${String(mentor.acuityAppointmentTypeId).slice(0, 8)}` : "unknown type";
-      toast({
-        title: "Individual Booking Failed",
-        description: `Failed booking with ${mentorName} (${appointmentType}): ${error.message || "Unknown error"}`,
-        variant: "destructive",
-      });
-    },
-  });
+  const { mutate: bookIndividualSession, isPending } = useSessionBooking();
 
   const handleSubmit = (data: IndividualBookingData) => {
     // Extra guard checks
@@ -163,7 +86,33 @@ const IndividualBookingDialog: React.FC<IndividualBookingDialogProps> = ({
       return;
     }
 
-    bookIndividualSession(data);
+    bookIndividualSession({
+      humanMentorId: mentor.id,
+      scheduledDate: data.scheduledDate,
+      duration: 60,
+      sessionGoals: data.sessionGoals.trim(),
+    }, {
+      onSuccess: (response) => {
+        toast({
+          title: "Individual Session Booked!",
+          description: response.data?.message || "Your individual session has been successfully booked.",
+          duration: 5000,
+        });
+        form.reset();
+        queryClient.invalidateQueries({ queryKey: ['/api/session-bookings'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/upcoming-sessions'] });
+        onSuccess();
+      },
+      onError: (error: Error) => {
+        const mentorName = mentor.user?.firstName || "mentor";
+        const appointmentType = mentor.acuityAppointmentTypeId ? `type ${String(mentor.acuityAppointmentTypeId).slice(0, 8)}` : "unknown type";
+        toast({
+          title: "Individual Booking Failed",
+          description: `Failed booking with ${mentorName} (${appointmentType}): ${error.message || "Unknown error"}`,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const selectedDate = form.watch('scheduledDate');

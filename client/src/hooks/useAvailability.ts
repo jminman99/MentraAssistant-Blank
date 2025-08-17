@@ -1,5 +1,4 @@
-
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { useQuery, UseQueryResult, useMutation, UseMutationResult } from "@tanstack/react-query";
 import { jsonGet } from "@/lib/fetcher";
 
 type MonthResponse = {
@@ -21,6 +20,23 @@ type RangeResponse = {
   data: { dates: string[]; times: Record<string, string[]> };
   cached: false;
   timestamp: string;
+};
+
+type SessionBookingRequest = {
+  appointmentTypeId: string;
+  date: string; // ISO date string
+  time: string; // ISO time string with offset
+  timezone: string;
+};
+
+type SessionBookingResponse = {
+  id: string;
+  appointmentTypeId: string;
+  date: string;
+  time: string;
+  timezone: string;
+  userId: string;
+  createdAt: string;
 };
 
 export function useAvailabilityMonth(
@@ -115,6 +131,41 @@ export function useAvailabilityRange(
     retry: (failureCount, error) => {
       if ((error as any)?.status === 401) return false;
       return failureCount < 2;
+    },
+  });
+}
+
+export function useSessionBooking(): UseMutationResult<SessionBookingResponse, Error, SessionBookingRequest> {
+  return useMutation<SessionBookingResponse, Error, SessionBookingRequest>({
+    mutationFn: async (bookingData) => {
+      const response = await fetch('/api/session-bookings', {
+        method: 'POST',
+        credentials: 'include', // Send Clerk cookies automatically
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      const text = await response.text();
+      let result: any = null;
+      try {
+        result = text ? JSON.parse(text) : null;
+      } catch {
+        // non-JSON response
+      }
+
+      if (!response.ok) {
+        const errorMessage = result?.error?.message || result?.message || text || `HTTP ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return result as SessionBookingResponse;
+    },
+    retry: (failureCount, error) => {
+      // don't retry on auth errors or client errors
+      if ((error as any)?.status === 401 || (error as any)?.status === 400) return false;
+      return failureCount < 1;
     },
   });
 }
