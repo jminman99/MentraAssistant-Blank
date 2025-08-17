@@ -1,8 +1,8 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createAcuityClient } from '../_lib/acuity-client.js';
-import { normalizeISOString, validateDateFormat } from '../_lib/time-utils.js';
-import { sendErrorResponse, createClientError } from '../_lib/error-responses.js';
+import { createAcuityClient } from '../_lib/acuity-client';
+import { normalizeISOString, validateDateFormat } from '../_lib/time-utils';
+import { sendErrorResponse, createClientError } from '../_lib/error-responses';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -44,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         return normalizeISOString(time);
       } catch (error) {
-        return { original: time, error: error instanceof Error ? error.message : String(error) };
+        return { original: time, error: error.message };
       }
     });
 

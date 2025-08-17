@@ -1,6 +1,7 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader("Cache-Control", "no-store");
   res.status(200).json({
     success: true,

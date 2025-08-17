@@ -15,8 +15,7 @@ import {
   mentorPersonalities,
   mentorLifeStories,
   mentorAvailability,
-  brandingConfigurations,
-  individualSessions // Assuming this is the correct table name for individual sessions
+  brandingConfigurations
 } from '../shared/schema.js';
 import { eq, desc, and, gte, lte, sql, ne, gt, lt, or } from 'drizzle-orm';
 import type {
@@ -485,81 +484,53 @@ export class VercelStorage {
   // Individual Session Booking methods
   async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
     try {
-      const requestId = Math.random().toString(36).substring(2, 9); // Simple request ID for logging
+      console.log('📝 [STORAGE] Creating individual session booking with data:', {
+        ...data,
+        scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+      });
+      console.log('📝 [STORAGE] Database connection status:', db ? 'Connected' : 'Not connected');
 
-      console.log(`[INDIVIDUAL:${requestId}] Received request to create individual session booking.`);
-      console.log(`[INDIVIDUAL:${requestId}] Input data:`, data);
-
-      // Fix scheduledDate property name mismatches and ensure it's a Date object
-      const scheduledDate = new Date(data.scheduledDate || data.scheduledAt || Date.now());
-      console.log(`[INDIVIDUAL:${requestId}] Parsed scheduledDate:`, scheduledDate.toISOString());
-
-      // Fix property access in validation
-      if (!data.scheduledAt) {
-        throw new Error(`Invalid scheduled date: ${data.scheduledAt}`);
-      }
-      if (new Date(data.scheduledAt) < new Date()) {
-        throw new Error(`Cannot book session in the past: ${data.scheduledAt}`);
+      // Validate data before insertion
+      if (!data.menteeId || !data.humanMentorId) {
+        throw new Error('Missing required menteeId or humanMentorId');
       }
 
-      if (!data.menteeId) {
-        throw new Error('Mentee ID is required');
-      }
-      if (!data.humanMentorId) {
-        throw new Error('Human Mentor ID is required');
-      }
-      if (!data.duration || data.duration <= 0) {
-        throw new Error('Invalid session duration');
+      // Validate scheduledDate specifically
+      if (!data.scheduledDate) {
+        throw new Error('Missing required scheduledDate');
       }
 
-      console.log(`[INDIVIDUAL:${requestId}] Inserting session for mentee ${data.menteeId} with mentor ${data.humanMentorId} at ${data.scheduledAt}`);
-
-      // Fix property access in log messages
-      const scheduledDateForLog = new Date(data.scheduledAt);
-      const scheduledDateStr = scheduledDateForLog.toISOString();
-      const today = new Date();
-      const isToday = scheduledDateForLog.toDateString() === today.toDateString();
-      const isFuture = scheduledDateForLog > today;
-      const daysDiff = Math.ceil((scheduledDateForLog.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-      console.log(`[INDIVIDUAL:${requestId}] Session scheduled for ${data.scheduledAt} (${scheduledDateStr})`);
-
-      console.log(`[INDIVIDUAL:${requestId}] Conflict check for mentor ${data.humanMentorId} on ${data.scheduledAt}`);
-
-      // Use the correct table name 'individualSessions'
-      const existingSessions = await db.select()
-        .from(individualSessions)
-        .where(
-          and(
-            eq(individualSessions.humanMentorId, data.humanMentorId),
-            eq(individualSessions.scheduledDate, scheduledDateForLog), // Use the parsed date object
-            eq(individualSessions.status, 'confirmed')
-          )
-        );
-
-      if (existingSessions.length > 0) {
-        console.warn(`[INDIVIDUAL:${requestId}] Conflict detected for mentor ${data.humanMentorId} at ${data.scheduledAt}`);
-        throw new Error('Selected time slot conflicts with an existing confirmed session.');
+      // Ensure scheduledDate is a valid Date object or ISO string
+      let validatedDate: string;
+      if (data.scheduledDate instanceof Date) {
+        if (isNaN(data.scheduledDate.getTime())) {
+          throw new Error('Invalid scheduledDate: Date object contains invalid time value');
+        }
+        validatedDate = data.scheduledDate.toISOString();
+      } else if (typeof data.scheduledDate === 'string') {
+        const parsedDate = new Date(data.scheduledDate);
+        if (isNaN(parsedDate.getTime())) {
+          throw new Error(`Invalid scheduledDate string: ${data.scheduledDate}`);
+        }
+        validatedDate = parsedDate.toISOString();
+      } else {
+        throw new Error(`Invalid scheduledDate type: ${typeof data.scheduledDate}`);
       }
-      console.log(`[INDIVIDUAL:${requestId}] No conflicts found.`);
 
-      // Fix database insert with correct properties
-      const insertData = {
-        menteeId: data.menteeId,
-        humanMentorId: data.humanMentorId,
-        scheduledDate: new Date(data.scheduledAt), // Ensure it's a Date object
-        duration: data.duration,
-        sessionType: data.sessionType,
-        meetingType: data.meetingType,
-        sessionGoals: data.sessionGoals,
-        timezone: data.timezone,
-        status: 'confirmed' as const,
-        videoLink: data.videoLink, // Assuming videoLink is part of the input data
-        calendlyEventId: data.calendlyEventId, // Assuming calendlyEventId is part of the input data
+      console.log('📝 [STORAGE] Validated date:', validatedDate);
+      console.log('📝 [STORAGE] About to execute INSERT query...');
+
+      // Prepare the validated data object
+      const validatedData = {
+        ...data,
+        scheduledDate: validatedDate
       };
 
-      console.log('📝 [STORAGE] Calling db.insert(individualSessions).values(...)');
-      const insertResult = await db.insert(individualSessions).values(insertData).returning();
+      console.log('📝 [STORAGE] Final data for insert:', validatedData);
+
+      // Execute the insert with detailed logging
+      console.log('📝 [STORAGE] Calling db.insert(sessionBookings).values(...).returning()');
+      const insertResult = await db.insert(sessionBookings).values(validatedData).returning();
       console.log('📝 [STORAGE] Insert query executed, raw result:', insertResult);
 
       if (!insertResult || insertResult.length === 0) {
@@ -578,7 +549,7 @@ export class VercelStorage {
 
       // Immediately verify the insert by querying back
       console.log('🔍 [STORAGE] Verifying insert by querying back...');
-      const verifyResult = await db.select().from(individualSessions).where(eq(individualSessions.id, session.id)).limit(1);
+      const verifyResult = await db.select().from(sessionBookings).where(eq(sessionBookings.id, session.id)).limit(1);
       console.log('🔍 [STORAGE] Verification query result:', verifyResult);
 
       if (verifyResult.length === 0) {
@@ -589,16 +560,17 @@ export class VercelStorage {
 
       return session;
     } catch (error) {
-      const requestId = Math.random().toString(36).substring(2, 9); // Simple request ID for logging
-      console.error(`🚨 [STORAGE] Error creating session booking: [${requestId}]`, {
+      console.error('🚨 [STORAGE] Error creating session booking:', {
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
-        data: data,
+        data: {
+          ...data,
+          scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+        }
       });
       throw error;
     }
   }
-
 
   async getIndividualSessionBookings(userId: number): Promise<SessionBooking[]> {
     try {
@@ -628,24 +600,50 @@ export class VercelStorage {
           sb.no_show_reported as "noShowReported",
           sb.cancellation_reason as "cancellationReason",
           sb.acuity_appointment_id as "acuityAppointmentId",
-          sb.confirmation_sent as "confirmationSent",
-          sb.follow_up_actions,
-          sb.mentor_rating,
-          sb.mentee_rating
+          sb.confirmation_sent as "confirmationSent"
         FROM session_bookings sb
         WHERE sb.mentee_id = ${userId}
         ORDER BY sb.scheduled_date DESC
       `);
 
       console.log('🔍 [STORAGE] Retrieved booking records:', bookings.rows.length);
+      console.log('🔍 [STORAGE] Raw booking data:', bookings.rows);
 
-      const transformedBookings: SessionBooking[] = bookings.rows.map((booking: any) => {
-        // Fix type conversion and add missing properties
+      const transformedBookings: SessionBooking[] = bookings.rows.map((booking: any, index: number) => {
+        console.log(`🔍 [STORAGE] Processing booking ${index + 1}:`, {
+          id: booking.id,
+          scheduledDate: booking.scheduledDate,
+          status: booking.status,
+          calendlyEventId: booking.calendlyEventId
+        });
+
         return {
-          ...booking,
-          followUpActions: booking.followUpActions || null,
-          mentorRating: booking.mentorRating || null,
-          menteeRating: booking.menteeRating || null
+          id: booking.id,
+          menteeId: booking.menteeId,
+          humanMentorId: booking.humanMentorId,
+          scheduledDate: booking.scheduledDate,
+          duration: booking.duration || 60,
+          status: booking.status || 'scheduled',
+          sessionGoals: booking.sessionGoals || 'Individual mentoring session',
+          meetingType: booking.meetingType || 'video',
+          videoLink: booking.videoLink,
+          calendlyEventId: booking.calendlyEventId,
+          sessionType: booking.sessionType || 'individual',
+          createdAt: booking.createdAt,
+          location: booking.location,
+          timezone: booking.timezone,
+          updatedAt: booking.updatedAt,
+          feedback: booking.feedback,
+          rating: booking.rating,
+          notes: booking.notes,
+          reminderSent: booking.reminderSent,
+          noShowReported: booking.noShowReported,
+          cancellationReason: booking.cancellationReason,
+          calendlyEventUrl: booking.calendlyEventUrl || null,
+          preparationNotes: booking.preparationNotes || null,
+          menteeQuestions: booking.menteeQuestions || null,
+          sessionNotes: booking.sessionNotes || null,
+          confirmationSent: booking.confirmationSent,
         } as SessionBooking;
       });
 
@@ -727,6 +725,8 @@ export class VercelStorage {
       });
 
       console.log(`✅ [STORAGE] Successfully transformed ${transformedSessions.length} individual sessions for user ${userId}`);
+      console.log('✅ [STORAGE] Final transformed data:', JSON.stringify(transformedSessions, null, 2));
+
       return transformedSessions;
     } catch (error) {
       console.error('🚨 [STORAGE] Error fetching individual sessions:', error);
@@ -796,22 +796,12 @@ export class VercelStorage {
       const db = getDatabase();
 
       // If updating scheduled time, check for conflicts
-      // Fix property name in update method
       if (updates.scheduledDate) {
-        // console.log(`Updating scheduled time from ${updates.scheduledDate} to ${updates.scheduledDate}`); // Original log message was redundant
-        updates.scheduledDate = new Date(updates.scheduledDate); // Ensure it's a Date object
-
         const booking = await this.getSessionBookingById(id);
-        if (!booking) {
-          console.error(`[updateSessionBooking] Booking with id ${id} not found.`);
-          return null;
-        }
-
-        // Ensure duration is handled correctly if not provided in updates
-        const duration = updates.duration || booking.duration;
+        if (!booking) return null;
 
         const startTime = new Date(updates.scheduledDate);
-        const endTime = new Date(startTime.getTime() + duration * 60000);
+        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || booking.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings
@@ -820,7 +810,7 @@ export class VercelStorage {
           AND (
             (scheduled_date >= ${startTime.toISOString()} AND scheduled_date < ${endTime.toISOString()})
             OR
-            (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${duration} minutes' > ${startTime.toISOString()})
+            (scheduled_date < ${startTime.toISOString()} AND scheduled_date + INTERVAL '${booking.duration} minutes' > ${startTime.toISOString()})
           )
         `);
 
@@ -907,13 +897,9 @@ export class VercelStorage {
       const bookingToUpdate = existingBooking[0];
 
       // If updating scheduled time, check for conflicts
-      // Use scheduledDate for updates, consistent with other methods
-      if (updates.scheduledDate) {
-        // Ensure scheduledDate is a Date object
-        updates.scheduledDate = new Date(updates.scheduledDate);
-
-        const startTime = new Date(updates.scheduledDate);
-        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+      if (updates.scheduledAt) {
+        const startTime = new Date(updates.scheduledAt);
+        const endTime = new Date(updates.scheduledAt.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings

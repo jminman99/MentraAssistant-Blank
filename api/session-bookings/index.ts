@@ -81,28 +81,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`[SESSION_BOOKINGS:${context.requestId}] Found database user ID:`, databaseUserId);
       }
 
-      const sessionData = {
+      const bookingData = {
         menteeId: databaseUserId, // Use the proper integer database user ID
-        humanMentorId: Number(validatedData.humanMentorId),
-        scheduledAt: new Date(validatedData.scheduledDate),
-        duration: Number(validatedData.duration),
-        sessionGoals: String(validatedData.sessionGoals || '').trim(),
-        sessionType: 'individual',
-        meetingType: 'video',
-        timezone: 'America/New_York'
+        humanMentorId: validatedData.humanMentorId,
+        scheduledDate: validatedData.scheduledDate,
+        duration: validatedData.duration,
+        sessionGoals: validatedData.sessionGoals,
+        status: 'confirmed' as const
       };
-
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Using database user ID for booking:`, databaseUserId);
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
-        ...sessionData,
-        scheduledAt: sessionData.scheduledAt.toISOString()
+        ...bookingData,
+        scheduledDate: bookingData.scheduledDate.toISOString()
       });
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] About to call storage.createIndividualSessionBooking`);
 
-      const booking = await storage.createIndividualSessionBooking(sessionData);
+      const booking = await storage.createIndividualSessionBooking(bookingData);
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Booking created successfully:`, {
         id: booking.id,

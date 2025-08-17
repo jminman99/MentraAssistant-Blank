@@ -1,3 +1,4 @@
+
 interface AcuityConfig {
   apiKey: string;
   userId: string;
@@ -35,7 +36,7 @@ export class AcuityClient {
       maxRetries: 3,
       ...config
     };
-
+    
     const credentials = Buffer.from(`${this.config.userId}:${this.config.apiKey}`).toString('base64');
     this.authHeader = `Basic ${credentials}`;
   }
@@ -61,7 +62,7 @@ export class AcuityClient {
       maxDelay = 30000
     } = retryOptions;
 
-    let lastError: AcuityApiError = new AcuityApiError('Unknown error'); // Initialize lastError
+    let lastError: AcuityApiError;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
@@ -87,7 +88,7 @@ export class AcuityClient {
 
         // Handle specific HTTP status codes
         const errorText = await response.text().catch(() => 'Unknown error');
-
+        
         if (response.status === 429) {
           // Rate limit - always retry
           lastError = new AcuityApiError(
@@ -119,7 +120,7 @@ export class AcuityClient {
 
       } catch (error) {
         clearTimeout(timeoutId);
-
+        
         if (error instanceof AcuityApiError) {
           lastError = error;
         } else if (error.name === 'AbortError') {
@@ -130,9 +131,8 @@ export class AcuityClient {
             true
           );
         } else {
-          const errorMessage = error instanceof Error ? error.message : String(error);
           lastError = new AcuityApiError(
-            `Network error: ${errorMessage}`,
+            `Network error: ${error.message}`,
             undefined,
             true
           );
@@ -149,7 +149,6 @@ export class AcuityClient {
       await this.sleep(delay);
     }
 
-    // Throw the last recorded error
     throw lastError;
   }
 
@@ -173,7 +172,7 @@ export class AcuityClient {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const monthsToFetch = new Set<string>();
-
+    
     const current = new Date(start.getFullYear(), start.getMonth(), 1);
     while (current <= end) {
       monthsToFetch.add(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`);
@@ -186,7 +185,7 @@ export class AcuityClient {
     );
 
     const monthResults = await Promise.all(monthPromises);
-
+    
     // Merge and filter results
     const allDates = new Set<string>();
     monthResults.forEach(result => {
@@ -200,7 +199,7 @@ export class AcuityClient {
     // Fetch times for all available dates with concurrency limiting
     const dates = Array.from(allDates).sort();
     const times: Record<string, string[]> = {};
-
+    
     // Process in batches to avoid overwhelming the API
     const batchSize = 5;
     for (let i = 0; i < dates.length; i += batchSize) {
@@ -210,7 +209,7 @@ export class AcuityClient {
           .then(result => ({ date, times: result }))
           .catch(error => ({ date, times: [], error }))
       );
-
+      
       const batchResults = await Promise.all(timePromises);
       batchResults.forEach(({ date, times: dateTimes }) => {
         times[date] = Array.isArray(dateTimes) ? dateTimes.sort() : [];
@@ -225,10 +224,10 @@ export class AcuityClient {
 export function createAcuityClient(): AcuityClient {
   const apiKey = process.env.ACUITY_API_KEY;
   const userId = process.env.ACUITY_USER_ID;
-
+  
   if (!apiKey || !userId) {
     throw new Error('Missing required Acuity configuration: ACUITY_API_KEY and ACUITY_USER_ID must be set');
   }
-
+  
   return new AcuityClient({ apiKey, userId });
 }
