@@ -296,6 +296,55 @@ export class VercelStorage {
   }
 
   // Human Mentor methods
+  async getHumanMentorById(id: number): Promise<any | null> {
+    try {
+      console.log("[storage] Fetching mentor by ID:", id);
+
+      const result = await db.execute(sql`
+        SELECT
+          hm.id,
+          hm.expertise_areas as "expertiseAreas",
+          hm.bio,
+          hm.acuityappointmenttypeid as "acuityAppointmentTypeId",
+          hm.availability_timezone as "availabilityTimezone",
+          hm.hourly_rate as "hourlyRate",
+          u."firstName",
+          u."lastName",
+          u."profilePictureUrl" as "profileImage"
+        FROM human_mentors hm
+        LEFT JOIN users u ON hm.user_id = u.id
+        WHERE hm.id = ${id}
+        LIMIT 1
+      `);
+
+      if (result.rows.length === 0) {
+        console.log("[storage] Mentor not found:", id);
+        return null;
+      }
+
+      const row = result.rows[0];
+      const mentor = {
+        id: row.id,
+        expertiseAreas: row.expertiseAreas,
+        bio: row.bio,
+        acuityAppointmentTypeId: row.acuityAppointmentTypeId,
+        availabilityTimezone: row.availabilityTimezone || "UTC",
+        hourlyRate: row.hourlyRate,
+        user: {
+          firstName: row.firstName,
+          lastName: row.lastName,
+          profileImage: row.profileImage,
+        }
+      };
+
+      console.log("[storage] Found mentor:", mentor);
+      return mentor;
+    } catch (error) {
+      console.error("[storage] Error fetching mentor by ID:", error);
+      return null;
+    }
+  }
+
   async getHumanMentorsByOrganization(orgId: number): Promise<any[]> {
     try {
       console.log("[storage] Fetching mentors for organization:", orgId);
