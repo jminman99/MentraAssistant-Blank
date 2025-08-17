@@ -1,4 +1,3 @@
-
 export interface NormalizedTime {
   iso: string;
   date: string;
@@ -22,10 +21,10 @@ export function normalizeISOString(input: string, fallbackTimezone?: string): st
 
   // Remove any whitespace
   const cleaned = input.trim();
-  
+
   // Check for basic ISO format
   const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:?\d{2})$/;
-  
+
   if (!isoRegex.test(cleaned)) {
     throw new TimeNormalizationError('Invalid ISO timestamp format', input);
   }
@@ -60,7 +59,7 @@ export function validateMonthFormat(month: string): boolean {
 export function validateDateFormat(date: string): boolean {
   const dateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
   if (!dateRegex.test(date)) return false;
-  
+
   // Verify it's a valid date
   const parsed = new Date(date + 'T00:00:00');
   return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date);
@@ -84,7 +83,7 @@ export function validateTimezone(timezone: string): boolean {
  */
 export function getCalendarDate(isoString: string, timezone: string): string {
   const date = new Date(isoString);
-  
+
   // Use Intl.DateTimeFormat to get the local date components
   const formatter = new Intl.DateTimeFormat('en-CA', { 
     timeZone: timezone,
@@ -92,7 +91,7 @@ export function getCalendarDate(isoString: string, timezone: string): string {
     month: '2-digit',
     day: '2-digit'
   });
-  
+
   return formatter.format(date); // Returns YYYY-MM-DD
 }
 
@@ -104,27 +103,27 @@ export function bucketTimesByDate(
   timezone: string
 ): Record<string, string[]> {
   const buckets: Record<string, string[]> = {};
-  
+
   for (const time of times) {
     try {
       const normalized = normalizeISOString(time);
       const calendarDate = getCalendarDate(normalized, timezone);
-      
+
       if (!buckets[calendarDate]) {
         buckets[calendarDate] = [];
       }
-      
+
       buckets[calendarDate].push(normalized);
     } catch (error) {
-      console.warn('Skipping invalid time slot:', time, error.message);
+      console.warn('Skipping invalid time slot:', time, error instanceof Error ? error.message : String(error));
     }
   }
-  
+
   // Sort times within each bucket
   Object.keys(buckets).forEach(date => {
     buckets[date].sort();
   });
-  
+
   return buckets;
 }
 
@@ -135,20 +134,20 @@ export function validateDateRange(startDate: string, endDate: string): void {
   if (!validateDateFormat(startDate)) {
     throw new TimeNormalizationError('Invalid start date format. Expected YYYY-MM-DD', startDate);
   }
-  
+
   if (!validateDateFormat(endDate)) {
     throw new TimeNormalizationError('Invalid end date format. Expected YYYY-MM-DD', endDate);
   }
-  
+
   if (startDate > endDate) {
     throw new TimeNormalizationError('Start date must be before or equal to end date', { startDate, endDate });
   }
-  
+
   // Reasonable range limits (e.g., max 1 year)
   const start = new Date(startDate);
   const end = new Date(endDate);
   const daysDiff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-  
+
   if (daysDiff > 365) {
     throw new TimeNormalizationError('Date range cannot exceed 365 days', { startDate, endDate, daysDiff });
   }
@@ -161,13 +160,14 @@ export function normalizeTimeArray(times: any[]): string[] {
   if (!Array.isArray(times)) {
     return [];
   }
-  
+
   return times
     .filter(time => typeof time === 'string' && time.trim())
     .map(time => {
       try {
         return normalizeISOString(time);
-      } catch {
+      } catch (error) {
+        console.warn('Skipping invalid time slot:', time, error instanceof Error ? error.message : String(error));
         return null;
       }
     })

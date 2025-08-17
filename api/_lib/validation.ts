@@ -151,7 +151,7 @@ export function validateCouncilBooking(data: any): ValidationResult<{
   };
 }
 
-export const validateSessionBookingId = (id: any) => {
+export const validateId = (id: any) => {
   if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) {
     return {
       field: 'id',
