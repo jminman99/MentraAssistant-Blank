@@ -14,8 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // lazy-load everything with side effects
-    const { requireUser } = await import("../_lib/auth.js");   // auth
-    const { storage } = await import("../_lib/storage.js");    // DB (lazy)
+    const { requireUser } = await import("./_lib/auth.js");   // auth
+    const { storage } = await import("./_lib/storage.js");    // DB (lazy)
     const {
       createRequestContext,
       logLatency,
