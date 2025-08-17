@@ -5,6 +5,8 @@ import { requireUser } from '../_lib/auth.js';
 import { applySimpleCors, handleOptions } from '../_lib/cors.js';
 import { createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
 
+export const config = { api: { bodyParser: true } };
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
 
@@ -16,9 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     console.log(`[SESSION_BOOKINGS:${context.requestId}] ${req.method} request started`);
-
-    // Parse JSON body if needed
-    parseJsonBody(req, context);
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] Request body:`, req.body);
 
     // Authenticate user
     const { dbUser } = await requireUser(req);
@@ -32,6 +32,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] POST request body:`, req.body);
+
+      // Ensure body exists
+      if (!req.body) {
+        console.log(`[SESSION_BOOKINGS:${context.requestId}] Missing request body`);
+        return res.status(400).json({
+          success: false,
+          error: 'Request body is required',
+          requestId: context.requestId
+        });
+      }
 
       // Validate request data
       const validation = validateSessionBooking(req.body);

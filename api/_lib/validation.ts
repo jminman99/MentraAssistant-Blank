@@ -15,71 +15,45 @@ export function validateSessionBooking(data: any): ValidationResult<{
   duration: number;
   sessionGoals: string;
 }> {
-  const errors: ValidationError[] = [];
-
-  // Validate humanMentorId
-  const mentorIdNum = Number(data.humanMentorId);
-  if (!data.humanMentorId || !Number.isInteger(mentorIdNum) || mentorIdNum <= 0) {
-    errors.push({
-      field: 'humanMentorId',
-      message: 'humanMentorId must be a positive integer'
-    });
-  }
-
-  // Validate duration
-  const durationNum = Number(data.duration);
-  if (!data.duration || !Number.isInteger(durationNum) || durationNum <= 0 || durationNum > 180) {
-    errors.push({
-      field: 'duration',
-      message: 'duration must be a positive integer between 1 and 180 minutes'
-    });
-  }
-
-  // Validate sessionGoals
-  if (!data.sessionGoals || typeof data.sessionGoals !== 'string' || data.sessionGoals.trim().length < 10) {
-    errors.push({
-      field: 'sessionGoals',
-      message: 'sessionGoals must be at least 10 characters long'
-    });
-  }
-
-  // Validate scheduledDate
-  let parsedDate: Date;
   try {
-    if (!data.scheduledDate) {
-      throw new Error('scheduledDate is required');
-    }
-
-    parsedDate = new Date(data.scheduledDate);
-    if (isNaN(parsedDate.getTime())) {
-      throw new Error('Invalid date format');
-    }
-
-    // Ensure date is in the future
-    if (parsedDate <= new Date()) {
-      throw new Error('Date must be in the future');
-    }
-  } catch (dateError) {
-    errors.push({
-      field: 'scheduledDate',
-      message: dateError instanceof Error ? dateError.message : 'Invalid date'
+    const schema = z.object({
+      humanMentorId: z.union([
+        z.number().int().positive(),
+        z.string().transform(str => {
+          const num = parseInt(str, 10);
+          if (isNaN(num) || num <= 0) throw new Error('Invalid mentor ID');
+          return num;
+        })
+      ]),
+      scheduledDate: z.string().min(1),
+      duration: z.number().int().min(30).max(180),
+      sessionGoals: z.string().min(10).max(500),
     });
-    parsedDate = new Date(); // fallback
-  }
 
-  if (errors.length > 0) {
-    return { success: false, errors };
-  }
+    const result = schema.safeParse(data);
 
-  return {
-    success: true,
-    data: {
-      humanMentorId: mentorIdNum,
-      scheduledDate: parsedDate!,
-      duration: durationNum,
-      sessionGoals: data.sessionGoals.trim()
+    if (!result.success) {
+      console.log('Validation failed:', result.error.issues);
+      return {
+        success: false,
+        errors: result.error.issues.map(issue => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }))
+      };
     }
-  };
+
+    return {
+      success: true,
+      data: result.data
+    };
+  } catch (error) {
+    console.error('Validation error:', error);
+    return {
+      success: false,
+      errors: [{ field: 'unknown', message: 'Validation error occurred' }]
+    };
+  }
 }
 
 export function validateCouncilBooking(data: any): ValidationResult<{

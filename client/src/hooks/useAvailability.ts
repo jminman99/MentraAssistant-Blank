@@ -157,13 +157,18 @@ type SessionBookingResponse = {
 export function useSessionBooking(): UseMutationResult<SessionBookingResponse, Error, SessionBookingData> {
   return useMutation<SessionBookingResponse, Error, SessionBookingData>({
     mutationFn: async (bookingData) => {
+      console.log('Sending booking data:', bookingData);
+      
       const response = await fetch('/api/session-bookings', {
         method: 'POST',
         credentials: 'include', // Send Clerk cookies automatically
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(bookingData),
+        body: JSON.stringify({
+          ...bookingData,
+          humanMentorId: parseInt(bookingData.humanMentorId, 10) // Ensure it's a number
+        }),
       });
 
       const text = await response.text();
