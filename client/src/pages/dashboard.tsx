@@ -531,10 +531,10 @@ export default function Dashboard() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["/api/human-mentors"],
+    queryKey: ["/api/mentors"],
     queryFn: async () => {
       const token = await getClerkToken(getToken);
-      const res = await fetch("/api/human-mentors", {
+      const res = await fetch("/api/mentors", {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

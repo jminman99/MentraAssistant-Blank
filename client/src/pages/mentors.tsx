@@ -13,7 +13,7 @@ export default function Mentors() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/human-mentors'],
+    queryKey: ['/api/mentors'],
     enabled: isLoaded && isSignedIn,
     queryFn: async () => {
       if (!getToken) {
@@ -26,7 +26,7 @@ export default function Mentors() {
         throw new Error('No Clerk token (check JWT template name in Clerk dashboard)');
       }
 
-      const res = await fetch('/api/human-mentors', {
+      const res = await fetch('/api/mentors', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
