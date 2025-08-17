@@ -68,17 +68,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const validation = validateSessionBooking(req.body);
       if (!validation.success) {
-        // TEMP: expose raw validator errors for debugging
-        const details = (validation.errors ?? validation.error?.issues ?? []).map((e: any) => ({
-          path: e.path || e?.code || "unknown",
-          message: e.message || e?.code || "Validation error",
-          received: e?.received,
-          expected: e?.expected,
-        }));
+        console.error("[SESSION_BOOKINGS] RAW validation failure:", validation);
         return res.status(400).json({
           success: false,
           error: "Validation failed",
-          details,
+          details: validation, // <— just return the whole object
           requestId: context.requestId,
         });
       }
