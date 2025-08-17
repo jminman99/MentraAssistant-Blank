@@ -1,15 +1,16 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { applyCorsHeaders, handlePreflight, createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
 import { storage } from '../_lib/storage.js';
 import { validateSessionBooking } from '../_lib/validation.js';
-import { getAuth } from '@clerk/nextjs/server';
+import { requireUser } from '../_lib/auth.js';
+import { applySimpleCors, handleOptions } from '../_lib/cors.js';
+import { createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
 
-  applyCorsHeaders(res);
+  applySimpleCors(res);
 
-  if (handlePreflight(req, res)) {
+  if (handleOptions(req, res)) {
     return;
   }
 
@@ -19,26 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse JSON body if needed
     parseJsonBody(req, context);
 
-    // Get user from Clerk cookies (Pages API)
-    const { userId } = getAuth(req);
-    if (!userId) {
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] No authenticated user found in cookies`);
-      return res.status(401).json({ success: false, error: "Not authenticated" });
-    }
+    // Authenticate user
+    const { dbUser } = await requireUser(req);
 
-    console.log(`[SESSION_BOOKINGS:${context.requestId}] Clerk user verified:`, userId);
-
-    // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(userId);
-    if (!user) {
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] User not found in database for Clerk ID:`, userId);
-      return res.status(404).json({
-        success: false,
-        error: "User not found in database. Please sync your account."
-      });
-    }
-
-    console.log(`[SESSION_BOOKINGS:${context.requestId}] User authenticated:`, user.id);
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] User authenticated:`, dbUser.id);
 
     if (req.method === 'POST') {
       // Apply rate limiting for booking creation (stricter limits)
@@ -62,44 +47,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const validatedData = validation.data!;
 
-      // Create the booking with validated data
-      // Ensure we have the database user ID, not the Clerk ID
-      let databaseUserId = user.id;
-
-      // If user.id is a string (Clerk ID), we need to look up the database user
-      if (typeof user.id === 'string' && user.id.startsWith('user_')) {
-        console.log(`[SESSION_BOOKINGS:${context.requestId}] Converting Clerk ID to database ID:`, user.id);
-        const dbUser = await storage.getUserByClerkId(user.id);
-        if (!dbUser) {
-          return res.status(400).json({
-            success: false,
-            error: 'User not found in database',
-            requestId: context.requestId
-          });
-        }
-        databaseUserId = dbUser.id;
-        console.log(`[SESSION_BOOKINGS:${context.requestId}] Found database user ID:`, databaseUserId);
-      }
-
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] Using database user ID for booking:`, databaseUserId);
-
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...validatedData,
-        scheduledAt: validatedData.scheduledDate.toISOString()
+        scheduledDate: validatedData.scheduledDate.toISOString()
       });
 
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] About to call storage.createIndividualSessionBooking`);
-
       const booking = await storage.createIndividualSessionBooking({
-        menteeId: databaseUserId, // Use the proper integer database user ID
+        menteeId: dbUser.id, // Use the database user ID directly
         humanMentorId: validatedData.humanMentorId,
-        scheduledAt: new Date(validatedData.scheduledDate), // Corrected parameter name
+        scheduledDate: new Date(validatedData.scheduledDate), // Fixed field name
         duration: validatedData.duration,
         sessionGoals: validatedData.sessionGoals,
         status: 'confirmed',
-        timezone: 'UTC', // Added timezone
-        sessionType: 'individual', // Added sessionType
-        meetingType: 'video' // Added meetingType
+        timezone: 'UTC',
+        sessionType: 'individual',
+        meetingType: 'video'
       });
 
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Booking created successfully:`, {
@@ -118,25 +80,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
     } else if (req.method === 'GET') {
-      // Ensure we have the database user ID for GET requests too
-      let databaseUserId = user.id;
-
-      if (typeof user.id === 'string' && user.id.startsWith('user_')) {
-        const dbUser = await storage.getUserByClerkId(user.id);
-        if (!dbUser) {
-          return res.status(400).json({
-            success: false,
-            error: 'User not found in database',
-            requestId: context.requestId
-          });
-        }
-        databaseUserId = dbUser.id;
-      }
-
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for database user:`, databaseUserId);
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] GET request for database user:`, dbUser.id);
 
       // Get user's bookings
-      const bookings = await storage.getIndividualSessionBookings(databaseUserId);
+      const bookings = await storage.getIndividualSessionBookings(dbUser.id);
 
       logLatency(context, `Retrieved ${bookings?.length || 0} bookings`);
 
@@ -147,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
     } else {
-      res.setHeader('Allow', ['GET', 'POST']);
+      res.setHeader('Allow', 'GET, POST');
       return res.status(405).json({
         success: false,
         error: 'Method not allowed',
@@ -155,7 +102,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-  } catch (error) {
+  } catch (error: any) {
+    // Handle authentication errors with proper status codes
+    if (error.status) {
+      return res.status(error.status).json({
+        success: false,
+        error: error.message,
+        requestId: context.requestId
+      });
+    }
+
     const errorResponse = createErrorResponse(error, context);
     return res.status(errorResponse.status).json(errorResponse.body);
   }
