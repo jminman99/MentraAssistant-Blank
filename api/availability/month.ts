@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { acuityFetch, jsonError } from './_util';
 import { z } from 'zod';
@@ -48,8 +47,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Normalize Acuity response to an array of YYYY-MM-DD strings
     const normalized: string[] = Array.isArray(data) ? data : (Array.isArray(data?.dates) ? data.dates : []);
-    
+
     res.setHeader('Cache-Control', 'no-store');
+    // Return consistent format that client expects
     return res.status(200).json({
       success: true,
       data: normalized,

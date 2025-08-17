@@ -2,8 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCorsHeaders, handlePreflight, createRequestContext, logLatency, parseJsonBody, createErrorResponse, applyRateLimit } from '../_lib/middleware.js';
 import { storage } from '../_lib/storage.js';
 import { validateSessionBooking } from '../_lib/validation.js';
-import { clerkClient } from "@clerk/clerk-sdk-node";
-import { getSessionToken } from "../_lib/auth.js";
+import { getAuth } from '@clerk/nextjs/server';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
@@ -20,33 +19,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse JSON body if needed
     parseJsonBody(req, context);
 
-    // Extract and verify Clerk JWT token (using same pattern as working endpoints)
-    const token = getSessionToken(req);
-    console.log(`[SESSION_BOOKINGS:${context.requestId}] Token extraction attempt:`, {
-      hasAuthHeader: !!req.headers.authorization,
-      hasCookie: !!req.headers.cookie,
-      tokenFound: !!token,
-      tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
-    });
-
-    if (!token) {
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] No token found in request headers:`, {
-        authorization: req.headers.authorization,
-        cookie: req.headers.cookie?.substring(0, 100) + '...' || 'none'
-      });
+    // Get user from Clerk cookies (Pages API)
+    const { userId } = getAuth(req);
+    if (!userId) {
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] No authenticated user found in cookies`);
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
 
-    // Verify the token with Clerk and get user ID
-    let userId;
-    try {
-      const verifiedToken = await clerkClient.verifyToken(token);
-      userId = verifiedToken.sub;
-      console.log(`[SESSION_BOOKINGS:${context.requestId}] Clerk user verified:`, userId);
-    } catch (verifyError) {
-      console.error(`[SESSION_BOOKINGS:${context.requestId}] Token verification failed:`, verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
-    }
+    console.log(`[SESSION_BOOKINGS:${context.requestId}] Clerk user verified:`, userId);
 
     // Get user from our database using Clerk ID
     const user = await storage.getUserByClerkId(userId);

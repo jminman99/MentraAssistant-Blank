@@ -49,6 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isoList: string[] = (times || []).map(t => normalizeIso(t.time || t.datetime));
 
     res.setHeader('Cache-Control', 'no-store');
+    // Return consistent format that client expects
     return res.status(200).json({
       success: true,
       data: isoList,

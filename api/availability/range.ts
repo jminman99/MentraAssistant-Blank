@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { acuityFetch, jsonError } from './_util';
 import { z } from 'zod';
@@ -37,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Wrap external API calls with error handling
     let dates: string[] = [];
     const times: Record<string, string[]> = {};
-    
+
     try {
       const monthKey = startDate.slice(0, 7);
       dates = await acuityFetch(
