@@ -1,49 +1,43 @@
 
-// app/api/availability/_util.ts
+// pages/api/availability/_util.ts
 export async function acuityFetch(path: string, init?: RequestInit) {
-  const base = process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1";
+  const base = process.env.ACUITY_BASE_URL || 'https://acuityscheduling.com/api/v1';
   const user = process.env.ACUITY_USER_ID;
-  const key  = process.env.ACUITY_API_KEY;
+  const key = process.env.ACUITY_API_KEY;
 
   if (!user || !key) {
-    const err = new Error("Missing ACUITY_USER_ID/ACUITY_API_KEY");
-    (err as any).code = "CONFIG_MISSING";
+    const err: any = new Error('Missing ACUITY_USER_ID/ACUITY_API_KEY');
+    err.code = 'CONFIG_MISSING';
     throw err;
   }
 
   const res = await fetch(`${base}${path}`, {
     ...init,
-    // Force Node runtime to use standard fetch
-    cache: "no-store",
+    method: 'GET',
+    cache: 'no-store',
     headers: {
+      Accept: 'application/json',
+      Authorization: `Basic ${Buffer.from(`${user}:${key}`).toString('base64')}`,
+      'User-Agent': 'Mentra/availability 1.0',
       ...(init?.headers || {}),
-      Authorization: `Basic ${Buffer.from(`${user}:${key}`).toString("base64")}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
     },
   });
 
   const text = await res.text();
   let json: any = null;
-  try { json = text ? JSON.parse(text) : null; } catch { /* leave json null */ }
+  try { json = text ? JSON.parse(text) : null; } catch { /* leave null */ }
 
   if (!res.ok) {
     const msg = json?.message || json?.error || text || `HTTP ${res.status}`;
-    const err = new Error(msg);
-    (err as any).status = res.status;
-    (err as any).body = json ?? text;
+    const err: any = new Error(msg);
+    err.status = res.status;
+    err.body = json ?? text;
     throw err;
   }
 
   return json;
 }
 
-export function jsonError(res: any, status: number, message: string, details?: any) {
-  res.status(status).json({ 
-    success: false, 
-    error: { 
-      message, 
-      ...(details ? { details } : {}) 
-    } 
-  });
+export function noStore(resLike: { setHeader?: Function }) {
+  try { resLike?.setHeader?.('Cache-Control','no-store'); } catch {}
 }
