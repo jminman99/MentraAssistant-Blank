@@ -31,6 +31,7 @@ import {
   brandingConfigurations
 } from '../shared/schema.js';
 import { eq, desc, and, gte, lte, sql, ne, gt, lt, or } from 'drizzle-orm';
+import { asIso } from './time-utils.js';
 import type {
   User,
   Organization,
@@ -548,7 +549,7 @@ export class VercelStorage {
     try {
       console.log('📝 [STORAGE] Creating individual session booking with data:', {
         ...data,
-        scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+        scheduledDate: asIso(data.scheduledDate)
       });
       console.log('📝 [STORAGE] Database connection status:', db ? 'Connected' : 'Not connected');
 
@@ -627,7 +628,7 @@ export class VercelStorage {
         stack: error instanceof Error ? error.stack : undefined,
         data: {
           ...data,
-          scheduledDate: data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate
+          scheduledDate: asIso(data.scheduledDate)
         }
       });
       throw error;
