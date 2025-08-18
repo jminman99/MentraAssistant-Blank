@@ -580,11 +580,24 @@ export class VercelStorage {
         scheduledDate: validatedDate
       };
 
-      console.log('📝 [STORAGE] Final data for insert:', validatedData);
+      // Type safety check before insert
+      console.log('📝 [STORAGE] TYPE MAP:', Object.fromEntries(
+        Object.entries(validatedData).map(([k, v]) => [k, typeof v])
+      ));
+
+      // Ensure all numeric fields are actually numbers
+      const finalData = {
+        ...validatedData,
+        duration: Number(validatedData.duration ?? 60),
+        humanMentorId: Number(validatedData.humanMentorId),
+        menteeId: Number(validatedData.menteeId),
+      };
+
+      console.log('📝 [STORAGE] Final data for insert:', finalData);
 
       // Execute the insert with detailed logging
       console.log('📝 [STORAGE] Calling db.insert(sessionBookings).values(...).returning()');
-      const insertResult = await db.insert(sessionBookings).values(validatedData).returning();
+      const insertResult = await db.insert(sessionBookings).values(finalData).returning();
       console.log('📝 [STORAGE] Insert query executed, raw result:', insertResult);
 
       if (!insertResult || insertResult.length === 0) {
