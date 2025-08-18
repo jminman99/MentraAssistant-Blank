@@ -85,7 +85,7 @@ export function getCalendarDate(isoString: string, timezone: string): string {
   const date = new Date(isoString);
 
   // Use Intl.DateTimeFormat to get the local date components
-  const formatter = new Intl.DateTimeFormat('en-CA', { 
+  const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
@@ -99,7 +99,7 @@ export function getCalendarDate(isoString: string, timezone: string): string {
  * Buckets time slots by their calendar date in the specified timezone
  */
 export function bucketTimesByDate(
-  times: string[], 
+  times: string[],
   timezone: string
 ): Record<string, string[]> {
   const buckets: Record<string, string[]> = {};
@@ -173,4 +173,68 @@ export function normalizeTimeArray(times: any[]): string[] {
     })
     .filter((time): time is string => time !== null)
     .sort();
+}
+
+export function asIso(value: any): string {
+  // Add detailed logging to catch the error
+  console.log('[asIso] Input value:', value, 'Type:', typeof value, 'Constructor:', value?.constructor?.name);
+
+  if (!value) {
+    console.log('[asIso] Empty value, returning empty string');
+    return '';
+  }
+
+  // If it's already a string in ISO format, return it
+  if (typeof value === 'string') {
+    console.log('[asIso] String input:', value);
+    // Check if it's already an ISO string
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+      console.log('[asIso] Already ISO format, returning as-is');
+      return value;
+    }
+    // Try to parse it as a date
+    console.log('[asIso] Attempting to parse string as date');
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) {
+      console.warn('[asIso] Invalid date string:', value);
+      return '';
+    }
+    const result = parsed.toISOString();
+    console.log('[asIso] Parsed and converted to ISO:', result);
+    return result;
+  }
+
+  // If it's a Date object
+  if (value instanceof Date) {
+    console.log('[asIso] Date object input');
+    if (isNaN(value.getTime())) {
+      console.warn('[asIso] Invalid Date object:', value);
+      return '';
+    }
+    const result = value.toISOString();
+    console.log('[asIso] Date converted to ISO:', result);
+    return result;
+  }
+
+  // Check if it has toISOString method but isn't a Date
+  if (value && typeof value.toISOString === 'function') {
+    console.log('[asIso] Object has toISOString method, attempting to call');
+    try {
+      const result = value.toISOString();
+      console.log('[asIso] toISOString succeeded:', result);
+      return result;
+    } catch (error) {
+      console.error('[asIso] toISOString failed:', error, 'Value:', value);
+      return '';
+    }
+  }
+
+  console.error('[asIso] UNEXPECTED VALUE TYPE - This might be the source of the error!');
+  console.error('[asIso] Value:', value);
+  console.error('[asIso] Type:', typeof value);
+  console.error('[asIso] Constructor:', value?.constructor?.name);
+  console.error('[asIso] Has toISOString?', value && typeof value.toISOString);
+  console.error('[asIso] Stack trace:', new Error().stack);
+
+  return '';
 }

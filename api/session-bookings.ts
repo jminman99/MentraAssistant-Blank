@@ -15,6 +15,19 @@ function asIso(value: unknown) {
   return value;
 }
 
+// Helper function to create JSON error responses
+function errorResponse(status: number, message: string, requestId: string) {
+  return {
+    status,
+    body: {
+      success: false,
+      error: message,
+      requestId: requestId,
+    },
+  };
+}
+
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
 
