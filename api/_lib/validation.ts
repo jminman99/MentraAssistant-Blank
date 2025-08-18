@@ -27,7 +27,11 @@ export function validateSessionBooking(data: any): ValidationResult<{
           return num;
         })
       ]),
-      scheduledDate: z.string().min(1),
+      scheduledDate: z.string().min(1).transform(str => {
+        const date = new Date(str);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return date;
+      }),
       duration: z.number().int().min(30).max(180),
       sessionGoals: z.string().min(10).max(500),
     });

@@ -91,22 +91,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // (Optional) create Acuity appointment here if you want
       // const acuityAppointmentId = await createAcuity(...)
 
-      // Safe logging conversion
-      const scheduled = validatedData.scheduledDate instanceof Date
-        ? validatedData.scheduledDate
-        : new Date(validatedData.scheduledDate);
-
+      // validatedData.scheduledDate is now guaranteed to be a Date object
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...validatedData,
-        scheduledDate: isNaN(scheduled.getTime())
-          ? String(validatedData.scheduledDate) // log whatever it was
-          : scheduled.toISOString()
+        scheduledDate: validatedData.scheduledDate.toISOString()
       });
 
       const booking = await storage.createIndividualSessionBooking({
         menteeId: dbUser.id,
         humanMentorId: validatedData.humanMentorId,
-        scheduledDate: new Date(validatedData.scheduledDate),
+        scheduledDate: validatedData.scheduledDate,
         duration: validatedData.duration,
         sessionGoals: validatedData.sessionGoals,
         status: "confirmed",
