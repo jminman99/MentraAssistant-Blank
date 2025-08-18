@@ -27,6 +27,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.body && req.body.scheduledDate) {
       console.log("[session-bookings-echo] scheduledDate type:", typeof req.body.scheduledDate);
       console.log("[session-bookings-echo] scheduledDate value:", req.body.scheduledDate);
+      
+      // Test safe conversion
+      try {
+        if (req.body.scheduledDate instanceof Date) {
+          console.log("[session-bookings-echo] as ISO:", req.body.scheduledDate.toISOString());
+        } else if (typeof req.body.scheduledDate === 'string') {
+          const testDate = new Date(req.body.scheduledDate);
+          if (!isNaN(testDate.getTime())) {
+            console.log("[session-bookings-echo] parsed as ISO:", testDate.toISOString());
+          }
+        }
+      } catch (e) {
+        console.log("[session-bookings-echo] toISOString failed:", e);
+      }
     }
     
     return res.status(200).json({ success: true, echo: req.body, note: "stub handler" });
