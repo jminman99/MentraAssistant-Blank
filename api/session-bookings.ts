@@ -76,10 +76,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           requestId: context.requestId,
         });
       }
-      const v = validation.data!;
+      const validatedData = validation.data!;
 
       // ensure mentor exists (and pick timezone)
-      const mentor = await storage.getHumanMentorById(v.humanMentorId);
+      const mentor = await storage.getHumanMentorById(validatedData.humanMentorId);
       if (!mentor) {
         return res.status(404).json({
           success: false,
@@ -91,12 +91,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // (Optional) create Acuity appointment here if you want
       // const acuityAppointmentId = await createAcuity(...)
 
+      // Safe logging conversion
+      const scheduled = validatedData.scheduledDate instanceof Date
+        ? validatedData.scheduledDate
+        : new Date(validatedData.scheduledDate);
+
+      console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
+        ...validatedData,
+        scheduledDate: isNaN(scheduled.getTime())
+          ? String(validatedData.scheduledDate) // log whatever it was
+          : scheduled.toISOString()
+      });
+
       const booking = await storage.createIndividualSessionBooking({
         menteeId: dbUser.id,
-        humanMentorId: v.humanMentorId,
-        scheduledDate: new Date(v.scheduledDate),
-        duration: v.duration,
-        sessionGoals: v.sessionGoals,
+        humanMentorId: validatedData.humanMentorId,
+        scheduledDate: new Date(validatedData.scheduledDate),
+        duration: validatedData.duration,
+        sessionGoals: validatedData.sessionGoals,
         status: "confirmed",
         timezone: mentor.availabilityTimezone || "UTC",
         sessionType: "individual",
