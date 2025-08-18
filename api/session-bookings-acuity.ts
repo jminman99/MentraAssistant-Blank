@@ -4,6 +4,24 @@ import { asIso } from './_lib/time-utils.js';
 export const config = { runtime: "nodejs" };
 
 // Safe helper for logging dates/strings
+function safeToISOString(value: unknown): string {
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) {
+      throw new Error('Invalid Date object');
+    }
+    return value.toISOString();
+  }
+  
+  if (typeof value === 'string') {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date string');
+    }
+    return date.toISOString();
+  }
+  
+  throw new Error('Value must be a Date object or valid date string');
+}
 function asIso(value: unknown) {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "string") {
