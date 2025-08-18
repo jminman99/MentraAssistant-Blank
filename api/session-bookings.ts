@@ -19,9 +19,6 @@ function errorResponse(status: number, message: string, requestId: string) {
   };
 }
 
-
-
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
 
