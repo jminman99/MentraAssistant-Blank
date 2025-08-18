@@ -4,16 +4,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 // keep Node runtime
 export const config = { runtime: "nodejs" };
 
-// Safe helper for logging dates/strings
-function asIso(value: unknown) {
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === "string") {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) return d.toISOString();
-    return value; // non-ISO string; just return as-is
-  }
-  return value;
-}
+// Import the safe asIso function from time-utils
+import { asIso } from './_lib/time-utils.js';
 
 // Helper function to create JSON error responses
 function errorResponse(status: number, message: string, requestId: string) {
@@ -28,22 +20,7 @@ function errorResponse(status: number, message: string, requestId: string) {
 }
 
 
-// Defensive wrapper for Date operations
-function safeToISOString(value: any): string {
-  if (!value) return '';
-  
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    return isNaN(parsed.getTime()) ? '' : parsed.toISOString();
-  }
-  
-  if (value instanceof Date) {
-    return isNaN(value.getTime()) ? '' : value.toISOString();
-  }
-  
-  console.error('CRITICAL: Attempted toISOString on invalid type:', typeof value, value);
-  return '';
-}
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
