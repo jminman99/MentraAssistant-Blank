@@ -585,12 +585,18 @@ export class VercelStorage {
         Object.entries(validatedData).map(([k, v]) => [k, typeof v])
       ));
 
-      // Ensure all numeric fields are actually numbers
+      // Ensure all numeric fields are actually numbers and scheduledDate is a Date
       const finalData = {
-        ...validatedData,
-        duration: Number(validatedData.duration ?? 60),
-        humanMentorId: Number(validatedData.humanMentorId),
         menteeId: Number(validatedData.menteeId),
+        humanMentorId: Number(validatedData.humanMentorId),
+        duration: Number(validatedData.duration ?? 60),
+        sessionGoals: validatedData.sessionGoals,
+        status: validatedData.status || "confirmed",
+        timezone: validatedData.timezone || "UTC",
+        sessionType: validatedData.sessionType || "individual",
+        meetingType: validatedData.meetingType || "video",
+        scheduledDate: new Date(validatedDate), // Ensure it's a Date object
+        calendlyEventId: validatedData.calendlyEventId || null,
       };
 
       console.log('📝 [STORAGE] Final data for insert:', finalData);
