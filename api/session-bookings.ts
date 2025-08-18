@@ -120,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...validatedData,
         scheduledDate: asIso(validatedData.scheduledDate),
-        scheduledAt: asIso((validatedData as any).scheduledAt),
+        // Remove scheduledAt since it doesn't exist in the validation schema
       });
 
       const booking = await storage.createIndividualSessionBooking({

@@ -28,8 +28,13 @@ export function validateSessionBooking(data: any): ValidationResult<{
         })
       ]),
       scheduledDate: z.string().min(1).transform(str => {
+        if (typeof str !== 'string') {
+          throw new Error('scheduledDate must be a string');
+        }
         const date = new Date(str);
-        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        if (isNaN(date.getTime())) {
+          throw new Error(`Invalid date format: ${str}`);
+        }
         return date;
       }),
       duration: z.number().int().min(30).max(180),
