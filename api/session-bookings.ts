@@ -4,6 +4,17 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 // keep Node runtime
 export const config = { runtime: "nodejs" };
 
+// Safe helper for logging dates/strings
+function asIso(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) return d.toISOString();
+    return value; // non-ISO string; just return as-is
+  }
+  return value;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -91,16 +102,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // (Optional) create Acuity appointment here if you want
       // const acuityAppointmentId = await createAcuity(...)
 
-      // validatedData.scheduledDate is now guaranteed to be a Date object
+      // Convert to Date object safely before using
+      const scheduled = validatedData.scheduledDate instanceof Date
+        ? validatedData.scheduledDate
+        : new Date(validatedData.scheduledDate);
+
+      if (isNaN(scheduled.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: [{ field: "scheduledDate", message: "Invalid ISO date" }],
+          requestId: context.requestId,
+        });
+      }
+
+      console.log(`[DEBUG] typeof scheduledDate =`, typeof validatedData.scheduledDate, validatedData.scheduledDate);
       console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating booking:`, {
         ...validatedData,
-        scheduledDate: validatedData.scheduledDate.toISOString()
+        scheduledDate: asIso(validatedData.scheduledDate),
+        scheduledAt: asIso((validatedData as any).scheduledAt),
       });
 
       const booking = await storage.createIndividualSessionBooking({
         menteeId: dbUser.id,
         humanMentorId: validatedData.humanMentorId,
-        scheduledDate: validatedData.scheduledDate,
+        scheduledDate: scheduled, // <-- Date object
         duration: validatedData.duration,
         sessionGoals: validatedData.sessionGoals,
         status: "confirmed",

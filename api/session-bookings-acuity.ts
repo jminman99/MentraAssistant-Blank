@@ -1,13 +1,24 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export const config = { api: { bodyParser: true } };
+export const config = { runtime: "nodejs" };
+
+// Safe helper for logging dates/strings
+function asIso(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) return d.toISOString();
+    return value; // non-ISO string; just return as-is
+  }
+  return value;
+}
 
 // Acuity API helper
 async function acuityPost(path: string, payload: any) {
   const base = process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1";
   const user = process.env.ACUITY_USER_ID!;
   const key = process.env.ACUITY_API_KEY!;
-  
+
   const res = await fetch(`${base}${path}`, {
     method: "POST",
     headers: {
@@ -22,7 +33,7 @@ async function acuityPost(path: string, payload: any) {
   const text = await res.text();
   let json: any = null;
   try { json = text ? JSON.parse(text) : null; } catch {}
-  
+
   if (!res.ok) {
     const msg = json?.message || json?.error || text || `HTTP ${res.status}`;
     const err: any = new Error(msg);
@@ -53,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { humanMentorId, scheduledDate, duration, sessionGoals } = req.body || {};
-    
+
     // Validate required fields
     if (!humanMentorId || !scheduledDate) {
       return res.status(400).json({
@@ -83,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const created = await acuityPost("/appointments", payload);
 
     return res.status(200).json({ success: true, data: created });
-    
+
   } catch (e: any) {
     console.error("[session-bookings-acuity] acuity error", {
       message: e?.message,

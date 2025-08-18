@@ -1,5 +1,18 @@
 // Copy of the storage interface for Vercel API routes
-import { db } from './db.js';
+import { sql } from "drizzle-orm";
+import { db } from "./db.js";
+
+// Safe helper for logging dates/strings
+function asIso(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) return d.toISOString();
+    return value; // non-ISO string; just return as-is
+  }
+  return value;
+}
+
 import {
   users,
   organizations,
