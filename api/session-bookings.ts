@@ -28,6 +28,23 @@ function errorResponse(status: number, message: string, requestId: string) {
 }
 
 
+// Defensive wrapper for Date operations
+function safeToISOString(value: any): string {
+  if (!value) return '';
+  
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+  }
+  
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? '' : value.toISOString();
+  }
+  
+  console.error('CRITICAL: Attempted toISOString on invalid type:', typeof value, value);
+  return '';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
 
