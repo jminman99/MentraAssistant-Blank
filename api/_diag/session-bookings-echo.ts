@@ -22,6 +22,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     console.log("[session-bookings-echo] echo body:", req.body);
+    
+    // Debug potential toISOString issues
+    if (req.body && req.body.scheduledDate) {
+      console.log("[session-bookings-echo] scheduledDate type:", typeof req.body.scheduledDate);
+      console.log("[session-bookings-echo] scheduledDate value:", req.body.scheduledDate);
+    }
+    
     return res.status(200).json({ success: true, echo: req.body, note: "stub handler" });
   } catch (e: any) {
     console.error("[session-bookings-echo] crash:", e);

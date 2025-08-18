@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { asIso } from './_lib/time-utils.js';
 
 export const config = { runtime: "nodejs" };
 
@@ -82,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const payload = {
       appointmentTypeID,
-      datetime: scheduledDate, // Keep the original ISO with offset
+      datetime: asIso(scheduledDate), // Keep the original ISO with offset
       timezone,
       firstName,
       lastName,
