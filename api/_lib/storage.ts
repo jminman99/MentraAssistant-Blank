@@ -19,7 +19,7 @@ import {
   mentorAvailability,
   brandingConfigurations
 } from '../shared/schema.js';
-import { eq, desc, and, gte, lte, sql, ne, gt, lt, or } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, ne, gt, lt, or } from 'drizzle-orm';
 import { asIso } from './time-utils.js';
 import type {
   User,
