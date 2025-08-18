@@ -159,18 +159,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // final safety net with detailed error info
     console.error('[SESSION_BOOKINGS] Uncaught error:', e);
     console.error('[SESSION_BOOKINGS] Error stack:', e?.stack);
-    try {
-      const { createErrorResponse } = await import("./_lib/middleware.js");
-      const ctx = { requestId: "unknown" };
-      const err = createErrorResponse(e, ctx as any);
-      return res.status(err.status).json(err.body);
-    } catch {
-      return res.status(500).json({ 
-        success: false, 
-        error: "Internal server error",
-        details: e?.stack || e?.message || String(e),
-        requestId: "unknown"
-      });
-    }
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: e?.stack || e?.message || String(e),
+      requestId: "unknown"
+    });
   }
 }

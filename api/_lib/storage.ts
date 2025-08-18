@@ -538,7 +538,9 @@ export class VercelStorage {
     try {
       console.log('📝 [STORAGE] Creating individual session booking with data:', {
         ...data,
-        scheduledDate: asIso(data.scheduledDate)
+        scheduledDate: typeof data.scheduledDate === "string"
+          ? data.scheduledDate
+          : (data.scheduledDate instanceof Date ? data.scheduledDate.toISOString() : data.scheduledDate)
       });
       console.log('📝 [STORAGE] Database connection status:', db ? 'Connected' : 'Not connected');
 
