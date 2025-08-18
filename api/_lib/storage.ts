@@ -833,7 +833,7 @@ export class VercelStorage {
     console.log('Inserting session booking:', sessionBooking);
 
     try {
-      const [created] = await this.db
+      const [created] = await db
         .insert(sessionBookings)
         .values(sessionBooking)
         .returning();
@@ -856,7 +856,8 @@ export class VercelStorage {
         if (!booking) return null;
 
         const startTime = new Date(updates.scheduledDate);
-        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || booking.duration) * 60000);
+        const durationMin = (updates.duration ?? booking.duration);
+        const endTime = new Date(startTime.getTime() + durationMin * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings
@@ -954,7 +955,8 @@ export class VercelStorage {
       // If updating scheduled time, check for conflicts
       if (updates.scheduledDate) {
         const startTime = new Date(updates.scheduledDate);
-        const endTime = new Date(updates.scheduledDate.getTime() + (updates.duration || bookingToUpdate.duration) * 60000);
+        const durationMin = (updates.duration ?? bookingToUpdate.duration);
+        const endTime = new Date(startTime.getTime() + durationMin * 60000);
 
         const conflictingBookings = await db.execute(sql`
           SELECT id FROM session_bookings
