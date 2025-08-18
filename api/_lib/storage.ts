@@ -646,86 +646,42 @@ export class VercelStorage {
   }
 
   async getIndividualSessionBookings(userId: number): Promise<SessionBooking[]> {
-    try {
-      console.log('🔍 [STORAGE] Fetching individual session bookings for user:', userId);
+    const { desc, eq } = await import('drizzle-orm');
+    const { sessionBookings } = await import('../shared/schema.js');
 
-      const bookings = await db.execute(sql`
-        SELECT
-          sb.id,
-          sb.mentee_id as "menteeId",
-          sb.human_mentor_id as "humanMentorId",
-          sb.scheduled_date as "scheduledDate",
-          sb.duration,
-          sb.status,
-          sb.session_goals as "sessionGoals",
-          sb.meeting_type as "meetingType",
-          sb.video_link as "videoLink",
-          sb.calendly_event_id as "calendlyEventId",
-          sb.created_at as "createdAt",
-          sb.session_type as "sessionType",
-          sb.location,
-          sb.timezone,
-          sb.updated_at as "updatedAt",
-          sb.feedback,
-          sb.rating,
-          sb.notes,
-          sb.reminder_sent as "reminderSent",
-          sb.no_show_reported as "noShowReported",
-          sb.cancellation_reason as "cancellationReason",
-          sb.acuity_appointment_id as "acuityAppointmentId",
-          sb.confirmation_sent as "confirmationSent"
-        FROM session_bookings sb
-        WHERE sb.mentee_id = ${userId}
-        ORDER BY sb.scheduled_date DESC
-      `);
+    const rows = await db
+      .select({
+        id: sessionBookings.id,
+        menteeId: sessionBookings.menteeId,
+        humanMentorId: sessionBookings.humanMentorId,
+        scheduledDate: sessionBookings.scheduledDate,
+        duration: sessionBookings.duration,
+        status: sessionBookings.status,
+        sessionGoals: sessionBookings.sessionGoals,
+        meetingType: sessionBookings.meetingType,
+        videoLink: sessionBookings.videoLink,
+        calendlyEventId: sessionBookings.calendlyEventId,
+        createdAt: sessionBookings.createdAt,
+        sessionType: sessionBookings.sessionType,
+        location: sessionBookings.location,
+        timezone: sessionBookings.timezone,
+        updatedAt: sessionBookings.updatedAt,
+        feedback: sessionBookings.feedback,
+        rating: sessionBookings.rating,
+        notes: sessionBookings.notes,
+        reminderSent: sessionBookings.reminderSent,
+        noShowReported: sessionBookings.noShowReported,
+        cancellationReason: sessionBookings.cancellationReason,
+        confirmationSent: sessionBookings.confirmationSent,
+      })
+      .from(sessionBookings)
+      .where(eq(sessionBookings.menteeId, userId))
+      .orderBy(desc(sessionBookings.scheduledDate));
 
-      console.log('🔍 [STORAGE] Retrieved booking records:', bookings.rows.length);
-      console.log('🔍 [STORAGE] Raw booking data:', bookings.rows);
-
-      const transformedBookings: SessionBooking[] = bookings.rows.map((booking: any, index: number) => {
-        console.log(`🔍 [STORAGE] Processing booking ${index + 1}:`, {
-          id: booking.id,
-          scheduledDate: booking.scheduledDate,
-          status: booking.status,
-          calendlyEventId: booking.calendlyEventId
-        });
-
-        return {
-          id: booking.id,
-          menteeId: booking.menteeId,
-          humanMentorId: booking.humanMentorId,
-          scheduledDate: booking.scheduledDate ? new Date(booking.scheduledDate) : new Date(),
-          duration: booking.duration || 60,
-          status: booking.status || 'scheduled',
-          sessionGoals: booking.sessionGoals || 'Individual mentoring session',
-          meetingType: booking.meetingType || 'video',
-          videoLink: booking.videoLink,
-          calendlyEventId: booking.calendlyEventId,
-          sessionType: booking.sessionType || 'individual',
-          createdAt: booking.createdAt,
-          location: booking.location,
-          timezone: booking.timezone,
-          updatedAt: booking.updatedAt,
-          feedback: booking.feedback,
-          rating: booking.rating,
-          notes: booking.notes,
-          reminderSent: booking.reminderSent,
-          noShowReported: booking.noShowReported,
-          cancellationReason: booking.cancellationReason,
-          calendlyEventUrl: booking.calendlyEventUrl || null,
-          preparationNotes: booking.preparationNotes || null,
-          menteeQuestions: booking.menteeQuestions || null,
-          sessionNotes: booking.sessionNotes || null,
-          confirmationSent: booking.confirmationSent,
-        } as SessionBooking;
-      });
-
-      console.log('✅ [STORAGE] Transformed bookings:', transformedBookings);
-      return transformedBookings;
-    } catch (error) {
-      console.error('🚨 [STORAGE] Error fetching individual session bookings:', error);
-      return [];
-    }
+    return rows.map(r => ({
+      ...r,
+      scheduledDate: r.scheduledDate ? new Date(r.scheduledDate) : null,
+    }));
   }
 
   async getMentoringSessions(userId: number): Promise<any[]> {
