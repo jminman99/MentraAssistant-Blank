@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export interface ValidationError {
   field: string;
   message: string;
@@ -48,10 +50,13 @@ export function validateSessionBooking(data: any): ValidationResult<{
       data: result.data
     };
   } catch (error) {
-    console.error('Validation error:', error);
+    console.error('Validation internal error:', error);
     return {
       success: false,
-      errors: [{ field: 'unknown', message: 'Validation error occurred' }]
+      errors: [{
+        field: 'internal',
+        message: error instanceof Error ? error.message : String(error)
+      }]
     };
   }
 }
