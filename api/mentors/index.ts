@@ -1,39 +1,25 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from "../_lib/storage.js";
-import { requireUser } from "../_lib/auth.js";
-import { applySimpleCors, handleOptions } from "../_lib/cors.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  applySimpleCors(res);
-
-  if (handleOptions(req, res)) {
-    return;
-  }
-
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Method not allowed' 
-    });
-  }
-
   try {
-    const { dbUser } = await requireUser(req);
+    const { requireUser } = await import('../_lib/auth.js');
+    const { storage } = await import('../_lib/storage.js');
 
-    const orgId = dbUser.organizationId || 1;
+    await requireUser(req);
 
-    // Return human mentors for the user's organization
-    const mentors = await storage.getHumanMentorsByOrganization(orgId);
-    return res.status(200).json({
-      success: true,
-      data: mentors
-    });
-  } catch (error: any) {
-    const status = error.status || 500;
-    return res.status(status).json({
+    if (req.method === 'GET') {
+      const mentors = await storage.getHumanMentors();
+      return res.status(200).json({ success: true, data: mentors });
+    }
+
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  } catch (e: any) {
+    return res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error'
+      error: e?.message || 'Internal error',
+      details: e?.stack
     });
   }
 }
