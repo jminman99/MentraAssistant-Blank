@@ -32,7 +32,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, mode: 'listRaw', data: rows.rows });
       }
 
-      // 3) Normal path (uses your storage transform)
+      // 3) Show which DB env vars are present and which DB we're connected to
+      if (req.query?.dbinfo === '1') {
+        const envVars = {
+          DATABASE_URL: process.env.DATABASE_URL ? 'present' : 'missing',
+          DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED ? 'present' : 'missing',
+          POSTGRES_URL: process.env.POSTGRES_URL ? 'present' : 'missing',
+          POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL ? 'present' : 'missing',
+          POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? 'present' : 'missing',
+        };
+
+        // Get actual DB connection info
+        const dbInfo = await db.execute(sql`
+          SELECT 
+            current_database() as database_name,
+            inet_server_addr()::text as server_addr,
+            current_setting('server_version') as postgres_version
+        `);
+
+        return res.status(200).json({ 
+          success: true, 
+          mode: 'dbInfo',
+          envVarsPresent: envVars,
+          actualConnection: dbInfo.rows[0]
+        });
+      }
+
+      // 4) Normal path (uses your storage transform)
       const bookings = await storage.getIndividualSessionBookings(dbUser.id);
       return res.status(200).json({ success: true, mode: 'listTransformed', data: bookings });
     }
