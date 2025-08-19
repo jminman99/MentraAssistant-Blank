@@ -1,35 +1,23 @@
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { sql } from '@vercel/postgres';
+
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 import * as schema from '../shared/schema.js';
 
-// Lazy database connection for Vercel serverless compatibility
-let dbInstance: ReturnType<typeof drizzle> | null = null;
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL not set');
+}
 
-export function createDatabaseConnection() {
+const sql = neon(process.env.DATABASE_URL);
+
+// Pass sql directly, not { client: sql }
+export const db = drizzle(sql, { schema });
+
+// Optional: Add connectivity check function
+export async function checkDatabaseConnection() {
   try {
-    // Vercel Postgres automatically uses environment variables
-    // No need to manually pass DATABASE_URL
-    return drizzle(sql, { schema });
+    const result = await db.execute(sql`SELECT 1 as ok`);
+    return { success: true, result };
   } catch (error) {
-    console.error('Failed to create database connection:', error);
-    throw new Error('Database connection failed');
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
-
-export function getDatabase() {
-  if (!dbInstance) {
-    dbInstance = createDatabaseConnection();
-  }
-  return dbInstance;
-}
-
-export function resetDatabaseConnection() {
-  dbInstance = null;
-}
-
-// Export db for backward compatibility
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-  get(target, prop) {
-    return getDatabase()[prop as keyof ReturnType<typeof drizzle>];
-  }
-});
