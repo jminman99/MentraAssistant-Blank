@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getSessionToken } from "./_lib/auth.js"; // Corrected path based on context
-import { storage } from "./_lib/storage.js"; // Corrected path based on context
+import { getSessionToken } from "../_lib/auth.js";
+import { storage } from "../_lib/storage.js";
 
 export const config = { api: { bodyParser: true } }; // Enable body parsing
 
@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // The edited snippet uses `requireUser(req)` to get auth details.
       // Let's adapt to that.
-      const { requireUser } = await import('./_lib/auth.js'); // Assuming _lib is in the same dir or accessible
+      const { requireUser } = await import('../_lib/auth.js');
       try {
         const auth = await requireUser(req);
         clerkUserId = auth.clerkUserId;
