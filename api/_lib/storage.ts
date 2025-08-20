@@ -621,7 +621,7 @@ export class VercelStorage {
           where id = ${session.id}
         `);
         console.log('🧪 session_bookings probe for new id:', session.id, '->', probe.rows);
-        
+
         // Log DB connection info once
         const info = await db.execute(sql`
           select current_database() as db,
