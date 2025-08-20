@@ -81,9 +81,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           lastName: lastName || existingUser.lastName,
         });
       } else {
+        // Guard: never attempt createUser without an email
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            error: "Email is required to create a new user",
+          });
+        }
+
         // Create new user with Clerk authentication
         user = await storage.createUser({
-          email: email || "", // Use email from body if available, otherwise default to empty string
+          email: email,
           firstName: firstName || "",
           lastName: lastName || "",
           clerkUserId: clerkUserId,
@@ -104,6 +112,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
     }
+
+    // Log which path we took
+    console.log("[SYNC] clerkUserId:", clerkUserId, "existing:", !!user?.id);
 
     return res.status(200).json({ success: true, data: user });
   } catch (error: any) {
