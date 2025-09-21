@@ -98,17 +98,17 @@ export class VercelStorage {
   async getUserByClerkId(clerkUserId: string): Promise<any> {
     const rows = await rawSql`
       SELECT
-        id,
-        email,
-        "first_name"  AS "firstName",
-        "last_name"   AS "lastName",
-        "clerk_user_id" AS "clerkUserId",
-        role,
-        "subscription_plan" AS "subscriptionPlan",
-        "organization_id" AS "organizationId",
-        "created_at" AS "createdAt"
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "clerkUserId",
+        "role",
+        "subscriptionPlan",
+        "organizationId",
+        "createdAt"
       FROM users
-      WHERE "clerk_user_id" = ${clerkUserId}
+      WHERE "clerkUserId" = ${clerkUserId}
       LIMIT 1
     `;
 
