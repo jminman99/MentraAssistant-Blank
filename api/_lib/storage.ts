@@ -1,6 +1,6 @@
 // Copy of the storage interface for Vercel API routes
 import { sql, eq } from "drizzle-orm";
-import { db } from "./db.js";
+import { db, rawSql } from "./db.js";
 
 import {
   users,
@@ -120,13 +120,29 @@ export class VercelStorage {
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.clerkUserId, clerkUserId))
-      .limit(1);
+    const rows = await rawSql`
+      SELECT
+        id,
+        email,
+        first_name        AS "firstName",
+        last_name         AS "lastName",
+        clerk_user_id     AS "clerkUserId",
+        role,
+        subscription_plan AS "subscriptionPlan",
+        organization_id   AS "organizationId",
+        profile_picture_url AS "profilePictureUrl",
+        phone_number      AS "phoneNumber",
+        is_active         AS "isActive",
+        individual_sessions_used AS "individualSessionsUsed",
+        council_sessions_used    AS "councilSessionsUsed",
+        created_at        AS "createdAt",
+        updated_at        AS "updatedAt"
+      FROM users
+      WHERE clerk_user_id = ${clerkUserId}
+      LIMIT 1
+    `;
 
-    const user = result[0] || null;
+    const user = rows[0] || null;
     console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
     return user;
   }
