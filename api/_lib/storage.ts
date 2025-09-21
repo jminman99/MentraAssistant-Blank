@@ -1,5 +1,5 @@
 // Copy of the storage interface for Vercel API routes
-import { sql, eq, sql as drizzleSql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { db } from "./db.js";
 
 import {
@@ -89,13 +89,13 @@ export class VercelStorage {
 
   // Health check method for database connectivity
   async healthCheck(): Promise<void> {
-    await db.execute(drizzleSql`select 1 as ok`);
+    await db.execute(sql`select 1 as ok`);
   }
 
   // Query method for basic database probes
   async query(query: string): Promise<any> {
     // Basic passthrough for simple probes. Prefer tagged template in app code.
-    return db.execute(drizzleSql.raw(query));
+    return db.execute(sql.raw(query));
   }
 
   // Get current database timestamp
@@ -120,12 +120,15 @@ export class VercelStorage {
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
-    const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.clerkUserId, clerkUserId),
-    });
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.clerkUserId, clerkUserId))
+      .limit(1);
 
+    const user = result[0] || null;
     console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
-    return user ?? null;
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
