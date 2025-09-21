@@ -1,6 +1,6 @@
 // Copy of the storage interface for Vercel API routes
-import { sql, eq } from "drizzle-orm";
-import { db, rawSql } from "./db.js";
+import { sql, eq, sql as drizzleSql } from "drizzle-orm";
+import { db } from "./db.js";
 
 import {
   users,
@@ -89,18 +89,18 @@ export class VercelStorage {
 
   // Health check method for database connectivity
   async healthCheck(): Promise<void> {
-    await db.execute(sql`select 1 as ok`);
+    await db.execute(drizzleSql`select 1 as ok`);
   }
 
   // Query method for basic database probes
   async query(query: string): Promise<any> {
     // Basic passthrough for simple probes. Prefer tagged template in app code.
-    return db.execute(sql.raw(query));
+    return db.execute(drizzleSql.raw(query));
   }
 
   // Get current database timestamp
   async getNow(): Promise<Date | null> {
-    const rows = await db.execute(sql`select now() as now`);
+    const rows = await db.execute(drizzleSql`select now() as now`);
     const result = rows.rows?.[0]?.now;
     return result instanceof Date ? result : (result ? new Date(result) : null);
   }
@@ -120,31 +120,12 @@ export class VercelStorage {
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
-    const rows = await rawSql`
-      SELECT
-        id,
-        email,
-        first_name        AS "firstName",
-        last_name         AS "lastName",
-        clerk_user_id     AS "clerkUserId",
-        role,
-        subscription_plan AS "subscriptionPlan",
-        organization_id   AS "organizationId",
-        profile_image     AS "profilePictureUrl",
-        phone_number      AS "phoneNumber",
-        is_active         AS "isActive",
-        individual_sessions_used AS "individualSessionsUsed",
-        council_sessions_used    AS "councilSessionsUsed",
-        created_at        AS "createdAt",
-        updated_at        AS "updatedAt"
-      FROM users
-      WHERE clerk_user_id = ${clerkUserId}
-      LIMIT 1
-    `;
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.clerkUserId, clerkUserId),
+    });
 
-    const user = rows[0] || null;
     console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
-    return user;
+    return user ?? null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
