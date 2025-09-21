@@ -96,20 +96,15 @@ export class VercelStorage {
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.clerkUserId, clerkUserId))
-      .limit(1);
+    const result = await db.execute(sql`
+      SELECT id, email, "firstName", "lastName", "clerkUserId", role, "subscriptionPlan", "organizationId", "createdAt"
+      FROM users
+      WHERE "clerkUserId" = ${clerkUserId}
+    `);
 
-    console.log(
-      '🔍 Retrieved user by Clerk ID:',
-      clerkUserId,
-      '-> User:',
-      user ? `ID: ${user.id}` : 'Not found'
-    );
-
-    return user ?? null;
+    const user = result.rows?.[0] || null;
+    console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
