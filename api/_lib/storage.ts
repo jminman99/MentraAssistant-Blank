@@ -100,15 +100,15 @@ export class VercelStorage {
       SELECT
         "id",
         "email",
-        "firstName",
-        "lastName",
-        "clerkUserId",
+        "first_name"        AS "firstName",
+        "last_name"         AS "lastName",
+        "clerk_user_id"     AS "clerkUserId",
         "role",
-        "subscriptionPlan",
-        "organizationId",
-        "createdAt"
+        "subscription_plan" AS "subscriptionPlan",
+        "organization_id"   AS "organizationId",
+        "created_at"        AS "createdAt"
       FROM users
-      WHERE "clerkUserId" = ${clerkUserId}
+      WHERE "clerk_user_id" = ${clerkUserId}
       LIMIT 1
     `;
 
