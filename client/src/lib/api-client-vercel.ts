@@ -1,7 +1,3 @@
-
-import React from 'react';
-import { useAuth } from '@clerk/clerk-react';
-
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 export class VercelApiClient {
@@ -36,8 +32,6 @@ export class VercelApiClient {
 
     return {};
   }
-
-  
 
   async sendChatMessage(content: string, aiMentorId: number) {
     try {
@@ -95,12 +89,12 @@ export class VercelApiClient {
   async getSessionBookings() {
     try {
       const authHeaders = await this.getAuthHeaders();
-      
+
       const response = await fetch(`${this.baseUrl}/api/session-bookings`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders
+          ...authHeaders,
         },
       });
 
@@ -111,7 +105,7 @@ export class VercelApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error("Failed to get session bookings:", error);
+      console.error('Failed to get session bookings:', error);
       throw error;
     }
   }
@@ -119,23 +113,40 @@ export class VercelApiClient {
   async getAiMentors() {
     try {
       const authHeaders = await this.getAuthHeaders();
-      
+
       const response = await fetch(`${this.baseUrl}/api/ai-mentors`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders
+          ...authHeaders,
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+
+        if (import.meta.env.DEV) {
+          console.warn('Falling back to mock mentors because API returned', response.status);
+          return {
+            success: true,
+            data: [
+              {
+                id: 1,
+                name: 'Layer 1 Mentor',
+                description: 'Mock mentor shown when API fails during local dev.',
+                avatarUrl: null,
+                expertiseAreas: ['Clerk auth', 'Chat flow'],
+              },
+            ],
+          };
+        }
+
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Failed to get AI mentors:", error);
+      console.error('Failed to get AI mentors:', error);
       throw error;
     }
   }
@@ -167,14 +178,3 @@ export class VercelApiClient {
 
 // Singleton instance
 export const vercelApiClient = new VercelApiClient();
-
-// Hook to initialize client with Clerk auth token
-export function useVercelApiClient() {
-  const { getToken } = useAuth();
-
-  React.useEffect(() => {
-    vercelApiClient.setTokenProvider(() => getToken());
-  }, [getToken]);
-
-  return vercelApiClient;
-}

@@ -10,6 +10,7 @@ import Debug from "./pages/debug";
 import ErrorBoundary from "./components/ErrorBoundary";
 import SessionDetails from './pages/SessionDetails';
 import { NotFound } from './pages/not-found';
+import { ClerkTokenBridge } from "@/components/auth/clerk-token-bridge";
 
 function Redirect({ to }: { to: string }) {
   const [, setLocation] = useLocation();
@@ -75,6 +76,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
+      <ClerkTokenBridge />
       <Router />
     </ErrorBoundary>
   );

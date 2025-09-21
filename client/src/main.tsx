@@ -4,22 +4,11 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import App from "./App";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// Persist a single QueryClient across Vite HMR in development.
-const existingQC = (globalThis as any).__queryClient;
-const queryClient =
-  existingQC ||
-  new QueryClient({
-    defaultOptions: {
-      queries: { refetchOnWindowFocus: false },
-    },
-  });
-(globalThis as any).__queryClient = queryClient;
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 const env = (import.meta as any).env ?? {};
 const PUBLISHABLE_KEY: string | undefined = env.VITE_CLERK_PUBLISHABLE_KEY;
-const IS_DEV = !!env.DEV;
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Clerk publishable key is missing.");
