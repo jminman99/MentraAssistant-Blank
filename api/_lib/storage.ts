@@ -388,64 +388,70 @@ export class VercelStorage {
     }
   }
 
+  private mapHumanMentorRow(row: any) {
+    return {
+      id: row.id,
+      organizationId: row.organizationId,
+      expertiseAreas: row.expertiseAreas,
+      bio: row.bio,
+      acuityAppointmentTypeId: row.acuityAppointmentTypeId,
+      availabilityTimezone: row.availabilityTimezone ?? 'UTC',
+      hourlyRate: row.hourlyRate,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      user: {
+        firstName: row.firstName,
+        lastName: row.lastName,
+        profilePictureUrl: row.profilePictureUrl,
+      },
+    };
+  }
+
+  async getHumanMentors(): Promise<any[]> {
+    const rows = await db.execute(sql`
+      SELECT
+        hm.id,
+        hm.organization_id        AS "organizationId",
+        hm.expertise_areas        AS "expertiseAreas",
+        hm.bio,
+        hm.acuity_appointment_type_id AS "acuityAppointmentTypeId",
+        hm.availability_timezone  AS "availabilityTimezone",
+        hm.hourly_rate            AS "hourlyRate",
+        hm.is_active              AS "isActive",
+        hm.created_at             AS "createdAt",
+        u.first_name              AS "firstName",
+        u.last_name               AS "lastName",
+        u.profile_picture_url     AS "profilePictureUrl"
+      FROM human_mentors hm
+      LEFT JOIN users u ON hm.user_id = u.id
+      ORDER BY hm.created_at DESC
+    `);
+
+    return rows.rows?.map(this.mapHumanMentorRow) ?? [];
+  }
+
   async getHumanMentorsByOrganization(orgId: number): Promise<any[]> {
-    try {
-      console.log("[storage] Fetching mentors for organization:", orgId);
+    const rows = await db.execute(sql`
+      SELECT
+        hm.id,
+        hm.organization_id        AS "organizationId",
+        hm.expertise_areas        AS "expertiseAreas",
+        hm.bio,
+        hm.acuity_appointment_type_id AS "acuityAppointmentTypeId",
+        hm.availability_timezone  AS "availabilityTimezone",
+        hm.hourly_rate            AS "hourlyRate",
+        hm.is_active              AS "isActive",
+        hm.created_at             AS "createdAt",
+        u.first_name              AS "firstName",
+        u.last_name               AS "lastName",
+        u.profile_picture_url     AS "profilePictureUrl"
+      FROM human_mentors hm
+      LEFT JOIN users u ON hm.user_id = u.id
+      WHERE hm.organization_id = ${orgId}
+      ORDER BY hm.created_at DESC
+    `);
 
-      const rows = await db
-        .select({
-          id: humanMentors.id,
-          expertiseAreas: humanMentors.expertiseAreas,
-          bio: humanMentors.bio,
-          acuityAppointmentTypeId: humanMentors.acuityAppointmentTypeId,
-          user: {
-            firstName: users.firstName,
-            lastName: users.lastName,
-          },
-        })
-        .from(humanMentors)
-        .leftJoin(users, eq(humanMentors.userId, users.id))
-        .where(eq(humanMentors.organizationId, orgId));
-
-      console.log("[storage] Found mentors:", rows.length);
-      return rows;
-    } catch (error) {
-      console.error("[storage] Error fetching mentors:", error);
-
-      // If there's a column error, try raw SQL as fallback
-      try {
-        console.log("[storage] Trying raw SQL fallback...");
-        const result = await db.execute(sql`
-          SELECT
-            hm.id,
-            hm.expertise_areas as "expertiseAreas",
-            hm.bio,
-            hm.acuityappointmenttypeid as "acuityAppointmentTypeId",
-            u."firstName",
-            u."lastName"
-          FROM human_mentors hm
-          LEFT JOIN users u ON hm.user_id = u.id
-          WHERE hm.organization_id = ${orgId}
-        `);
-
-        const mappedRows = result.rows.map((row: any) => ({
-          id: row.id,
-          expertiseAreas: row.expertiseAreas,
-          bio: row.bio,
-          acuityAppointmentTypeId: row.acuityAppointmentTypeId,
-          user: {
-            firstName: row.firstName,
-            lastName: row.lastName,
-          }
-        }));
-
-        console.log("[storage] Raw SQL succeeded, found mentors:", mappedRows.length);
-        return mappedRows;
-      } catch (rawError) {
-        console.error("[storage] Raw SQL also failed:", rawError);
-        throw error; // Throw original error
-      }
-    }
+    return rows.rows?.map(this.mapHumanMentorRow) ?? [];
   }
 
   // Council methods
@@ -1029,6 +1035,7 @@ export const {
   getAiMentors,
   getChatMessages,
   createChatMessage,
+  getHumanMentors,
   getHumanMentorsByOrganization,
   getCouncilParticipants,
   createCouncilBooking,
