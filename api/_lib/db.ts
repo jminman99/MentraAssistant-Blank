@@ -6,15 +6,16 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL not set');
 }
 
-const sql = neon(process.env.DATABASE_URL!);
+const neonSql = neon(process.env.DATABASE_URL!);
 
-// Pass sql directly, not { client: sql }
-export const db = drizzle(sql, { schema });
+// Pass neonSql directly, not { client: sql }
+export const db = drizzle(neonSql, { schema });
+export const rawSql = neonSql;
 
 // Optional: Add connectivity check function
 export async function checkDatabaseConnection() {
   try {
-    const result = await db.execute(sql`SELECT 1 as ok`);
+    const result = await rawSql`SELECT 1 as ok`;
     return { success: true, result };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
