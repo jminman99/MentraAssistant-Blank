@@ -616,6 +616,7 @@ export type InsertMentorApplication = z.infer<typeof insertMentorApplicationSche
 export type MentorLifeStory = typeof mentorLifeStories.$inferSelect;
 export type InsertMentorLifeStory = z.infer<typeof insertMentorLifeStorySchema>;
 export type SessionBooking = typeof sessionBookings.$inferSelect;
+export type NewSessionBooking = typeof sessionBookings.$inferInsert;
 export type InsertSessionBooking = z.infer<typeof insertSessionBookingSchema>;
 export type CouncilSession = typeof councilSessions.$inferSelect;
 export type InsertCouncilSession = z.infer<typeof insertCouncilSessionSchema>;

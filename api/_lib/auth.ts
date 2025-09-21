@@ -40,7 +40,6 @@ export async function requireUser(req: VercelRequest): Promise<AuthenticatedUser
   try {
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY!,
-      issuer: process.env.CLERK_ISSUER || 'https://clerk.accounts.dev',
       clockSkewInMs: 60_000,
     });
     clerkUserId = payload?.sub;

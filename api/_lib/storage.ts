@@ -39,7 +39,7 @@ import type {
   InsertAiMentor,
   InsertHumanMentor,
   InsertChatMessage,
-  InsertSessionBooking,
+  NewSessionBooking,
   InsertCouncilSession,
   InsertMentorApplication,
   InsertSemanticConfiguration,
@@ -632,7 +632,7 @@ export class VercelStorage {
       ));
 
       // Ensure all numeric fields are actually numbers and scheduledDate is a Date
-      const finalData: InsertSessionBooking = {
+      const finalData: NewSessionBooking = {
         menteeId: Number(validatedData.menteeId),
         humanMentorId: Number(validatedData.humanMentorId),
         duration: Number(validatedData.duration ?? 60),
@@ -642,7 +642,7 @@ export class VercelStorage {
         sessionType: validatedData.sessionType || "individual",
         meetingType: validatedData.meetingType || "video",
         scheduledDate: new Date(validatedDate),
-        calendlyEventId: validatedData.calendlyEventId || null,
+        calendlyEventId: validatedData.calendlyEventId ?? null,
       };
 
       console.log('📝 [STORAGE] Final data for insert:', finalData);
@@ -697,30 +697,7 @@ export class VercelStorage {
       console.log('🔍 [STORAGE] Fetching individual session bookings for user:', userId);
 
       const rows = await db
-        .select({
-          id: sessionBookings.id,
-          menteeId: sessionBookings.menteeId,
-          humanMentorId: sessionBookings.humanMentorId,
-          scheduledDate: sessionBookings.scheduledDate,
-          duration: sessionBookings.duration,
-          status: sessionBookings.status,
-          sessionGoals: sessionBookings.sessionGoals,
-          meetingType: sessionBookings.meetingType,
-          videoLink: sessionBookings.videoLink,
-          calendlyEventId: sessionBookings.calendlyEventId,
-          createdAt: sessionBookings.createdAt,
-          sessionType: sessionBookings.sessionType,
-          location: sessionBookings.location,
-          timezone: sessionBookings.timezone,
-          updatedAt: sessionBookings.updatedAt,
-          feedback: sessionBookings.feedback,
-          rating: sessionBookings.rating,
-          notes: sessionBookings.notes,
-          reminderSent: sessionBookings.reminderSent,
-          noShowReported: sessionBookings.noShowReported,
-          cancellationReason: sessionBookings.cancellationReason,
-          confirmationSent: sessionBookings.confirmationSent,
-        })
+        .select()
         .from(sessionBookings)
         .where(eq(sessionBookings.menteeId, userId))
         .orderBy(desc(sessionBookings.scheduledDate));
@@ -728,23 +705,7 @@ export class VercelStorage {
       console.log('🔍 [STORAGE] Retrieved booking records:', rows.length);
       console.log('🔍 [STORAGE] Raw booking data:', rows);
 
-      return rows.map((r, index) => {
-        console.log(`🔍 [STORAGE] Processing booking ${index + 1}:`, {
-          id: r.id,
-          scheduledDate: r.scheduledDate,
-          status: r.status,
-          calendlyEventId: r.calendlyEventId
-        });
-
-        return {
-          ...r,
-          scheduledDate: r.scheduledDate ? new Date(r.scheduledDate) : new Date(),
-          calendlyEventUrl: null,
-          preparationNotes: null,
-          menteeQuestions: null,
-          sessionNotes: null,
-        } as SessionBooking;
-      });
+      return rows;
     } catch (error) {
       console.error('🚨 [STORAGE] Error fetching individual session bookings:', error);
       return [];
@@ -852,7 +813,7 @@ export class VercelStorage {
       throw new Error('Invalid scheduledAt');
     }
 
-    const sessionBooking: InsertSessionBooking = {
+    const sessionBooking: NewSessionBooking = {
       menteeId: data.menteeId,
       humanMentorId: data.humanMentorId,
       scheduledDate,

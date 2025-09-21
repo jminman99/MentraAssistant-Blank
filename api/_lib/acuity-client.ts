@@ -61,7 +61,7 @@ export class AcuityClient {
       maxDelay = 30000
     } = retryOptions;
 
-    let lastError: AcuityApiError;
+    let lastError: AcuityApiError | undefined;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
@@ -117,24 +117,26 @@ export class AcuityClient {
           );
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         clearTimeout(timeoutId);
 
         if (error instanceof AcuityApiError) {
           lastError = error;
-        } else if (error.name === 'AbortError') {
+        } else if (error instanceof Error && error.name === 'AbortError') {
           lastError = new AcuityApiError(
             'Request timeout',
             undefined,
             true,
             true
           );
-        } else {
+        } else if (error instanceof Error) {
           lastError = new AcuityApiError(
             `Network error: ${error.message}`,
             undefined,
             true
           );
+        } else {
+          lastError = new AcuityApiError('Unknown error', undefined, true);
         }
       }
 
@@ -148,7 +150,11 @@ export class AcuityClient {
       await this.sleep(delay);
     }
 
-    throw lastError || new Error('All retry attempts failed');
+    if (lastError) {
+      throw lastError;
+    }
+
+    throw new Error('All retry attempts failed');
   }
 
   async getAvailabilityMonth(appointmentTypeId: string, timezone: string, month: string): Promise<any> {
