@@ -192,19 +192,47 @@ export class VercelStorage {
   // AI Mentor methods
   async getAiMentors(organizationId?: number): Promise<AiMentor[]> {
     try {
-      if (organizationId && organizationId <= 0) {
-        throw new Error('Invalid organization ID provided');
+      let result;
+
+      if (organizationId && organizationId > 0) {
+        result = await rawSql`
+          SELECT
+            id,
+            name,
+            description,
+            personality_prompt   AS "personalityPrompt",
+            avatar_url           AS "avatarUrl",
+            personality_traits   AS "personalityTraits",
+            expertise_areas      AS "expertiseAreas",
+            conversation_style   AS "conversationStyle",
+            temperature,
+            organization_id      AS "organizationId",
+            is_active            AS "isActive",
+            created_at           AS "createdAt"
+          FROM ai_mentors
+          WHERE is_active = true AND organization_id = ${organizationId}
+        `;
+      } else {
+        result = await rawSql`
+          SELECT
+            id,
+            name,
+            description,
+            personality_prompt   AS "personalityPrompt",
+            avatar_url           AS "avatarUrl",
+            personality_traits   AS "personalityTraits",
+            expertise_areas      AS "expertiseAreas",
+            conversation_style   AS "conversationStyle",
+            temperature,
+            organization_id      AS "organizationId",
+            is_active            AS "isActive",
+            created_at           AS "createdAt"
+          FROM ai_mentors
+          WHERE is_active = true
+        `;
       }
 
-      if (organizationId) {
-        return await db.select().from(aiMentors).where(
-          and(
-            eq(aiMentors.isActive, true),
-            eq(aiMentors.organizationId, organizationId)
-          )
-        );
-      }
-      return await db.select().from(aiMentors).where(eq(aiMentors.isActive, true));
+      return result.rows ?? [];
     } catch (error) {
       this.handleError('getAiMentors', error);
     }
@@ -279,13 +307,30 @@ export class VercelStorage {
 
   async getBrandingConfiguration(organizationId: number): Promise<any | null> {
     try {
-      const result = await db
-        .select()
-        .from(brandingConfigurations)
-        .where(eq(brandingConfigurations.organizationId, organizationId))
-        .limit(1);
+      const result = await rawSql`
+        SELECT
+          id,
+          organization_id      AS "organizationId",
+          target_audience      AS "targetAudience",
+          primary_tagline      AS "primaryTagline",
+          secondary_tagline    AS "secondaryTagline",
+          problem_statement    AS "problemStatement",
+          vision_statement     AS "visionStatement",
+          cta_text             AS "ctaText",
+          color_scheme         AS "colorScheme",
+          mentor_terminology   AS "mentorTerminology",
+          tone,
+          feature_labels       AS "featureLabels",
+          navigation_config    AS "navigationConfig",
+          is_active            AS "isActive",
+          created_at           AS "createdAt",
+          updated_at           AS "updatedAt"
+        FROM branding_configurations
+        WHERE organization_id = ${organizationId}
+        LIMIT 1
+      `;
 
-      return result[0] || null;
+      return result.rows?.[0] || null;
     } catch (error) {
       this.handleError('getBrandingConfiguration', error);
     }
