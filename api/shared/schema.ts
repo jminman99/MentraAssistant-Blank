@@ -79,7 +79,7 @@ export const humanMentors = pgTable("human_mentors", {
   videoCallLink: text("video_call_link"),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("5.0"),
   totalSessions: integer("total_sessions").default(0),
-  acuityAppointmentTypeId: integer("acuityappointmenttypeid"),
+  acuityAppointmentTypeId: integer("acuity_appointment_type_id"),
   googleRefreshToken: text("google_refresh_token"),
   googleAccessToken: text("google_access_token"),
   googleTokenExpiry: timestamp("google_token_expiry"),
