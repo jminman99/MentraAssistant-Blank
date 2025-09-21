@@ -1,6 +1,6 @@
 // Copy of the storage interface for Vercel API routes
-import { sql } from "drizzle-orm";
-import { db, rawSql } from "./db.js";
+import { sql, eq } from "drizzle-orm";
+import { db } from "./db.js";
 
 import {
   users,
@@ -19,7 +19,7 @@ import {
   mentorAvailability,
   brandingConfigurations
 } from '../shared/schema.js';
-import { eq, desc, and, gte, lte, ne, gt, lt, or } from 'drizzle-orm';
+import { desc, and, gte, lte, ne, gt, lt, or } from 'drizzle-orm';
 import { asIso } from './time-utils.js';
 import type {
   User,
@@ -96,25 +96,12 @@ export class VercelStorage {
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
-    const rows = await rawSql`
-      SELECT
-        "id",
-        "email",
-        "first_name"        AS "firstName",
-        "last_name"         AS "lastName",
-        "clerk_user_id"     AS "clerkUserId",
-        "role",
-        "subscription_plan" AS "subscriptionPlan",
-        "organization_id"   AS "organizationId",
-        "created_at"        AS "createdAt"
-      FROM users
-      WHERE "clerk_user_id" = ${clerkUserId}
-      LIMIT 1
-    `;
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.clerkUserId, clerkUserId),
+    });
 
-    const user = rows[0] || null;
     console.log('🔍 Retrieved user by Clerk ID:', clerkUserId, '-> User:', user ? `ID: ${user.id}` : 'Not found');
-    return user;
+    return user ?? null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
