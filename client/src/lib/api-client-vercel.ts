@@ -51,6 +51,32 @@ export class VercelApiClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+
+        if (import.meta.env.DEV) {
+          console.warn('Falling back to mock chat reply because API returned', response.status);
+
+          const now = new Date().toISOString();
+          const userPayload = {
+            id: Date.now(),
+            content,
+            role: 'user',
+            createdAt: now,
+            aiMentorId,
+          };
+          const aiPayload = {
+            id: Date.now() + 1,
+            content: `📎 Mock reply: received "${content}" while backend is warming up.`,
+            role: 'assistant',
+            createdAt: new Date(Date.now() + 10).toISOString(),
+            aiMentorId,
+          };
+
+          return {
+            userMessage: { success: true, data: userPayload },
+            aiMessage: { success: true, data: aiPayload },
+          };
+        }
+
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
