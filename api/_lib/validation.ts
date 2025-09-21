@@ -84,7 +84,9 @@ export function validateCouncilBooking(data: any): ValidationResult<{
       message: 'selectedMentors must be an array'
     });
   } else {
-    const mentorIds = data.selectedMentors.map(Number).filter(id => Number.isInteger(id) && id > 0);
+    const mentorIds = data.selectedMentors
+      .map((value: unknown) => Number(value))
+      .filter((id: number) => Number.isInteger(id) && id > 0);
     if (mentorIds.length < 3 || mentorIds.length > 5) {
       errors.push({
         field: 'selectedMentors',

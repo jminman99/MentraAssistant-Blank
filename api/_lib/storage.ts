@@ -48,6 +48,30 @@ import type {
   InsertMentorAvailability
 } from '../shared/schema.js';
 
+type CreateIndividualSessionBookingInput = {
+  menteeId: number;
+  humanMentorId: number;
+  scheduledDate: Date | string;
+  duration?: number;
+  sessionGoals?: string | null;
+  status?: string;
+  timezone?: string;
+  sessionType?: string;
+  meetingType?: string;
+  calendlyEventId?: string | null;
+};
+
+type CreateSessionBookingInput = {
+  menteeId: number;
+  timezone: string;
+  humanMentorId: number;
+  scheduledAt: Date | string;
+  duration: number;
+  sessionType: string;
+  meetingType: string;
+  sessionGoals?: string | null;
+};
+
 // Helper function to get the database instance (assuming db is already imported and configured)
 function getDatabase() {
   // In a real scenario, this would return the initialized db instance.
@@ -550,7 +574,7 @@ export class VercelStorage {
   }
 
   // Individual Session Booking methods
-  async createIndividualSessionBooking(data: InsertSessionBooking): Promise<SessionBooking> {
+  async createIndividualSessionBooking(data: CreateIndividualSessionBookingInput): Promise<SessionBooking> {
     try {
       console.log('📝 [STORAGE] Creating individual session booking with data:', {
         ...data,
@@ -602,16 +626,16 @@ export class VercelStorage {
       ));
 
       // Ensure all numeric fields are actually numbers and scheduledDate is a Date
-      const finalData = {
+      const finalData: InsertSessionBooking = {
         menteeId: Number(validatedData.menteeId),
         humanMentorId: Number(validatedData.humanMentorId),
         duration: Number(validatedData.duration ?? 60),
-        sessionGoals: validatedData.sessionGoals,
+        sessionGoals: validatedData.sessionGoals ?? null,
         status: validatedData.status || "confirmed",
         timezone: validatedData.timezone || "UTC",
         sessionType: validatedData.sessionType || "individual",
         meetingType: validatedData.meetingType || "video",
-        scheduledDate: new Date(validatedDate), // Ensure it's a Date object
+        scheduledDate: new Date(validatedDate),
         calendlyEventId: validatedData.calendlyEventId || null,
       };
 
@@ -800,16 +824,7 @@ export class VercelStorage {
     }
   }
 
-  async createSessionBooking(data: {
-    menteeId?: number;
-    timezone: string;
-    humanMentorId: number;
-    scheduledAt: Date;
-    duration: number;
-    sessionType: string;
-    meetingType: string;
-    sessionGoals?: string | null;
-  }): Promise<SessionBooking> {
+  async createSessionBooking(data: CreateSessionBookingInput): Promise<SessionBooking> {
     console.log('Creating session booking with data:', data);
 
     // Validate required fields
@@ -824,22 +839,24 @@ export class VercelStorage {
     }
 
     // Ensure scheduledAt is a valid Date object
-    const scheduledDate = new Date(data.scheduledAt);
+    const scheduledDate = data.scheduledAt instanceof Date
+      ? data.scheduledAt
+      : new Date(data.scheduledAt);
     if (isNaN(scheduledDate.getTime())) {
       throw new Error('Invalid scheduledAt');
     }
 
-    const sessionBooking = {
+    const sessionBooking: InsertSessionBooking = {
       menteeId: data.menteeId,
       humanMentorId: data.humanMentorId,
-      scheduledDate: scheduledDate,
+      scheduledDate,
       duration: data.duration || 60,
       status: 'confirmed',
-      sessionGoals: data.sessionGoals,
+      sessionGoals: data.sessionGoals ?? null,
       meetingType: data.meetingType || 'video',
       sessionType: data.sessionType || 'individual',
       timezone: data.timezone || 'UTC',
-      createdAt: new Date()
+      calendlyEventId: null,
     };
 
     console.log('Inserting session booking:', sessionBooking);
