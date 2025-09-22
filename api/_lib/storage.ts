@@ -100,7 +100,7 @@ export class VercelStorage {
 
   // Get current database timestamp
   async getNow(): Promise<Date | null> {
-    const rows = await db.execute(drizzleSql`select now() as now`);
+    const rows = await db.execute(sql`select now() as now`);
     const result = rows.rows?.[0]?.now;
     return result instanceof Date ? result : (result ? new Date(result) : null);
   }
