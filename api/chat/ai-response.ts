@@ -82,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get conversation history for context using database user ID
     const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
 
-    // Get mentor info to retrieve custom prompt from database
+    // Get mentor info
     const aiMentor = await storage.getAiMentor(aiMentorId);
 
     if (!aiMentor) {
@@ -93,17 +93,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Use the mentor's personality prompt from database
+    // Pull semantic configuration (custom prompts)
+    const organizationId = user.organizationId ?? undefined;
+    let semanticConfig = await storage.getSemanticConfiguration(aiMentor.name, organizationId);
+
+    // If no org-specific config exists, fall back to global config by mentor name
+    if (!semanticConfig) {
+      semanticConfig = await storage.getSemanticConfiguration(aiMentor.name);
+    }
+    // mentorPersonality is not used currently; can be integrated later if needed
+
+    // Prefer customPrompt from semantic_configurations; fallback to ai_mentors.personality_prompt; then generic
+    const systemContent = (semanticConfig?.customPrompt && semanticConfig.customPrompt.trim().length > 0)
+      ? semanticConfig.customPrompt
+      : (aiMentor.personalityPrompt || "You are a wise and supportive mentor. Provide thoughtful, encouraging advice.");
+
     console.log('🤖 Using AI Mentor:', {
       id: aiMentor.id,
       name: aiMentor.name,
-      hasPrompt: !!aiMentor.personalityPrompt
+      hasPrompt: !!aiMentor.personalityPrompt,
+      hasCustomPrompt: !!semanticConfig?.customPrompt,
+      customPromptScope: semanticConfig ? (semanticConfig.organizationId ? 'org' : 'global') : 'none',
     });
 
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
-        content: aiMentor.personalityPrompt || "You are a wise and supportive mentor. Provide thoughtful, encouraging advice."
+        content: systemContent,
       }
     ];
 
