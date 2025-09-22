@@ -306,7 +306,7 @@ export class VercelStorage {
 
   async getBrandingConfiguration(organizationId: number): Promise<any | null> {
     try {
-      const result = await rawSql`
+      const rows = await rawSql`
         SELECT
           id,
           organization_id      AS "organizationId",
@@ -329,7 +329,7 @@ export class VercelStorage {
         LIMIT 1
       `;
 
-      return result.rows?.[0] || null;
+      return (rows as any[])[0] || null;
     } catch (error) {
       this.handleError('getBrandingConfiguration', error);
     }
