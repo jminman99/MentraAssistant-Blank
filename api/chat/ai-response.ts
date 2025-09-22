@@ -82,8 +82,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get conversation history for context using database user ID
     const previousMessages = await storage.getChatMessages(user.id, aiMentorId, 10);
 
-    // Get mentor info
-    const aiMentor = await storage.getAiMentor(aiMentorId);
+    // Require org context and get mentor scoped to organization
+    if (user.organizationId == null) {
+      return res.status(400).json({ success: false, error: 'User missing organization context' });
+    }
+    const aiMentor = await storage.getAiMentor(aiMentorId, user.organizationId);
 
     if (!aiMentor) {
       console.error(`AI Mentor with ID ${aiMentorId} not found`);
@@ -93,27 +96,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Pull semantic configuration (custom prompts)
-    const organizationId = user.organizationId ?? undefined;
-    let semanticConfig = await storage.getSemanticConfiguration(aiMentor.name, organizationId);
-
-    // If no org-specific config exists, fall back to global config by mentor name
-    if (!semanticConfig) {
-      semanticConfig = await storage.getSemanticConfiguration(aiMentor.name);
-    }
-    // mentorPersonality is not used currently; can be integrated later if needed
-
-    // Prefer customPrompt from semantic_configurations; fallback to ai_mentors.personality_prompt; then generic
-    const systemContent = (semanticConfig?.customPrompt && semanticConfig.customPrompt.trim().length > 0)
-      ? semanticConfig.customPrompt
-      : (aiMentor.personalityPrompt || "You are a wise and supportive mentor. Provide thoughtful, encouraging advice.");
+    // Use only ai_mentors.personality_prompt; if missing, fall back to a generic prompt
+    const systemContent = aiMentor.personalityPrompt
+      ? aiMentor.personalityPrompt
+      : "You are a wise and supportive mentor. Provide thoughtful, encouraging advice.";
 
     console.log('🤖 Using AI Mentor:', {
       id: aiMentor.id,
       name: aiMentor.name,
       hasPrompt: !!aiMentor.personalityPrompt,
-      hasCustomPrompt: !!semanticConfig?.customPrompt,
-      customPromptScope: semanticConfig ? (semanticConfig.organizationId ? 'org' : 'global') : 'none',
     });
 
     const messages: ChatCompletionMessageParam[] = [
@@ -136,11 +127,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Add current user message
     messages.push({ role: "user", content: message });
 
-    // Use mentor-specific temperature setting
-    const temperature = aiMentor.temperature !== null && aiMentor.temperature !== undefined
-      ? Number(aiMentor.temperature)
+    // Use mentor-specific temperature setting from ai_mentors.temperature
+    const rawTemp = Number(aiMentor.temperature);
+    const temperature = Number.isFinite(rawTemp)
+      ? Math.min(2, Math.max(0, rawTemp)) // clamp to OpenAI's 0–2 range
       : 0.7;
 
+    if (rawTemp !== temperature) {
+      console.log(`🤖 Temperature adjusted/clamped: raw=${rawTemp} effective=${temperature}`);
+    }
     console.log(`🤖 Using temperature: ${temperature} for mentor: ${aiMentor.name}`);
     console.log('🤖 Calling OpenAI API...');
 

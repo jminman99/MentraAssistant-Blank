@@ -166,9 +166,25 @@ export class VercelStorage {
     return result.rows as AiMentor[];
   }
 
-  async getAiMentor(id: number): Promise<AiMentor | null> {
+  async getAiMentor(id: number, organizationId: number): Promise<AiMentor | null> {
     const result = await db.execute(sql`
-      SELECT * FROM ai_mentors WHERE id = ${id} LIMIT 1
+      SELECT
+        id,
+        name,
+        description,
+        personality_prompt AS "personalityPrompt",
+        avatar_url         AS "avatarUrl",
+        personality_traits AS "personalityTraits",
+        expertise_areas    AS "expertiseAreas",
+        conversation_style AS "conversationStyle",
+        temperature,
+        organization_id    AS "organizationId",
+        is_active          AS "isActive",
+        created_at         AS "createdAt"
+      FROM ai_mentors
+      WHERE id = ${id}
+        AND organization_id = ${organizationId}
+      LIMIT 1
     `);
     return (result.rows[0] as AiMentor) || null;
   }
@@ -203,10 +219,65 @@ export class VercelStorage {
 
   async getSemanticConfiguration(mentorName: string, organizationId?: number): Promise<any | null> {
     const result = await db.execute(sql`
-      SELECT * FROM semantic_configurations
+      SELECT
+        id,
+        organization_id          AS "organizationId",
+        mentor_name              AS "mentorName",
+        custom_prompt            AS "customPrompt",
+        communication_style      AS "communicationStyle",
+        common_phrases           AS "commonPhrases",
+        decision_making          AS "decisionMaking",
+        mentoring,
+        detailed_background      AS "detailedBackground",
+        core_values              AS "coreValues",
+        conversation_starters    AS "conversationStarters",
+        advice_patterns          AS "advicePatterns",
+        response_examples        AS "responseExamples",
+        context_awareness_rules  AS "contextAwarenessRules",
+        story_selection_logic    AS "storySelectionLogic",
+        personality_consistency_rules AS "personalityConsistencyRules",
+        conversation_flow_patterns    AS "conversationFlowPatterns",
+        is_active                AS "isActive",
+        created_at               AS "createdAt",
+        updated_at               AS "updatedAt"
+      FROM semantic_configurations
       WHERE mentor_name = ${mentorName}
       ${organizationId ? sql`AND organization_id = ${organizationId}` : sql``}
       ORDER BY id DESC LIMIT 1
+    `);
+    return result.rows[0] || null;
+  }
+
+  // Lookup semantic configuration by mentorId (joins on mentor name internally)
+  async getSemanticConfigurationByMentorId(mentorId: number, organizationId?: number): Promise<any | null> {
+    const result = await db.execute(sql`
+      SELECT
+        sc.id,
+        sc.organization_id          AS "organizationId",
+        sc.mentor_name              AS "mentorName",
+        sc.custom_prompt            AS "customPrompt",
+        sc.communication_style      AS "communicationStyle",
+        sc.common_phrases           AS "commonPhrases",
+        sc.decision_making          AS "decisionMaking",
+        sc.mentoring,
+        sc.detailed_background      AS "detailedBackground",
+        sc.core_values              AS "coreValues",
+        sc.conversation_starters    AS "conversationStarters",
+        sc.advice_patterns          AS "advicePatterns",
+        sc.response_examples        AS "responseExamples",
+        sc.context_awareness_rules  AS "contextAwarenessRules",
+        sc.story_selection_logic    AS "storySelectionLogic",
+        sc.personality_consistency_rules AS "personalityConsistencyRules",
+        sc.conversation_flow_patterns    AS "conversationFlowPatterns",
+        sc.is_active                AS "isActive",
+        sc.created_at               AS "createdAt",
+        sc.updated_at               AS "updatedAt"
+      FROM semantic_configurations sc
+      JOIN ai_mentors am ON am.name = sc.mentor_name
+      WHERE am.id = ${mentorId}
+      ${organizationId ? sql`AND sc.organization_id = ${organizationId}` : sql``}
+      ORDER BY sc.id DESC
+      LIMIT 1
     `);
     return result.rows[0] || null;
   }
