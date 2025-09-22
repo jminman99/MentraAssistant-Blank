@@ -93,8 +93,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const validatedData = validation.data!;
 
+      // ensure user belongs to an organization
+      if (dbUser.organizationId == null) {
+        return res.status(400).json({
+          success: false,
+          error: "User is not assigned to an organization",
+          requestId: context.requestId,
+        });
+      }
+
       // ensure mentor exists (and pick timezone)
-      const mentor = await storage.getHumanMentorById(validatedData.humanMentorId);
+      const mentor = await storage.getHumanMentorById(
+        validatedData.humanMentorId,
+        dbUser.organizationId,
+      );
       if (!mentor) {
         return res.status(404).json({
           success: false,

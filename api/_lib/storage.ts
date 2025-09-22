@@ -90,7 +90,7 @@ export class VercelStorage {
   }
 
   async query(query: string): Promise<any> {
-    return db.execute(sql.unsafe(query));
+    return db.execute(sql.raw(query));
   }
 
   async getNow(): Promise<Date | null> {
@@ -106,7 +106,7 @@ export class VercelStorage {
     const result = await db.execute(sql`
       SELECT * FROM users WHERE id = ${id} LIMIT 1
     `);
-    return result.rows[0] || null;
+    return (result.rows[0] as User) || null;
   }
 
   async getUserByClerkId(clerkUserId: string): Promise<any> {
@@ -131,14 +131,14 @@ export class VercelStorage {
       WHERE clerk_user_id = ${clerkUserId}
       LIMIT 1
     `);
-    return result.rows[0] || null;
+    return (result.rows[0] as User) || null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
     const result = await db.execute(sql`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
     `);
-    return result.rows[0] || null;
+    return (result.rows[0] as User) || null;
   }
 
   async createUser(data: InsertUser): Promise<User> {
@@ -170,7 +170,7 @@ export class VercelStorage {
     const result = await db.execute(sql`
       SELECT * FROM ai_mentors WHERE id = ${id} LIMIT 1
     `);
-    return result.rows[0] || null;
+    return (result.rows[0] as AiMentor) || null;
   }
 
   // ---------------- ORGANIZATIONS ----------------
@@ -313,6 +313,33 @@ export class VercelStorage {
     `);
     return result.rows?.map(this.mapHumanMentorRow) ?? [];
   }
+
+
+async getHumanMentorById(id: number, orgId: number): Promise<any | null> {
+  const result = await db.execute(sql`
+    SELECT
+      hm.id,
+      hm.organization_id        AS "organizationId",
+      hm.expertise_areas        AS "expertiseAreas",
+      hm.bio,
+      hm.acuity_appointment_type_id AS "acuityAppointmentTypeId",
+      hm.availability_timezone  AS "availabilityTimezone",
+      hm.hourly_rate            AS "hourlyRate",
+      hm.is_active              AS "isActive",
+      hm.created_at             AS "createdAt",
+      u.first_name              AS "firstName",
+      u.last_name               AS "lastName",
+      u.profile_picture_url     AS "profilePictureUrl"
+    FROM human_mentors hm
+    LEFT JOIN users u ON hm.user_id = u.id
+    WHERE hm.id = ${id}
+      AND hm.organization_id = ${orgId}
+    LIMIT 1
+  `);
+
+  return result.rows[0] || null;
+}
+
 
   // ---------------- COUNCIL ----------------
 
@@ -487,7 +514,7 @@ export class VercelStorage {
       WHERE id = ${id}
       LIMIT 1
     `);
-    return result.rows[0] || null;
+    return (result.rows[0] as SessionBooking) || null;
   }
 
   async updateSessionBookingByAcuityId(acuityAppointmentId: string, updates: Partial<SessionBooking>): Promise<SessionBooking | null> {
@@ -514,6 +541,7 @@ export const {
   createChatMessage,
   getHumanMentors,
   getHumanMentorsByOrganization,
+  getHumanMentorById, // 👈 add this
   getCouncilParticipants,
   createCouncilBooking,
   cancelCouncilSession,
@@ -523,4 +551,4 @@ export const {
   cancelSessionBooking,
   getIndividualSessionBookings,
   updateSessionBookingByAcuityId
-} = storage
+} = storage;
