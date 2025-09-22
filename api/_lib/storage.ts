@@ -100,9 +100,12 @@ export class VercelStorage {
 
   // Get current database timestamp
   async getNow(): Promise<Date | null> {
-    const rows = await db.execute(sql`select now() as now`);
-    const result = rows.rows?.[0]?.now;
-    return result instanceof Date ? result : (result ? new Date(result) : null);
+    const result = await db.execute(sql`select now() as now`);
+    const value = result.rows?.[0]?.now as unknown;
+    if (!value) {
+      return null;
+    }
+    return value instanceof Date ? value : new Date(value as string);
   }
 
   // User methods
@@ -192,10 +195,8 @@ export class VercelStorage {
   // AI Mentor methods
   async getAiMentors(organizationId?: number): Promise<AiMentor[]> {
     try {
-      let result;
-
-      if (organizationId && organizationId > 0) {
-        result = await rawSql`
+      const rows = organizationId && organizationId > 0
+        ? await rawSql`
           SELECT
             id,
             name,
@@ -211,9 +212,8 @@ export class VercelStorage {
             created_at           AS "createdAt"
           FROM ai_mentors
           WHERE is_active = true AND organization_id = ${organizationId}
-        `;
-      } else {
-        result = await rawSql`
+        `
+        : await rawSql`
           SELECT
             id,
             name,
@@ -230,9 +230,8 @@ export class VercelStorage {
           FROM ai_mentors
           WHERE is_active = true
         `;
-      }
 
-      return result.rows ?? [];
+      return rows as AiMentor[];
     } catch (error) {
       this.handleError('getAiMentors', error);
     }
