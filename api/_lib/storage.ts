@@ -200,7 +200,14 @@ export class VercelStorage {
 
   async getChatMessages(userId: number, aiMentorId: number, limit = 50): Promise<ChatMessage[]> {
     const result = await db.execute(sql`
-      SELECT *
+      SELECT
+        id,
+        user_id              AS "userId",
+        ai_mentor_id         AS "aiMentorId",
+        role,
+        content,
+        conversation_context AS "conversationContext",
+        created_at           AS "createdAt"
       FROM chat_messages
       WHERE user_id = ${userId}
         AND ai_mentor_id = ${aiMentorId}

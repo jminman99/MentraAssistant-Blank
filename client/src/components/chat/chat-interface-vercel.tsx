@@ -174,9 +174,19 @@ export function ChatInterfaceVercel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-select first mentor with safety check
+  // Restore previously selected mentor from localStorage on mount
   useEffect(() => {
-    if (Array.isArray(aiMentors) && aiMentors.length > 0 && !selectedMentorId) {
+    const saved = localStorage.getItem('selectedAiMentorId');
+    const id = saved ? Number(saved) : null;
+    if (id && Number.isFinite(id)) {
+      setSelectedMentorId(id);
+    }
+  }, []);
+
+  // When mentors load, if no selection or saved selection is not in the list, default to first
+  useEffect(() => {
+    if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
+    if (!selectedMentorId || !aiMentors.some(m => m.id === selectedMentorId)) {
       setSelectedMentorId(aiMentors[0].id);
     }
   }, [aiMentors, selectedMentorId]);
@@ -281,7 +291,10 @@ export function ChatInterfaceVercel() {
         <AiMentorSelector
           mentors={aiMentors}
           selectedId={selectedMentorId}
-          onSelect={setSelectedMentorId}
+          onSelect={(id) => {
+            setSelectedMentorId(id);
+            try { localStorage.setItem('selectedAiMentorId', String(id)); } catch {}
+          }}
         />
       </div>
 
