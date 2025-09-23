@@ -223,6 +223,26 @@ export class AcuityClient {
 
     return { dates, times };
   }
+
+  async createAppointment(payload: {
+    appointmentTypeID: number | string;
+    datetime: string; // ISO 8601 string
+    timezone: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    notes?: string;
+  }): Promise<any> {
+    return this.fetchWithRetry('/appointments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getAppointment(appointmentId: string | number): Promise<any> {
+    const id = String(appointmentId);
+    return this.fetchWithRetry(`/appointments/${encodeURIComponent(id)}`);
+  }
 }
 
 // Factory function for creating configured client

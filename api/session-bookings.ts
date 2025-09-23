@@ -115,9 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // (Optional) create Acuity appointment here if you want
-      // const acuityAppointmentId = await createAcuity(...)
-
       // Convert to Date object safely before using
       const scheduled = validatedData.scheduledDate instanceof Date
         ? validatedData.scheduledDate
@@ -128,6 +125,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           success: false,
           error: "Validation failed",
           details: [{ field: "scheduledDate", message: "Invalid ISO date" }],
+          requestId: context.requestId,
+        });
+      }
+
+      // Create Acuity appointment when credentials and mentor appointment type are available
+      let acuityAppointmentId: string | null = null;
+      try {
+        if (!mentor.acuityAppointmentTypeId) {
+          console.warn(`[SESSION_BOOKINGS:${context.requestId}] Mentor ${mentor.id} missing acuityAppointmentTypeId`);
+        } else if (!process.env.ACUITY_API_KEY || !process.env.ACUITY_USER_ID) {
+          console.warn(`[SESSION_BOOKINGS:${context.requestId}] Acuity credentials not configured – skipping upstream booking`);
+        } else {
+          const { createAcuityClient } = await import('./_lib/acuity-client.js');
+          const acuity = createAcuityClient();
+          const payload = {
+            appointmentTypeID: mentor.acuityAppointmentTypeId,
+            datetime: scheduled.toISOString(),
+            timezone: mentor.availabilityTimezone || dbUser.timezone || 'UTC',
+            firstName: dbUser.firstName || 'Mentra',
+            lastName: dbUser.lastName || 'User',
+            email: dbUser.email || 'unknown@example.com',
+            notes: validatedData.sessionGoals || undefined,
+          };
+          console.log(`[SESSION_BOOKINGS:${context.requestId}] Creating Acuity appointment`, payload);
+          const created = await acuity.createAppointment(payload);
+          acuityAppointmentId = String(created?.id ?? created?.appointment?.id ?? '');
+          console.log(`[SESSION_BOOKINGS:${context.requestId}] Acuity appointment created`, { id: acuityAppointmentId });
+
+          // Verify the created appointment and include canonical details for debugging
+          try {
+            if (acuityAppointmentId) {
+              const verified = await acuity.getAppointment(acuityAppointmentId);
+              console.log(`[SESSION_BOOKINGS:${context.requestId}] Acuity appointment verified`, {
+                id: acuityAppointmentId,
+                datetime: verified?.datetime,
+                timezone: verified?.timezone,
+                status: verified?.status,
+              });
+            }
+          } catch (verifyErr: any) {
+            console.warn(`[SESSION_BOOKINGS:${context.requestId}] Could not verify Acuity appointment`, verifyErr?.message || verifyErr);
+          }
+        }
+      } catch (err: any) {
+        console.error(`[SESSION_BOOKINGS:${context.requestId}] Acuity booking failed`, {
+          message: err?.message,
+          status: err?.statusCode || err?.status,
+          retryable: err?.isRetryable,
+          timeout: err?.isTimeout,
+        });
+        return res.status(502).json({
+          success: false,
+          error: 'Upstream scheduling failed',
+          details: err?.message || String(err),
+          statusCode: err?.statusCode || err?.status,
+          retryable: !!err?.isRetryable,
+          timeout: !!err?.isTimeout,
           requestId: context.requestId,
         });
       }
@@ -148,7 +202,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         timezone: mentor.availabilityTimezone || "UTC",
         sessionType: "individual",
         meetingType: "video",
-        calendlyEventId: null, // or String(acuityAppointmentId)
+        calendlyEventId: acuityAppointmentId || null,
       });
 
       logLatency(context, "Session booking creation");
@@ -156,6 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(201).json({
         success: true,
         data: booking,
+        upstream: acuityAppointmentId ? { provider: 'acuity', id: acuityAppointmentId } : undefined,
         requestId: context.requestId,
       });
     }
