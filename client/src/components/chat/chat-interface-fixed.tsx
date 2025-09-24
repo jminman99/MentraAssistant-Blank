@@ -26,6 +26,10 @@ export function ChatInterface() {
   const { data: aiMentors = [] } = useQuery<AiMentor[]>({
     queryKey: ['/api/ai-mentors'],
     enabled: !!user,
+    select: (res: any) => {
+      const arr = Array.isArray(res) ? res : (res?.data && Array.isArray(res.data)) ? res.data : [];
+      return arr.map((m: any) => ({ ...m, id: Number(m.id) }));
+    }
   });
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
@@ -98,11 +102,11 @@ export function ChatInterface() {
     } catch {}
   }, []);
 
-  // When mentors load, if no selection or saved selection not in list, default to first
+  // When mentors load, only default if there is no saved selection
   useEffect(() => {
     if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
-    if (!selectedMentorId || !aiMentors.some(m => m.id === selectedMentorId)) {
-      setSelectedMentorId(aiMentors[0].id);
+    if (selectedMentorId == null) {
+      setSelectedMentorId(Number(aiMentors[0].id));
     }
   }, [aiMentors, selectedMentorId]);
 

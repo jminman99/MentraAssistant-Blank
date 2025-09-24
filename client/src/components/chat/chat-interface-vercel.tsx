@@ -34,11 +34,13 @@ export function ChatInterfaceVercel() {
     queryFn: () => vercelApiClient.getAiMentors(),
     select: (res) => {
       // Defensive data extraction - handle multiple response formats
-      if (Array.isArray(res)) return res;
-      if (res?.data && Array.isArray(res.data)) return res.data;
-      if (res?.success && Array.isArray(res.data)) return res.data;
-      console.warn('Unexpected AI mentors response format:', res);
-      return [];
+      const arr = Array.isArray(res) ? res
+        : (res?.data && Array.isArray(res.data)) ? res.data
+        : (res?.success && Array.isArray(res.data)) ? res.data
+        : [];
+      // Normalize id to number to avoid equality mismatches
+      return arr.map((m: any) => ({ ...m, id: Number(m.id) }));
+      
     },
     enabled: !!user,
     retry: 2,
@@ -188,11 +190,12 @@ export function ChatInterfaceVercel() {
     } catch {}
   }, []);
 
-  // When mentors load, if no selection or saved selection is not in the list, default to first
+  // When mentors load, only default if there is no saved selection
   useEffect(() => {
     if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
-    if (!selectedMentorId || !aiMentors.some(m => m.id === selectedMentorId)) {
-      setSelectedMentorId(aiMentors[0].id);
+    const hasSelected = selectedMentorId != null;
+    if (!hasSelected) {
+      setSelectedMentorId(Number(aiMentors[0].id));
     }
   }, [aiMentors, selectedMentorId]);
 
