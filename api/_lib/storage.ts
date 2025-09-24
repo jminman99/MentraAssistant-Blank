@@ -376,6 +376,14 @@ export class VercelStorage {
     };
   }
 
+  private isMissingAcuityColumn(error: any): boolean {
+    const msg = String(error?.message || error);
+    return (
+      (error?.code === '42703') &&
+      (msg.includes('acuity_appointment_type_id') || msg.includes('accuity_appointment_type_id'))
+    );
+  }
+
   async getHumanMentors(): Promise<any[]> {
     const result = await db.execute(sql`
       SELECT
@@ -421,7 +429,6 @@ export class VercelStorage {
     return result.rows?.map(this.mapHumanMentorRow) ?? [];
   }
 
-
 async getHumanMentorById(id: number, orgId: number): Promise<any | null> {
   const result = await db.execute(sql`
     SELECT
@@ -443,7 +450,6 @@ async getHumanMentorById(id: number, orgId: number): Promise<any | null> {
       AND hm.organization_id = ${orgId}
     LIMIT 1
   `);
-
   return result.rows[0] || null;
 }
 
