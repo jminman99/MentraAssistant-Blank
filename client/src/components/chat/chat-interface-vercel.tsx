@@ -174,13 +174,18 @@ export function ChatInterfaceVercel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Restore previously selected mentor from localStorage on mount
+  // Restore previously selected mentor on mount (URL > localStorage)
   useEffect(() => {
-    const saved = localStorage.getItem('selectedAiMentorId');
-    const id = saved ? Number(saved) : null;
-    if (id && Number.isFinite(id)) {
-      setSelectedMentorId(id);
-    }
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('mentor') || params.get('aiMentorId');
+      const fromStorage = localStorage.getItem('selectedAiMentorId');
+      const raw = fromUrl ?? fromStorage ?? null;
+      const id = raw ? Number(raw) : null;
+      if (id && Number.isFinite(id)) {
+        setSelectedMentorId(id);
+      }
+    } catch {}
   }, []);
 
   // When mentors load, if no selection or saved selection is not in the list, default to first
@@ -194,6 +199,15 @@ export function ChatInterfaceVercel() {
   // Clear optimistic messages when changing mentors
   useEffect(() => {
     setOptimisticMessages([]);
+    // Persist selection whenever it changes
+    if (selectedMentorId) {
+      try {
+        localStorage.setItem('selectedAiMentorId', String(selectedMentorId));
+        const url = new URL(window.location.href);
+        url.searchParams.set('mentor', String(selectedMentorId));
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
   }, [selectedMentorId]);
 
   // Clear optimistic messages when server data is updated
