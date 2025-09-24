@@ -87,9 +87,21 @@ export function ChatInterface() {
     }
   });
 
-  // Auto-select first mentor when available
+  // Restore previously selected mentor from localStorage on mount
   useEffect(() => {
-    if (aiMentors.length > 0 && !selectedMentorId) {
+    try {
+      const saved = localStorage.getItem('selectedAiMentorId');
+      const id = saved ? Number(saved) : null;
+      if (id && Number.isFinite(id)) {
+        setSelectedMentorId(id);
+      }
+    } catch {}
+  }, []);
+
+  // When mentors load, if no selection or saved selection not in list, default to first
+  useEffect(() => {
+    if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
+    if (!selectedMentorId || !aiMentors.some(m => m.id === selectedMentorId)) {
       setSelectedMentorId(aiMentors[0].id);
     }
   }, [aiMentors, selectedMentorId]);
@@ -318,7 +330,10 @@ export function ChatInterface() {
         <AiMentorSelector
           mentors={aiMentors}
           selectedId={selectedMentorId}
-          onSelect={setSelectedMentorId}
+          onSelect={(id) => {
+            setSelectedMentorId(id);
+            try { localStorage.setItem('selectedAiMentorId', String(id)); } catch {}
+          }}
         />
       </div>
 
