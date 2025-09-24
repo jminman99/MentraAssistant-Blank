@@ -207,11 +207,7 @@ export function ChatInterfaceVercel() {
     // Persist selection whenever it changes
     if (selectedMentorId) {
       try {
-        console.debug('[ChatVercel] selection changed', { selectedMentorId });
         localStorage.setItem('selectedAiMentorId', String(selectedMentorId));
-        const url = new URL(window.location.href);
-        url.searchParams.set('mentor', String(selectedMentorId));
-        window.history.replaceState({}, '', url.toString());
       } catch {}
     }
   }, [selectedMentorId]);
@@ -312,7 +308,6 @@ export function ChatInterfaceVercel() {
           mentors={aiMentors}
           selectedId={selectedMentorId}
           onSelect={(id) => {
-            console.debug('[ChatVercel] user selected mentor', { id });
             setSelectedMentorId(id);
             try { localStorage.setItem('selectedAiMentorId', String(id)); } catch {}
           }}
@@ -396,16 +391,3 @@ export function ChatInterfaceVercel() {
     </div>
   );
 }
-  // Debug: log initial state on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('selectedAiMentorId');
-      console.debug('[ChatVercel] mount', {
-        initialSelectedMentorId: selectedMentorId,
-        url: typeof window !== 'undefined' ? window.location.search : '',
-        stored,
-      });
-    } catch (e) {
-      console.debug('[ChatVercel] mount (no storage)', { initialSelectedMentorId: selectedMentorId });
-    }
-  }, []);
