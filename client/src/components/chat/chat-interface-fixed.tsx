@@ -97,6 +97,7 @@ export function ChatInterface() {
       const saved = localStorage.getItem('selectedAiMentorId');
       const id = saved ? Number(saved) : null;
       if (id && Number.isFinite(id)) {
+        console.debug('[ChatFixed] restore from storage', { id });
         setSelectedMentorId(id);
       }
     } catch {}
@@ -105,7 +106,11 @@ export function ChatInterface() {
   // When mentors load, only default if there is no saved selection
   useEffect(() => {
     if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
+    const ids = aiMentors.map((m: any) => Number(m.id));
+    const contains = selectedMentorId != null && ids.includes(Number(selectedMentorId));
+    console.debug('[ChatFixed] mentors loaded', { ids, selectedMentorId, contains });
     if (selectedMentorId == null) {
+      console.debug('[ChatFixed] defaulting to first', { id: Number(aiMentors[0].id) });
       setSelectedMentorId(Number(aiMentors[0].id));
     }
   }, [aiMentors, selectedMentorId]);

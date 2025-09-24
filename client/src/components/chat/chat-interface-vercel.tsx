@@ -10,7 +10,18 @@ import { AiMentor, ChatMessage } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { vercelApiClient } from "@/lib/api-client-vercel";
 export function ChatInterfaceVercel() {
-  const [selectedMentorId, setSelectedMentorId] = useState<number | null>(null);
+  const [selectedMentorId, setSelectedMentorId] = useState<number | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('mentor') || params.get('aiMentorId');
+      const fromStorage = localStorage.getItem('selectedAiMentorId');
+      const raw = fromUrl ?? fromStorage ?? null;
+      const id = raw ? Number(raw) : null;
+      return id && Number.isFinite(id) ? id : null;
+    } catch {
+      return null;
+    }
+  });
   const [messageInput, setMessageInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
@@ -176,25 +187,16 @@ export function ChatInterfaceVercel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Restore previously selected mentor on mount (URL > localStorage)
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const fromUrl = params.get('mentor') || params.get('aiMentorId');
-      const fromStorage = localStorage.getItem('selectedAiMentorId');
-      const raw = fromUrl ?? fromStorage ?? null;
-      const id = raw ? Number(raw) : null;
-      if (id && Number.isFinite(id)) {
-        setSelectedMentorId(id);
-      }
-    } catch {}
-  }, []);
+  // Removed separate restore effect; initial state already restored synchronously
 
   // When mentors load, only default if there is no saved selection
   useEffect(() => {
     if (!Array.isArray(aiMentors) || aiMentors.length === 0) return;
-    const hasSelected = selectedMentorId != null;
-    if (!hasSelected) {
+    const ids = aiMentors.map((m: any) => Number(m.id));
+    const contains = selectedMentorId != null && ids.includes(Number(selectedMentorId));
+    console.debug('[ChatVercel] mentors loaded', { ids, selectedMentorId, contains });
+    if (selectedMentorId == null) {
+      console.debug('[ChatVercel] defaulting to first mentor', { id: Number(aiMentors[0].id) });
       setSelectedMentorId(Number(aiMentors[0].id));
     }
   }, [aiMentors, selectedMentorId]);
@@ -205,6 +207,7 @@ export function ChatInterfaceVercel() {
     // Persist selection whenever it changes
     if (selectedMentorId) {
       try {
+        console.debug('[ChatVercel] selection changed', { selectedMentorId });
         localStorage.setItem('selectedAiMentorId', String(selectedMentorId));
         const url = new URL(window.location.href);
         url.searchParams.set('mentor', String(selectedMentorId));
@@ -309,6 +312,7 @@ export function ChatInterfaceVercel() {
           mentors={aiMentors}
           selectedId={selectedMentorId}
           onSelect={(id) => {
+            console.debug('[ChatVercel] user selected mentor', { id });
             setSelectedMentorId(id);
             try { localStorage.setItem('selectedAiMentorId', String(id)); } catch {}
           }}
@@ -392,3 +396,16 @@ export function ChatInterfaceVercel() {
     </div>
   );
 }
+  // Debug: log initial state on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('selectedAiMentorId');
+      console.debug('[ChatVercel] mount', {
+        initialSelectedMentorId: selectedMentorId,
+        url: typeof window !== 'undefined' ? window.location.search : '',
+        stored,
+      });
+    } catch (e) {
+      console.debug('[ChatVercel] mount (no storage)', { initialSelectedMentorId: selectedMentorId });
+    }
+  }, []);
