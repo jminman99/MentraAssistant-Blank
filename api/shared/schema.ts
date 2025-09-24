@@ -23,7 +23,8 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").default("user"),
   subscriptionPlan: subscriptionPlanEnum("subscription_plan").default("ai-only"),
   organizationId: integer("organization_id").references(() => organizations.id, { onDelete: 'cascade' }),
-  profilePictureUrl: text("profile_image"),
+  // Column name confirmed in DB: profile_picture_url
+  profilePictureUrl: text("profile_picture_url"),
   bio: text("bio"),
   phoneNumber: varchar("phone_number", { length: 20 }),
   location: varchar("location", { length: 100 }),

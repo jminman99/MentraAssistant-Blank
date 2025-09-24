@@ -121,7 +121,7 @@ export class VercelStorage {
       subscription_plan AS "subscriptionPlan",
       organization_id   AS "organizationId",
       timezone          AS "timezone",
-      profile_picture_url AS "profilePictureUrl",
+        profile_picture_url AS "profilePictureUrl",
         phone_number      AS "phoneNumber",
         is_active         AS "isActive",
         individual_sessions_used AS "individualSessionsUsed",
@@ -157,12 +157,40 @@ export class VercelStorage {
   async getAiMentors(organizationId?: number): Promise<AiMentor[]> {
     const result = organizationId
       ? await db.execute(sql`
-          SELECT * FROM ai_mentors
+          SELECT
+            id,
+            name,
+            description,
+            personality_prompt AS "personalityPrompt",
+            avatar_url         AS "avatarUrl",
+            personality_traits AS "personalityTraits",
+            expertise_areas    AS "expertiseAreas",
+            conversation_style AS "conversationStyle",
+            temperature,
+            organization_id    AS "organizationId",
+            is_active          AS "isActive",
+            created_at         AS "createdAt"
+          FROM ai_mentors
           WHERE is_active = true AND organization_id = ${organizationId}
+          ORDER BY created_at DESC
         `)
       : await db.execute(sql`
-          SELECT * FROM ai_mentors
+          SELECT
+            id,
+            name,
+            description,
+            personality_prompt AS "personalityPrompt",
+            avatar_url         AS "avatarUrl",
+            personality_traits AS "personalityTraits",
+            expertise_areas    AS "expertiseAreas",
+            conversation_style AS "conversationStyle",
+            temperature,
+            organization_id    AS "organizationId",
+            is_active          AS "isActive",
+            created_at         AS "createdAt"
+          FROM ai_mentors
           WHERE is_active = true
+          ORDER BY created_at DESC
         `);
     return result.rows as AiMentor[];
   }

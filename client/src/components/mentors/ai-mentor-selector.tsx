@@ -43,7 +43,7 @@ export function AiMentorSelector({ mentors, selectedId, onSelect }: AiMentorSele
             title={getMentorSummary(mentor.name)} // Show full summary on hover
           >
             <img 
-              src={mentor.avatar} 
+              src={(mentor as any).avatar || (mentor as any).avatarUrl || (mentor as any).avatar_url || ''} 
               alt={mentor.name} 
               className="w-6 h-6 rounded-full object-cover"
             />
