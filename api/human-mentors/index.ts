@@ -1,19 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { clerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from "../_lib/storage.js";
-import { getSessionToken } from "../_lib/auth.js";
-import { applyCorsHeaders, handlePreflight, createRequestContext } from "../_lib/middleware.js";
+import { requireUser } from "../_lib/auth.js";
+import { createRequestContext } from "../_lib/middleware.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Add CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -24,39 +14,18 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
   const context = createRequestContext();
 
   try {
-    // Extract and verify Clerk JWT token (using same pattern as working endpoints)
-    const token = getSessionToken(req);
-    if (!token) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
+    // Reuse standard auth helper for consistency with other endpoints
+    const { dbUser } = await requireUser(req);
+    if (dbUser.organizationId == null) {
+      return res.status(400).json({ success: false, error: 'User is missing organization context' });
     }
-
-    // Verify the token with Clerk and get user ID
-    let userId;
-    try {
-      const verifiedToken = await clerkClient.verifyToken(token);
-      userId = verifiedToken.sub;
-      console.log("✅ Clerk user verified:", userId);
-    } catch (verifyError) {
-      console.error("Token verification failed:", verifyError);
-      return res.status(401).json({ success: false, error: "Invalid token" });
-    }
-
-    // Get user from our database using Clerk ID
-    const user = await storage.getUserByClerkId(userId);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "User not found in database. Please sync your account." 
-      });
-    }
-
-    const orgId = user.organizationId || 1;
+    const orgId = dbUser.organizationId;
 
     // Fetch mentors for org
     const mentors = await storage.getHumanMentorsByOrganization(orgId);
     const safeMentors = Array.isArray(mentors) ? mentors : [];
 
-      // Add realistic availability data to each mentor
+      // Normalize fields and add lightweight availability preview
       const mentorsWithAvailability = safeMentors.map((mentor: any) => {
         const currentHour = new Date().getHours();
         const isBusinessHours = currentHour >= 9 && currentHour <= 17;
@@ -64,6 +33,13 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
 
         return {
           ...mentor,
+          // UI expects 'profileImage' nested; provide alias to DB field
+          user: mentor.user ? { 
+            ...mentor.user, 
+            profileImage: mentor.user.profilePictureUrl 
+          } : mentor.user,
+          // UI sometimes expects 'expertise' string
+          expertise: Array.isArray(mentor.expertiseAreas) ? mentor.expertiseAreas.join(', ') : mentor.expertiseAreas,
           availability: {
             today: isBusinessHours && randomAvailability,
             tomorrow: Math.random() > 0.2,
@@ -74,18 +50,12 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      console.log("[human-mentors]", { orgId, userId: user.id, len: safeMentors.length });
+      console.log("[human-mentors]", { orgId, userId: dbUser.id, len: safeMentors.length });
 
       return res.status(200).json({
         success: true,
         data: mentorsWithAvailability,
         hasAccess: safeMentors.length > 0,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
       });
 
 
