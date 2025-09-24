@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult, useMutation, UseMutationResult } from "@tanstack/react-query";
 import { jsonGet } from "@/lib/fetcher";
+import { useAuth } from "@/lib/auth-hook";
 
 type MonthResponse = {
   success: true;
@@ -155,15 +156,29 @@ type SessionBookingResponse = {
 };
 
 export function useSessionBooking(): UseMutationResult<SessionBookingResponse, Error, SessionBookingData> {
+  const { getToken } = useAuth();
+
   return useMutation<SessionBookingResponse, Error, SessionBookingData>({
     mutationFn: async (bookingData) => {
       console.log('Sending booking data:', bookingData);
+      let token: string | null = null;
+      if (getToken) {
+        try { token = await getToken({ template: 'mentra-api' } as any); } catch {}
+        if (!token) { try { token = await getToken({ template: 'default' } as any); } catch {} }
+        if (!token) { try { token = await getToken(); } catch {} }
+      }
+      if (!token) {
+        const err: any = new Error('Not authenticated (missing token)');
+        err.status = 401;
+        throw err;
+      }
       
       const response = await fetch('/api/session-bookings', {
         method: 'POST',
-        credentials: 'include', // Send Clerk cookies automatically
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...bookingData,
